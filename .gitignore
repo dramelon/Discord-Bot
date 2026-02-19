@@ -1,0 +1,64 @@
+# vewy vewy secret
+src/perServerCmd/
+src/dramelon/
+src/futurecmd/
+
+# Dependencies
+node_modules/
+
+# Production build
+build/
+dist/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+config.json
+
+# Testing and Coverage
+coverage/
+.nyc_output/
+
+# Editor directories and files
+.idea/
+.vscode/
+*.swp
+*.swo
+*.swn
+.settings/
+.classpath
+.project
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# TypeScript
+*.tsbuildinfo
+
+# Caches
+.eslintcache
+.npm
