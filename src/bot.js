@@ -1,8 +1,7 @@
 require('dotenv').config();
-const fs = require('node:fs');
-const path = require('node:path');
 const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
 
+const commandsList = require('./commands');
 const handleSimpleCommand = require('./simplecmd');
 const handleRandomReply = require('./randomreply');
 
@@ -22,32 +21,11 @@ const client = new Client({ intents: [
 
 client.commands = new Collection();
 
-// Point to commands folder
-const foldersPath = path.join(__dirname, 'commands');
-const commandFolders = fs.readdirSync(foldersPath);
-
-for (const folder of commandFolders) {
-	const commandsPath = path.join(foldersPath, folder);
-
-	if (folder.endsWith('.js')) {
-		const command = require(commandsPath);
-		if ('data' in command && 'execute' in command) {
-			client.commands.set(command.data.name, command);
-		} else {
-			console.log(`[WARNING] The command at ${commandsPath} is missing a required "data" or "execute" property.`);
-		}
-	} else if (fs.statSync(commandsPath).isDirectory()) {
-		const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
-		for (const file of commandFiles) {
-			const filePath = path.join(commandsPath, file);
-			const command = require(filePath);
-			// Set a new item in the Collection with the key as the command name and the value as the exported module
-			if ('data' in command && 'execute' in command) {
-				client.commands.set(command.data.name, command);
-			} else {
-				console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
-			}
-		}
+for (const command of commandsList) {
+	if ('data' in command && 'execute' in command) {
+		client.commands.set(command.data.name, command);
+	} else {
+		console.log(`[WARNING] A command is missing a required "data" or "execute" property.`);
 	}
 }
 
