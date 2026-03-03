@@ -30,8 +30,6 @@ for (const command of commandsList) {
 }
 
 client.on(Events.InteractionCreate, async interaction => {
-	if (!interaction.isChatInputCommand()) return;
-
 	const command = interaction.client.commands.get(interaction.commandName);
 
 	if (!command) {
@@ -39,14 +37,24 @@ client.on(Events.InteractionCreate, async interaction => {
 		return;
 	}
 
-	try {
-		await command.execute(interaction);
-	} catch (error) {
-		console.error(error);
-		if (interaction.replied || interaction.deferred) {
-			await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
-		} else {
-			await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+	if (interaction.isAutocomplete()) {
+		if (command.autocomplete) {
+			try {
+				await command.autocomplete(interaction);
+			} catch (error) {
+				console.error(`Error handling autocomplete for ${interaction.commandName}:`, error);
+			}
+		}
+	} else if (interaction.isChatInputCommand()) {
+		try {
+			await command.execute(interaction);
+		} catch (error) {
+			console.error(error);
+			if (interaction.replied || interaction.deferred) {
+				await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
+			} else {
+				await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+			}
 		}
 	}
 });

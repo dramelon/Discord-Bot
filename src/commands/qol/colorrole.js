@@ -114,101 +114,153 @@ module.exports = {
 		.setDescription('Manage your color role.')
 		.setContexts([0]) // Guild Only
 		.setIntegrationTypes([0]) // Guild Install Only
-		.addStringOption(option =>
-			option.setName('input')
-				.setDescription('The color name, hex code, or RGB values.')
+		.addStringOption(option => 
+			option.setName('name')
+				.setDescription('Color name (e.g. red, blue) - start typing to see suggestions')
+				.setAutocomplete(true)
+				.setRequired(false))
+		.addStringOption(option => 
+			option.setName('hex')
+				.setDescription('Hex code (e.g. #FF8000)')
+				.setRequired(false))
+		.addIntegerOption(option => 
+			option.setName('r')
+				.setDescription('Red (0-255)')
+				.setMinValue(0).setMaxValue(255).setRequired(false))
+		.addIntegerOption(option => 
+			option.setName('g')
+				.setDescription('Green (0-255)')
+				.setMinValue(0).setMaxValue(255).setRequired(false))
+		.addIntegerOption(option => 
+			option.setName('b')
+				.setDescription('Blue (0-255)')
+				.setMinValue(0).setMaxValue(255).setRequired(false))
+		.addIntegerOption(option => 
+			option.setName('greyscale')
+				.setDescription('Greyscale value (0-255)')
+				.setMinValue(0).setMaxValue(255).setRequired(false))
+		.addBooleanOption(option => 
+			option.setName('remove')
+				.setDescription('Remove your color role')
 				.setRequired(false)),
+	async autocomplete(interaction) {
+		const focusedValue = interaction.options.getFocused();
+		// Prevent showing all 100+ colors on an empty input
+		if (!focusedValue) {
+			return await interaction.respond([]);
+		}
+
+		const choices = Object.keys(colorMap);
+		const filtered = choices.filter(choice => choice.startsWith(focusedValue.toLowerCase())).slice(0, 25);
+		await interaction.respond(filtered.map(choice => ({ name: choice, value: choice })));
+	},
 	async execute(interaction) {
-		const input = interaction.options.getString('input');
-		// If in the specific "clean" channel, make replies ephemeral (hidden)
 		const isCleanChannel = interaction.channelId === '1472877917015900172';
 
-		// --- Handle Removal (No Input) ---
-		if (!input) {
-			const existingRole = interaction.member.roles.cache.find(x => /^0x[0-9A-F]{6}$/i.test(x.name));
+		const nameOpt = interaction.options.getString('name');
+		const hexOpt = interaction.options.getString('hex');
+		const rOpt = interaction.options.getInteger('r');
+		const gOpt = interaction.options.getInteger('g');
+		const bOpt = interaction.options.getInteger('b');
+		const greyOpt = interaction.options.getInteger('greyscale');
+		const removeOpt = interaction.options.getBoolean('remove');
 
+		// --- Handle Removal ---
+		// Trigger if: remove=true OR name="none"/"remove" OR no options provided
+		const isRemove = removeOpt === true || 
+			(nameOpt && ['none', 'remove', 'clear'].includes(nameOpt.toLowerCase())) ||
+			(interaction.options.data.length === 0);
+
+		if (isRemove) {
+			const existingRole = interaction.member.roles.cache.find(x => /^0x[0-9A-F]{6}$/i.test(x.name));
 			if (existingRole) {
 				try {
-					// Check if we should delete the role (if user is the only one)
 					const shouldDelete = existingRole.members.size <= 1;
-
 					await interaction.member.roles.remove(existingRole);
-					
-					if (shouldDelete) {
-						await existingRole.delete('Unused color role');
-					}
-					
+					if (shouldDelete) await existingRole.delete('Unused color role');
 					return interaction.reply({ content: 'Color role removed.', ephemeral: isCleanChannel });
-
 				} catch (error) {
 					console.error(error);
 					return interaction.reply({ content: 'Error: I cannot manage roles. Please check my permissions.', ephemeral: true });
 				}
 			} else {
-				return interaction.reply({ content: 'You do not have a color role to remove. Try `/color input:red` to get one.', ephemeral: true });
+				return interaction.reply({ content: 'You do not have a color role to remove.', ephemeral: true });
 			}
 		}
 
-		// --- Handle Color Setting ---
+		// --- Handle Color Calculation ---
 		let r, g, b;
-		const inputName = input.toLowerCase();
-		const args = inputName.split(/ +/);
 
-		const hexMatch = inputName.match(/^(?:0x|#)?([0-9a-f]{6})$/i);
-		const hexMatch3 = inputName.match(/^(?:0x|#)?([0-9a-f]{3})$/i);
-		// Check if input is a single number 0-255 (e.g. "255")
-		const decimalMatch = inputName.match(/^(\d{1,3})$/); 
-		const hexGrey = inputName.match(/^(?:0x|#)?([0-9a-f]{1,2})$/i);
-
-		if (hexMatch) {
-			const hexVal = parseInt(hexMatch[1], 16);
-			r = (hexVal >> 16) & 255;
-			g = (hexVal >> 8) & 255;
-			b = hexVal & 255;
-		} else if (decimalMatch && parseInt(decimalMatch[1], 10) <= 255) {
-			const val = parseInt(decimalMatch[1], 10);
-			r = g = b = val;
-		} else if (colorMap[inputName]) {
-			[r, g, b] = colorMap[inputName];
-		} else if (hexMatch3) {
-			const hexVal = parseInt(hexMatch3[1], 16);
-			r = ((hexVal >> 8) & 0xF) * 0x11;
-			g = ((hexVal >> 4) & 0xF) * 0x11;
-			b = (hexVal & 0xF) * 0x11;
-		} else if (args.length >= 3) {
-			[r, g, b] = args.slice(0, 3).map(Number);
-		} else if (hexGrey) {
-			const raw = hexGrey[1];
-			// Expand single char hex (e.g. "F" -> "FF" -> 255)
-			const val = raw.length === 1
-				? parseInt(raw + raw, 16)
-				: parseInt(raw, 16);
-			r = g = b = val;
-		} else {
-			// Fuzzy search for suggestions
-			const matches = Object.keys(colorMap)
-				.map(name => ({ name, dist: levenshtein(inputName, name) }))
-				.filter(item => item.dist <= 3) // Allow some typos
-				.sort((a, b) => a.dist - b.dist)
-				.slice(0, 5);
-
-			if (matches.length > 0) {
-				const options = matches.map((m, i) => `**${i + 1}.** \`${m.name}\` (${colorMap[m.name].join(', ')})`).join('\n');
-				return interaction.reply({
-					content: `Color not found. Did you mean:\n${options}\n\nPlease run the command again with the exact name (e.g., \`/color input:${matches[0].name}\`).`,
-					ephemeral: true
-				});
+		if (rOpt !== null && gOpt !== null && bOpt !== null) {
+			// 1. Explicit RGB
+			r = rOpt; g = gOpt; b = bOpt;
+		} else if (greyOpt !== null) {
+			// 2. Greyscale
+			r = g = b = greyOpt;
+		} else if (hexOpt) {
+			// 3. Explicit Hex
+			const cleanHex = hexOpt.replace(/^#|0x/i, '');
+			if (/^[0-9A-F]{6}$/i.test(cleanHex)) {
+				const val = parseInt(cleanHex, 16);
+				r = (val >> 16) & 255; g = (val >> 8) & 255; b = val & 255;
+			} else if (/^[0-9A-F]{3}$/i.test(cleanHex)) {
+				const val = parseInt(cleanHex, 16);
+				r = ((val >> 8) & 0xF) * 0x11; g = ((val >> 4) & 0xF) * 0x11; b = (val & 0xF) * 0x11;
 			} else {
-				return interaction.reply({
-					content: 'Please provide RGB values, a hex code, or a valid color name.\nExamples: `/color input:255 128 0`, `/color input:FF8000`, `/color input:green`',
-					ephemeral: true
-				});
+				return interaction.reply({ content: 'Invalid hex code provided.', ephemeral: true });
 			}
+		} else if (nameOpt) {
+			// 4. Name / Legacy Input (Fuzzy search, etc)
+			const inputName = nameOpt.toLowerCase();
+			const args = inputName.split(/ +/);
+			
+			const hexMatch = inputName.match(/^(?:0x|#)?([0-9a-f]{6})$/i);
+			const hexMatch3 = inputName.match(/^(?:0x|#)?([0-9a-f]{3})$/i);
+			const decimalMatch = inputName.match(/^(\d{1,3})$/); 
+			const hexGrey = inputName.match(/^(?:0x|#)?([0-9a-f]{1,2})$/i);
+
+			if (hexMatch) {
+				const hexVal = parseInt(hexMatch[1], 16);
+				r = (hexVal >> 16) & 255; g = (hexVal >> 8) & 255; b = hexVal & 255;
+			} else if (decimalMatch && parseInt(decimalMatch[1], 10) <= 255) {
+				const val = parseInt(decimalMatch[1], 10);
+				r = g = b = val;
+			} else if (colorMap[inputName]) {
+				[r, g, b] = colorMap[inputName];
+			} else if (hexMatch3) {
+				const hexVal = parseInt(hexMatch3[1], 16);
+				r = ((hexVal >> 8) & 0xF) * 0x11; g = ((hexVal >> 4) & 0xF) * 0x11; b = (val & 0xF) * 0x11;
+			} else if (args.length >= 3) {
+				[r, g, b] = args.slice(0, 3).map(Number);
+			} else if (hexGrey) {
+				const raw = hexGrey[1];
+				const val = raw.length === 1 ? parseInt(raw + raw, 16) : parseInt(raw, 16);
+				r = g = b = val;
+			} else {
+				// Fuzzy search
+				const matches = Object.keys(colorMap)
+					.map(name => ({ name, dist: levenshtein(inputName, name) }))
+					.filter(item => item.dist <= 3)
+					.sort((a, b) => a.dist - b.dist)
+					.slice(0, 5);
+
+				if (matches.length > 0) {
+					const options = matches.map((m, i) => `**${i + 1}.** \`${m.name}\` (${colorMap[m.name].join(', ')})`).join('\n');
+					return interaction.reply({
+						content: `Color not found. Did you mean:\n${options}\n\nTry \`/color name:${matches[0].name}\``,
+						ephemeral: true
+					});
+				} else {
+					return interaction.reply({ content: 'Invalid color name or format.', ephemeral: true });
+				}
+			}
+		} else {
+			return interaction.reply({ content: 'Please provide a color option (name, hex, rgb, or greyscale).', ephemeral: true });
 		}
 
-		// Validate numbers
+		// --- Apply Role ---
 		if ([r, g, b].some(val => isNaN(val) || val < 0 || val > 255)) {
-			return interaction.reply({ content: 'Invalid RGB values. Please use numbers between 0 and 255.', ephemeral: true });
+			return interaction.reply({ content: 'Invalid RGB values calculated.', ephemeral: true });
 		}
 
 		const hex = [r, g, b].map(x => x.toString(16).padStart(2, '0').toUpperCase()).join('');
