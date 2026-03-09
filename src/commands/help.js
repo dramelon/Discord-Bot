@@ -46,6 +46,23 @@ module.exports = {
 				{ name: 'Round-Trip Latency', value: 'The time difference between when the interaction was created and when the initial reply was sent.', inline: false },
 				{ name: 'Message Edit Latency', value: 'The time it takes to edit the message with the final ping results.', inline: false },
 			);
+		} else if (command.data.name === 'clipboard') {
+			embed.addFields(
+				{ name: 'text', value: 'The text to display on the sign. Supports custom and animated emojis.', inline: false },
+			);
+		} else if (command.data.name === 'stretch') {
+			embed.addFields(
+				{ name: 'target', value: '(Optional) The user to stretch. Defaults to your own avatar.', inline: false },
+			);
+		} else if (command.data.name === 'color') {
+			embed.addFields(
+				{ name: 'Description', value: 'Set or update your custom role color. You can use a color name, hex code, RGB values, or a greyscale value.', inline: false },
+				{ name: 'Options', value: '> **name**: Select from a list of predefined colors.\n> **hex**: Use a hex code (e.g. `#FF0000`).\n> **r, g, b**: Define exact RGB values (0-255).\n> **greyscale**: Set a shade of grey (0-255).\n> **remove**: Remove your current color role.', inline: false },
+			);
+		} else if (command.data.name === 'leaderboard') {
+			embed.addFields(
+				{ name: 'Description', value: 'Displays the top 10 users ranked by level and XP.', inline: false },
+			);
 		}
 
 		await interaction.reply({ embeds: [embed] });

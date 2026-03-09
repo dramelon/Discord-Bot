@@ -4,6 +4,7 @@ const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
 const commandsList = require('./commands');
 const handleSimpleCommand = require('./simplecmd');
 const handleRandomReply = require('./randomreply');
+const handleLeveling = require('./leveling');
 
 const token = process.env.DISCORD_TOKEN;
 
@@ -61,6 +62,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
 client.on(Events.MessageCreate, handleSimpleCommand);
 client.on(Events.MessageCreate, handleRandomReply);
+client.on(Events.MessageCreate, handleLeveling);
 
 client.once(Events.ClientReady, readyClient => {
 	console.log(`Ready! Logged in as ${readyClient.user.tag}`);
