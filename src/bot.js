@@ -2,9 +2,10 @@ require('dotenv').config();
 const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
 
 const commandsList = require('./commands');
-const handleSimpleCommand = require('./simplecmd');
 const handleRandomReply = require('./randomreply');
 const handleLeveling = require('./leveling');
+const { logCommand } = require('./logger');
+const { startTracking } = require('./commands/qol/status');
 
 const token = process.env.DISCORD_TOKEN;
 
@@ -47,10 +48,40 @@ client.on(Events.InteractionCreate, async interaction => {
 			}
 		}
 	} else if (interaction.isChatInputCommand()) {
+		const start = Date.now();
+		
+		// Capture options strictly for logging purposes
+		// We use .data to get the raw structure of arguments provided
+		const commandOptions = interaction.options.data || [];
+
 		try {
 			await command.execute(interaction);
+
+			// Log successful execution
+			logCommand({
+				status: 'success',
+				command: interaction.commandName,
+				user: interaction.user.tag,
+				userId: interaction.user.id,
+				guildId: interaction.guildId,
+				channelId: interaction.channelId,
+				params: commandOptions,
+				duration: `${Date.now() - start}ms`
+			});
 		} catch (error) {
 			console.error(error);
+			
+			// Log error execution
+			logCommand({
+				status: 'error',
+				command: interaction.commandName,
+				user: interaction.user.tag,
+				userId: interaction.user.id,
+				params: commandOptions,
+				error: error.message,
+				stack: error.stack
+			});
+
 			if (interaction.replied || interaction.deferred) {
 				await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
 			} else {
@@ -60,7 +91,6 @@ client.on(Events.InteractionCreate, async interaction => {
 	}
 });
 
-client.on(Events.MessageCreate, handleSimpleCommand);
 client.on(Events.MessageCreate, handleRandomReply);
 client.on(Events.MessageCreate, handleLeveling);
 
@@ -70,4 +100,5 @@ client.once(Events.ClientReady, readyClient => {
 	console.log(`Command list: ${client.commands.map(cmd => cmd.data.name).join(', ')}`);
 });
 
+startTracking();
 client.login(token);

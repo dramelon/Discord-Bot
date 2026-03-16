@@ -9,7 +9,7 @@ module.exports = {
 		.setName('leaderboard')
 		.setDescription('Show the top 10 users by level and XP')
 		.setContexts([0])
-		.setIntegrationTypes([0]),
+		.setIntegrationTypes([0, 1]),
 	async execute(interaction) {
 		let data = {};
 		if (fs.existsSync(dataPath)) {

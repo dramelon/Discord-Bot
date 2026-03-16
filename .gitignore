@@ -1,4 +1,6 @@
 # vewy vewy secret
+assets/
+data/
 src/perServerCmd/
 src/dramelon/
 src/futurecmd/

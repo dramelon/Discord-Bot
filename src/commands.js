@@ -5,6 +5,8 @@ const clipboard = require('./commands/fun/clipboard');
 const stretch = require('./commands/fun/stretch');
 const rank = require('./commands/fun/rank');
 const leaderboard = require('./commands/fun/leaderboard');
+const status = require('./commands/qol/status');
+const tree = require('./commands/minecraftGame/tree');
 
 // Add any other commands here
 module.exports = [
@@ -15,4 +17,5 @@ module.exports = [
 	stretch,
 	rank,
 	leaderboard,
+	status,
 ];
