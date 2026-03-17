@@ -32,6 +32,11 @@ for (const command of commandsList) {
 }
 
 client.on(Events.InteractionCreate, async interaction => {
+	// Only process ChatInputCommand and Autocomplete interactions here.
+	// Other interaction types (buttons, selects, modals) do not have a commandName
+	// and are handled by other event listeners or specific component handlers.
+	if (!interaction.isChatInputCommand() && !interaction.isAutocomplete()) return;
+
 	const command = interaction.client.commands.get(interaction.commandName);
 
 	if (!command) {
