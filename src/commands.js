@@ -7,6 +7,9 @@ const rank = require('./commands/fun/rank');
 const leaderboard = require('./commands/fun/leaderboard');
 const status = require('./commands/qol/status');
 const minecraft = require('./commands/minecraftGame/minecraftCommandHandler');
+const mineadmin = require('./commands/minecraftGame/mineadminCommandHandler');
+const verification = require('./commands/admin/verification');
+const commandManager = require('./commands/admin/commandManager');
 
 // Add any other commands here
 module.exports = [
@@ -19,4 +22,7 @@ module.exports = [
 	leaderboard,
 	status,
 	minecraft,
+	mineadmin,
+	verification,
+	commandManager,
 ];

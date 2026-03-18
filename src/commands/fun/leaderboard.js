@@ -7,7 +7,7 @@ const dataPath = path.join(process.cwd(), 'data', 'levels.json');
 module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('leaderboard')
-		.setDescription('Show the top 10 users by level and XP')
+		.setDescription('Show the top 10 users by total XP')
 		.setContexts([0])
 		.setIntegrationTypes([0, 1]),
 	async execute(interaction) {
@@ -20,10 +20,10 @@ module.exports = {
 			}
 		}
 
-		// Convert data object to array, sort by XP descending, and take top 10
+		// Convert data object to array, sort by totalXp descending, and take top 10
 		const topUsers = Object.entries(data)
 			.map(([userId, userData]) => ({ userId, ...userData }))
-			.sort((a, b) => b.xp - a.xp)
+			.sort((a, b) => (b.totalXp || 0) - (a.totalXp || 0))
 			.slice(0, 10);
 
 		if (topUsers.length === 0) {
@@ -31,12 +31,13 @@ module.exports = {
 		}
 
 		const embed = new EmbedBuilder()
-			.setTitle('🏆 Leaderboard')
+			.setTitle('🏆 Universal Leaderboard')
 			.setColor(0xFFD700) // Gold
 			.setDescription(topUsers.map((user, index) => {
 				const rank = index + 1;
-				return `**${rank}.** <@${user.userId}> : Level ${user.level} (${user.xp} XP) • ${user.xp} Messages`;
-			}).join('\n'));
+				const displayName = user.displayname || user.username || `User ${user.userId}`;
+				return `**${rank}.** **${displayName}** (<@${user.userId}>)\n╰ Level **${user.level}** • **${user.totalXp}** Total XP • **${user.totalMessages || 0}** Messages`;
+			}).join('\n\n'));
 
 		await interaction.reply({ embeds: [embed] });
 	},

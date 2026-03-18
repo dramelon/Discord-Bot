@@ -1,3 +1,4 @@
+const { EmbedBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -241,6 +242,19 @@ const {
     getXPRequired
 } = require('../leveling');
 
+function getToolDisplayName(tool) {
+    let name = tool.type.replace(/_/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    
+    if (tool.enchantments && Object.keys(tool.enchantments).length > 0) {
+        const firstEnchant = Object.keys(tool.enchantments)[0];
+        const level = tool.enchantments[firstEnchant];
+        const roman = ['I', 'II', 'III', 'IV', 'V'][level - 1] || level;
+        name = `${firstEnchant} ${roman} ${name}`;
+    }
+    
+    return name;
+}
+
 function getAdvancementData() {
     if (!fs.existsSync(ADVANCEMENT_FILE)) return {};
     try {
@@ -271,6 +285,28 @@ function checkAdvancements(player, itemGained) {
     }
 
     return newAchievements;
+}
+
+/**
+ * Broadcasts an achievement in a separate message
+ */
+async function broadcastAchievement(context, user, achievement) {
+    const embed = new EmbedBuilder()
+        .setTitle('🏆 Advancement Reached!')
+        .setAuthor({ name: user.username, iconURL: user.displayAvatarURL() })
+        .setDescription(`**${achievement.name}**\n*${achievement.description}*`)
+        .addFields({ name: '🔓 Unlocked Recipes', value: achievement.unlocks.join(', ').replace(/_/g, ' ') })
+        .setColor(0xf1c40f);
+        //.setThumbnail('https://i.imgur.com/8YlQpX8.png'); // Minecraft trophie-like icon if possible or just color
+
+    try {
+        const channel = context.channel;
+        if (channel) {
+            await channel.send({ embeds: [embed] });
+        }
+    } catch (e) {
+        console.error('Error broadcasting achievement:', e);
+    }
 }
 
 async function autocompleteToolHelper(interaction) {
@@ -308,5 +344,7 @@ module.exports = {
     addPlayerXP,
     autocompleteToolHelper,
     checkAdvancements,
-    getAdvancementData
+    getAdvancementData,
+    getToolDisplayName,
+    broadcastAchievement
 };

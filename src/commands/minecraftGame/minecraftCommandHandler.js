@@ -9,27 +9,33 @@ const { executeCombineLogic, autocompleteCombineLogic } = require('./combine');
 const { executeRepairLogic, autocompleteRepairLogic } = require('./repair');
 const { executeEnchantLogic, autocompleteEnchantLogic } = require('./enchant');
 const { executeDisenchantLogic, autocompleteDisenchantLogic } = require('./disenchant');
-const { executeAdminLogic, autocompleteAdminLogic } = require('./admin');
+const { executeProfileLogic } = require('./profile');
+const { executeInspectLogic, autocompleteInspectLogic } = require('./inspect');
+const { executeHowToLogic } = require('./howto');
 
 const SUBCOMMAND_DESCRIPTIONS = {
-    tree: 'Chop down an oak tree for resources',
-    inventory: 'View your items and stats',
-    craft: 'Open the crafting menu or craft items',
-    mine: 'Mine for stone and shiny resources',
-    equip: 'Equip or unequip a tool from your collection',
-    smelt: 'Smelt raw ores into ingots using fuel',
-    combine: 'Merge two tools of the same type to combine durability',
-    repair: 'Repair a metal or stone tool using base materials',
-    enchant: 'Use Level and Lapis to enchant a tool',
-    disenchant: 'Clear all enchantments from a tool',
-    admin: 'Privileged commands for game moderators',
-    help: 'Get general information or help for a specific command'
+    'mine': 'Mine for resources using your equipped pickaxe',
+    'tree': 'Chop trees to get wood and other drops',
+    'craft': 'Craft items and tools from your resources',
+    'inventory': 'Show your Minecraft game inventory',
+    'equip': 'Equip a tool for mining',
+    'smelt': 'Manage your furnace and smelt ores',
+    'combine': 'Combine two tools to merge their durability',
+    'repair': 'Repair a metal tool using its base material',
+    'enchant': 'Enchant a tool using Levels and Lapis',
+    'disenchant': 'Clear enchantments from a tool',
+    'profile': 'Show a player\'s Minecraft profile and progress',
+    'inspect': 'Wiki: Inspect items and tools for details',
+    'howto': 'New to the game? Get a step-by-step guide!',
+    'help': 'Get general information or help for a specific command'
 };
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('minecraft')
-// ... existing code ...
+        .setDescription('Core command for the Minecraft-style game')
+        .setContexts([0, 1, 2])
+        .setIntegrationTypes([0, 1])
         .addSubcommand(subcommand =>
             subcommand
                 .setName('smelt')
@@ -41,9 +47,6 @@ module.exports = {
                         .setRequired(false)
                 )
         )
-        .setDescription('Core command for the Minecraft-style game')
-        .setContexts([0, 1, 2])
-        .setIntegrationTypes([0, 1])
         .addSubcommand(subcommand =>
             subcommand
                 .setName('help')
@@ -161,68 +164,47 @@ module.exports = {
                         .setRequired(true)
                 )
         )
-        .addSubcommandGroup(group =>
-            group
-                .setName('admin')
-                .setDescription(SUBCOMMAND_DESCRIPTIONS.admin)
-                .addSubcommand(sub =>
-                    sub.setName('give_item')
-                        .setDescription('Give an item to a user')
-                        .addUserOption(opt => opt.setName('user').setDescription('The target user').setRequired(true))
-                        .addStringOption(opt => opt.setName('item').setDescription('Item ID').setAutocomplete(true).setRequired(true))
-                        .addIntegerOption(opt => opt.setName('amount').setDescription('How many').setMinValue(1))
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('profile')
+                .setDescription(SUBCOMMAND_DESCRIPTIONS.profile)
+                .addUserOption(option =>
+                    option.setName('user')
+                        .setDescription('User to check profile of')
+                        .setRequired(false)
                 )
-                .addSubcommand(sub =>
-                    sub.setName('remove_item')
-                        .setDescription('Remove an item from a user')
-                        .addUserOption(opt => opt.setName('user').setDescription('The target user').setRequired(true))
-                        .addStringOption(opt => opt.setName('item').setDescription('Item ID').setAutocomplete(true).setRequired(true))
-                        .addIntegerOption(opt => opt.setName('amount').setDescription('How many').setMinValue(1))
+        )
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('inspect')
+                .setDescription(SUBCOMMAND_DESCRIPTIONS.inspect)
+                .addStringOption(option =>
+                    option.setName('item')
+                        .setDescription('Item or tool to inspect')
+                        .setAutocomplete(true)
+                        .setRequired(true)
                 )
-                .addSubcommand(sub =>
-                    sub.setName('give_achievement')
-                        .setDescription('Grant an achievement to a user')
-                        .addUserOption(opt => opt.setName('user').setDescription('The target user').setRequired(true))
-                        .addStringOption(opt => opt.setName('achievement').setDescription('Advancement ID').setAutocomplete(true).setRequired(true))
-                )
-                .addSubcommand(sub =>
-                    sub.setName('remove_achievement')
-                        .setDescription('Revoke an achievement from a user')
-                        .addUserOption(opt => opt.setName('user').setDescription('The target user').setRequired(true))
-                        .addStringOption(opt => opt.setName('achievement').setDescription('Advancement ID').setAutocomplete(true).setRequired(true))
-                )
-                .addSubcommand(sub =>
-                    sub.setName('clear')
-                        .setDescription('Clear a user\'s inventory')
-                        .addUserOption(opt => opt.setName('user').setDescription('The target user').setRequired(true))
-                )
-                .addSubcommand(sub =>
-                    sub.setName('hardreset')
-                        .setDescription('Reset a user to level 0 and empty inventory')
-                        .addUserOption(opt => opt.setName('user').setDescription('The target user').setRequired(true))
-                )
-                .addSubcommand(sub =>
-                    sub.setName('enchant')
-                        .setDescription('Enchant user\'s equipped tool')
-                        .addUserOption(opt => opt.setName('user').setDescription('The target user').setRequired(true))
-                        .addStringOption(opt => opt.setName('enchantment').setDescription('Enchantment ID').setAutocomplete(true).setRequired(true))
-                        .addIntegerOption(opt => opt.setName('level').setDescription('Level').setMinValue(1).setMaxValue(5).setRequired(true))
-                )
-                .addSubcommand(sub =>
-                    sub.setName('disenchant')
-                        .setDescription('Disenchant user\'s equipped tool')
-                        .addUserOption(opt => opt.setName('user').setDescription('The target user').setRequired(true))
-                        .addStringOption(opt => opt.setName('enchantment').setDescription('Enchantment ID or "all"').setAutocomplete(true).setRequired(true))
+        )
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('howto')
+                .setDescription(SUBCOMMAND_DESCRIPTIONS.howto)
+                .addStringOption(option =>
+                    option.setName('step')
+                        .setDescription('Select a specific tutorial step')
+                        .setRequired(false)
+                        .addChoices(
+                            { name: '🌲 Step 1: Gathering Wood', value: 'gathering' },
+                            { name: '⚒️ Step 2: Crafting Basics', value: 'crafting' },
+                            { name: '⛏️ Step 3: Mining & Resources', value: 'mining' },
+                            { name: '🔥 Step 4: Processing & Wiki', value: 'processing' }
+                        )
                 )
         ),
 
     async autocomplete(interaction) {
         const subcommand = interaction.options.getSubcommand();
-        const group = interaction.options.getSubcommandGroup(false);
 
-        if (group === 'admin') {
-            return await autocompleteAdminLogic(interaction);
-        }
 
         if (subcommand === 'craft') {
             return await autocompleteCraftLogic(interaction);
@@ -256,6 +238,10 @@ module.exports = {
             return await autocompleteDisenchantLogic(interaction);
         }
 
+        if (subcommand === 'inspect') {
+            return await autocompleteInspectLogic(interaction);
+        }
+
         if (subcommand === 'help') {
             const focusedValue = interaction.options.getFocused().toLowerCase();
             const commands = Object.keys(SUBCOMMAND_DESCRIPTIONS);
@@ -271,19 +257,11 @@ module.exports = {
         const group = interaction.options.getSubcommandGroup(false);
         const userId = interaction.user.id;
 
-        // Global XP Gain
+        // Global XP Gain - leveling.js handles notification if we pass interaction
         const { addPlayerXP } = require('./../../utils/minecraftData');
-        const levelUp = addPlayerXP(userId, 1, interaction.user); // 1 XP per command
-        if (levelUp !== null) {
-            // Small delay to ensure command response comes first or just followUp
-            setTimeout(() => {
-                interaction.followUp({ content: `🎊 **Level Up!** You are now level **${levelUp}**!`, ephemeral: true }).catch(() => {});
-            }, 1000);
-        }
+        addPlayerXP(userId, 1, interaction.user, interaction);
 
-        if (group === 'admin') {
-            return await executeAdminLogic(interaction);
-        }
+
 
         if (subcommand === 'tree') {
             return await executeTreeLogic(interaction);
@@ -325,18 +303,49 @@ module.exports = {
             return await executeDisenchantLogic(interaction);
         }
 
+        if (subcommand === 'profile') {
+            return await executeProfileLogic(interaction);
+        }
+
+        if (subcommand === 'inspect') {
+            return await executeInspectLogic(interaction);
+        }
+
+        if (subcommand === 'howto') {
+            return await executeHowToLogic(interaction);
+        }
+
         if (subcommand === 'help') {
             const commandName = interaction.options.getString('command');
 
             if (!commandName) {
                 const embed = new EmbedBuilder()
-                    .setTitle('🎮 Minecraft Game Info')
-                    .setDescription('Welcome to the Minecraft-inspired Discord game!')
+                    .setTitle('🎮 Minecraft Game: Ultimate Guide')
+                    .setDescription('Welcome to the fluffin-powered Minecraft Discord experience! 🌟\nBuild your empire, master the elements, and become the top player on the leaderboard!')
                     .setColor(0x2ecc71)
                     .addFields(
-                        { name: '🛠️ Available Subcommands', value: Object.entries(SUBCOMMAND_DESCRIPTIONS).map(([name, desc]) => `\`/minecraft ${name}\` - ${desc}`).join('\n') },
-                        { name: '💡 Hint', value: 'Use `/minecraft help <command>` for detailed info on any action!' }
-                    );
+                        {
+                            name: '📈 Progression & Levels',
+                            value: 'Gain **1 XP** for every chat message and command! As you level up, you\'ll unlock power for **Tool Enchanting**. Your level progress is global across the entire bot! 🌍'
+                        },
+                        {
+                            name: '🏆 Achievements & Recipes',
+                            value: 'Reach milestones to unlock **Advancements**! Each rank unlocks new **Recipes** and abilities. Check `/minecraft profile` to see your collection! 🎖️'
+                        },
+                        {
+                            name: '⚔️ Core Features',
+                            value: '• **Gathering**: `/minecraft tree` & `/minecraft mine`\n• **Economy**: `/minecraft craft` & `/minecraft smelt`\n• **Equipment**: `/minecraft equip`, `/minecraft repair` & `/minecraft enchant`'
+                        },
+                        {
+                            name: '📖 Knowledge Base',
+                            value: 'Confused about an item? Use **`/minecraft inspect <item>`** to view the in-game wiki with descriptions and sources!'
+                        },
+                        {
+                            name: '🛠️ Subcommand List',
+                            value: Object.entries(SUBCOMMAND_DESCRIPTIONS).map(([name, desc]) => `\`${name}\` - ${desc}`).join('\n')
+                        }
+                    )
+                    .setFooter({ text: '💡 Use /minecraft help <command> for deep details on any action!' });
 
                 return await interaction.reply({ embeds: [embed] });
             }
@@ -389,6 +398,30 @@ module.exports = {
                         .addFields(
                             { name: 'Options', value: '`item`: (Autocomplete) The item to craft.\n`amount`: (Optional) Number of items to craft.' },
                             { name: '💡 Tip', value: 'Run `/minecraft craft` with no options to see all recipes!' }
+                        );
+                    break;
+                case 'profile':
+                    embed.setTitle('👤 Command: /minecraft profile')
+                        .setDescription(SUBCOMMAND_DESCRIPTIONS.profile)
+                        .addFields(
+                            { name: 'Options', value: '`user`: (Optional) The player to check. Defaults to you.' },
+                            { name: '📊 Included Data', value: 'Total Items, Tool Count, Advancements (Achievements), and Lifetime Stats.' }
+                        );
+                    break;
+                case 'inspect':
+                    embed.setTitle('📖 Command: /minecraft inspect')
+                        .setDescription(SUBCOMMAND_DESCRIPTIONS.inspect)
+                        .addFields(
+                            { name: 'Options', value: '`item`: (Autocomplete) The item or tool to look up.' },
+                            { name: '📝 Note', value: 'Includes descriptions, obtainment sources, and tool stats if applicable.' }
+                        );
+                    break;
+                case 'howto':
+                    embed.setTitle('📖 Command: /minecraft howto')
+                        .setDescription(SUBCOMMAND_DESCRIPTIONS.howto)
+                        .addFields(
+                            { name: 'Options', value: '`step`: (Optional) Choose a part of the guide: `Gathering`, `Crafting`, `Mining`, or `Processing`.' },
+                            { name: '💡 Tip', value: 'Run without options for the "New Player" starter guide!' }
                         );
                     break;
                 case 'help':

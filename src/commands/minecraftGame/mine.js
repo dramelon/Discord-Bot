@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require('discord.js');
-const { getPlayerData, savePlayerData, getLootTable } = require('../../utils/minecraftData');
+const { getPlayerData, savePlayerData, getLootTable, checkAdvancements, broadcastAchievement } = require('../../utils/minecraftData');
 
 async function executeMineLogic(interaction) {
     const userId = interaction.user.id;
@@ -85,7 +85,6 @@ async function executeMineLogic(interaction) {
     }
 
     // Check Advancements
-    const { checkAdvancements } = require('../../utils/minecraftData');
     const allNewAchievements = [];
     for (const item of Object.keys(lootGained)) {
         const newAdvs = checkAdvancements(player, item);
@@ -112,12 +111,7 @@ async function executeMineLogic(interaction) {
 
     if (allNewAchievements.length > 0) {
         for (const adv of allNewAchievements) {
-            const advEmbed = new EmbedBuilder()
-                .setTitle('🏆 Advancement Reached!')
-                .setDescription(`**${adv.name}**\n*${adv.description}*`)
-                .addFields({ name: '🔓 Unlocked Recipes', value: adv.unlocks.join(', ').replace(/_/g, ' ') })
-                .setColor(0xf1c40f);
-            await interaction.followUp({ embeds: [advEmbed] });
+            await broadcastAchievement(interaction, interaction.user, adv);
         }
     }
 }

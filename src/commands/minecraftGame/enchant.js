@@ -72,6 +72,7 @@ async function executeEnchantLogic(interaction) {
     tool.enchantments = {
         [selectedEnchant]: Math.min(power, enchantments[selectedEnchant].max_level)
     };
+    tool.timesEnchanted = (tool.timesEnchanted || 0) + 1;
 
     // Save all
     savePlayerData(allPlayerData);

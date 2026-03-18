@@ -1,9 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const fs = require('fs');
-const path = require('path');
-
-const dataPath = path.join(process.cwd(), 'data', 'levels.json');
-const xpRequirePath = path.join(process.cwd(), 'data', 'level_xprequire.json');
+const { getUserLevelData, getXPRequired } = require('../../leveling');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -17,35 +13,23 @@ module.exports = {
 				.setRequired(false)),
 	async execute(interaction) {
 		const target = interaction.options.getUser('target') || interaction.user;
+		const userData = getUserLevelData(target.id);
 		
-		let data = {};
-		if (fs.existsSync(dataPath)) {
-			try {
-				data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
-			} catch (e) {
-				console.error('Error reading levels data:', e);
-			}
-		}
-
-		const userData = data[target.id] || { xp: 0, level: 0 };
-		
-		let xpRequirements = {};
-		if (fs.existsSync(xpRequirePath)) {
-			try {
-				xpRequirements = JSON.parse(fs.readFileSync(xpRequirePath, 'utf8'));
-			} catch (e) { console.error(e); }
-		}
-
-		const nextLevelXp = xpRequirements[userData.level + 1] || 'Max';
+		const nextLevel = userData.level + 1;
+		const requiredXP = getXPRequired(nextLevel);
+		const progress = Math.min(100, Math.floor((userData.xp / requiredXP) * 100));
 
 		const embed = new EmbedBuilder()
 			.setTitle(`${target.username}'s Rank`)
 			.setThumbnail(target.displayAvatarURL())
 			.setColor(0x00FF00)
 			.addFields(
-				{ name: 'Level', value: `${userData.level}`, inline: true },
-				{ name: 'XP', value: `${userData.xp} / ${nextLevelXp}`, inline: true }
-			);
+				{ name: 'Level', value: `⭐ ${userData.level}`, inline: true },
+				{ name: 'Progress', value: `📊 ${userData.xp} / ${requiredXP} (${progress}%)`, inline: true },
+				{ name: 'Total XP', value: `✨ ${userData.totalXp}`, inline: true },
+				{ name: 'Messages', value: `💬 ${userData.totalMessages || 0}`, inline: true }
+			)
+			.setFooter({ text: 'Keep chatting and playing Minecraft to level up!' });
 
 		await interaction.reply({ embeds: [embed] });
 	},

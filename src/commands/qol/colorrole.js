@@ -69,6 +69,7 @@ const colorMap = {
 	"magenta rose": [255, 0, 175],
 	"maroon": [128, 0, 0],
 	"mauve": [224, 176, 255],
+	"midnight blue": [25, 25, 112],
 	"navy blue": [0, 0, 128],
 	"ochre": [204, 119, 34],
 	"olive": [128, 128, 0],
@@ -105,7 +106,65 @@ const colorMap = {
 	"violet": [238, 130, 238],
 	"viridian": [64, 130, 109],
 	"white": [255, 255, 255],
-	"yellow": [255, 255, 0]
+	"yellow": [255, 255, 0],
+	// custom names
+	"dramelon": [255, 192, 203],
+	//🔥 Fire & Earth (Reds, Oranges, Browns)
+	"alizarin crimson": [227, 38, 54],
+	"blood orange": [210, 16, 1],
+	"burnt sienna": [233, 116, 81],
+	"cayenne": [148, 17, 0],
+	"clay": [182, 115, 82],
+	"dark red": [139, 0, 0],
+	"firebrick": [178, 34, 34],
+	"mahogany": [192, 64, 0],
+	"rust": [183, 65, 14],
+	"terracotta": [226, 114, 91],
+	// 🌿 Nature & Grove (Greens & Teals)
+	"army green": [75, 83, 32],
+	"celadon": [172, 225, 175],
+	"forest green": [34, 139, 34],
+	"kelly green": [76, 187, 23],
+	"moss green": [138, 154, 91],
+	"mint green": [152, 255, 152],
+	"pine green": [1, 121, 111],
+	"pistachio": [147, 197, 114],
+	"seafoam green": [159, 226, 191],
+	"shamrock": [0, 158, 96],
+	// 🌌 Sky & Deep Sea (Blues & Purples)
+	"cobalt": [0, 71, 171],
+	"cornflower blue": [100, 149, 237],
+	"deep sky blue": [0, 191, 255],
+	"denim": [21, 96, 189],
+	"dodger blue": [30, 144, 255],
+	"eggplant": [97, 64, 81],
+	"electric purple": [191, 0, 255],
+	"royal blue": [65, 105, 225],
+	"steel blue": [70, 130, 180],
+	"wisteria": [201, 160, 220],
+	// ✨ Treasure & Shine (Gold, Pinks, Neons)
+	"bubblegum": [255, 193, 204],
+	"canary yellow": [255, 239, 0],
+	"cotton candy": [255, 188, 217],
+	"hot pink": [255, 105, 180],
+	"lemon chiffon": [255, 250, 205],
+	"neon green": [57, 255, 20],
+	"pearl": [234, 224, 200],
+	"rose gold": [183, 110, 121],
+	"shocking pink": [252, 15, 192],
+	"topaz": [255, 200, 124],
+	// 🐉 Special "Dragon" Inspired Colors
+	"dragon fire": [236, 101, 33],
+	"dragon ice": [175, 238, 238],
+	"dragon wind": [240, 255, 255],
+	"dragon lightning": [255, 255, 145],
+	"dragon shadow": [45, 45, 70],
+	"dragon spirit": [135, 206, 235],
+	"dragon acid": [173, 255, 47],
+	"obsidian": [28, 28, 28],
+	"ancient gold": [207, 181, 59],
+	"toxic waste": [142, 212, 0],
+	"mystic purple": [112, 48, 160]
 };
 
 module.exports = {
@@ -114,36 +173,50 @@ module.exports = {
 		.setDescription('Manage your color role.')
 		.setContexts([0]) // Guild Only
 		.setIntegrationTypes([0]) // Guild Install Only
-		.addStringOption(option => 
-			option.setName('name')
-				.setDescription('Color name (e.g. red, blue) - start typing to see suggestions')
-				.setAutocomplete(true)
-				.setRequired(false))
-		.addStringOption(option => 
-			option.setName('hex')
-				.setDescription('Hex code (e.g. #FF8000)')
-				.setRequired(false))
-		.addIntegerOption(option => 
-			option.setName('r')
-				.setDescription('Red (0-255)')
-				.setMinValue(0).setMaxValue(255).setRequired(false))
-		.addIntegerOption(option => 
-			option.setName('g')
-				.setDescription('Green (0-255)')
-				.setMinValue(0).setMaxValue(255).setRequired(false))
-		.addIntegerOption(option => 
-			option.setName('b')
-				.setDescription('Blue (0-255)')
-				.setMinValue(0).setMaxValue(255).setRequired(false))
-		.addIntegerOption(option => 
-			option.setName('greyscale')
-				.setDescription('Greyscale value (0-255)')
-				.setMinValue(0).setMaxValue(255).setRequired(false))
-		.addBooleanOption(option => 
-			option.setName('remove')
-				.setDescription('Remove your color role')
-				.setRequired(false)),
+		.addSubcommand(subcommand =>
+			subcommand.setName('color_name')
+				.setDescription('Set color by name (e.g. red, blue)')
+				.addStringOption(option =>
+					option.setName('name')
+						.setDescription('Color name - start typing to see suggestions')
+						.setAutocomplete(true)
+						.setRequired(true)))
+		.addSubcommand(subcommand =>
+			subcommand.setName('hex')
+				.setDescription('Set color by hex code (e.g. #FF8000)')
+				.addStringOption(option =>
+					option.setName('hex')
+						.setDescription('Hex code (e.g. #FF8000)')
+						.setRequired(true)))
+		.addSubcommand(subcommand =>
+			subcommand.setName('rgb')
+				.setDescription('Set color by RGB values (0-255)')
+				.addIntegerOption(option =>
+					option.setName('r')
+						.setDescription('Red (0-255)')
+						.setMinValue(0).setMaxValue(255).setRequired(true))
+				.addIntegerOption(option =>
+					option.setName('g')
+						.setDescription('Green (0-255)')
+						.setMinValue(0).setMaxValue(255).setRequired(true))
+				.addIntegerOption(option =>
+					option.setName('b')
+						.setDescription('Blue (0-255)')
+						.setMinValue(0).setMaxValue(255).setRequired(true)))
+		.addSubcommand(subcommand =>
+			subcommand.setName('greyscale')
+				.setDescription('Set color by greyscale value (0-255)')
+				.addIntegerOption(option =>
+					option.setName('number')
+						.setDescription('Greyscale value (0-255)')
+						.setMinValue(0).setMaxValue(255).setRequired(true)))
+		.addSubcommand(subcommand =>
+			subcommand.setName('remove')
+				.setDescription('Remove your color role')),
 	async autocomplete(interaction) {
+		const subcommand = interaction.options.getSubcommand();
+		if (subcommand !== 'color_name') return;
+
 		const focusedValue = interaction.options.getFocused();
 		// Prevent showing all 100+ colors on an empty input
 		if (!focusedValue) {
@@ -156,22 +229,10 @@ module.exports = {
 	},
 	async execute(interaction) {
 		const isCleanChannel = interaction.channelId === '1472877917015900172';
-
-		const nameOpt = interaction.options.getString('name');
-		const hexOpt = interaction.options.getString('hex');
-		const rOpt = interaction.options.getInteger('r');
-		const gOpt = interaction.options.getInteger('g');
-		const bOpt = interaction.options.getInteger('b');
-		const greyOpt = interaction.options.getInteger('greyscale');
-		const removeOpt = interaction.options.getBoolean('remove');
+		const subcommand = interaction.options.getSubcommand();
 
 		// --- Handle Removal ---
-		// Trigger if: remove=true OR name="none"/"remove" OR no options provided
-		const isRemove = removeOpt === true || 
-			(nameOpt && ['none', 'remove', 'clear'].includes(nameOpt.toLowerCase())) ||
-			(interaction.options.data.length === 0);
-
-		if (isRemove) {
+		if (subcommand === 'remove') {
 			const existingRole = interaction.member.roles.cache.find(x => /^0x[0-9A-F]{6}$/i.test(x.name));
 			if (existingRole) {
 				try {
@@ -191,14 +252,15 @@ module.exports = {
 		// --- Handle Color Calculation ---
 		let r, g, b;
 
-		if (rOpt !== null && gOpt !== null && bOpt !== null) {
-			// 1. Explicit RGB
-			r = rOpt; g = gOpt; b = bOpt;
-		} else if (greyOpt !== null) {
-			// 2. Greyscale
-			r = g = b = greyOpt;
-		} else if (hexOpt) {
-			// 3. Explicit Hex
+		if (subcommand === 'rgb') {
+			r = interaction.options.getInteger('r');
+			g = interaction.options.getInteger('g');
+			b = interaction.options.getInteger('b');
+		} else if (subcommand === 'greyscale') {
+			const greyValue = interaction.options.getInteger('number');
+			r = g = b = greyValue;
+		} else if (subcommand === 'hex') {
+			const hexOpt = interaction.options.getString('hex');
 			const cleanHex = hexOpt.replace(/^#|0x/i, '');
 			if (/^[0-9A-F]{6}$/i.test(cleanHex)) {
 				const val = parseInt(cleanHex, 16);
@@ -209,35 +271,12 @@ module.exports = {
 			} else {
 				return interaction.reply({ content: 'Invalid hex code provided.', ephemeral: true });
 			}
-		} else if (nameOpt) {
-			// 4. Name / Legacy Input (Fuzzy search, etc)
-			const inputName = nameOpt.toLowerCase();
-			const args = inputName.split(/ +/);
-			
-			const hexMatch = inputName.match(/^(?:0x|#)?([0-9a-f]{6})$/i);
-			const hexMatch3 = inputName.match(/^(?:0x|#)?([0-9a-f]{3})$/i);
-			const decimalMatch = inputName.match(/^(\d{1,3})$/); 
-			const hexGrey = inputName.match(/^(?:0x|#)?([0-9a-f]{1,2})$/i);
-
-			if (hexMatch) {
-				const hexVal = parseInt(hexMatch[1], 16);
-				r = (hexVal >> 16) & 255; g = (hexVal >> 8) & 255; b = hexVal & 255;
-			} else if (decimalMatch && parseInt(decimalMatch[1], 10) <= 255) {
-				const val = parseInt(decimalMatch[1], 10);
-				r = g = b = val;
-			} else if (colorMap[inputName]) {
+		} else if (subcommand === 'color_name') {
+			const inputName = interaction.options.getString('name').toLowerCase();
+			if (colorMap[inputName]) {
 				[r, g, b] = colorMap[inputName];
-			} else if (hexMatch3) {
-				const hexVal = parseInt(hexMatch3[1], 16);
-				r = ((hexVal >> 8) & 0xF) * 0x11; g = ((hexVal >> 4) & 0xF) * 0x11; b = (val & 0xF) * 0x11;
-			} else if (args.length >= 3) {
-				[r, g, b] = args.slice(0, 3).map(Number);
-			} else if (hexGrey) {
-				const raw = hexGrey[1];
-				const val = raw.length === 1 ? parseInt(raw + raw, 16) : parseInt(raw, 16);
-				r = g = b = val;
 			} else {
-				// Fuzzy search
+				// Fuzzy search if name doesn't exist
 				const matches = Object.keys(colorMap)
 					.map(name => ({ name, dist: levenshtein(inputName, name) }))
 					.filter(item => item.dist <= 3)
@@ -247,15 +286,13 @@ module.exports = {
 				if (matches.length > 0) {
 					const options = matches.map((m, i) => `**${i + 1}.** \`${m.name}\` (${colorMap[m.name].join(', ')})`).join('\n');
 					return interaction.reply({
-						content: `Color not found. Did you mean:\n${options}\n\nTry \`/color name:${matches[0].name}\``,
+						content: `Color \`${inputName}\` not found. Did you mean:\n${options}\n\nTry selecting from the autocomplete suggestions!`,
 						ephemeral: true
 					});
 				} else {
-					return interaction.reply({ content: 'Invalid color name or format.', ephemeral: true });
+					return interaction.reply({ content: `Invalid color name: \`${inputName}\`.`, ephemeral: true });
 				}
 			}
-		} else {
-			return interaction.reply({ content: 'Please provide a color option (name, hex, rgb, or greyscale).', ephemeral: true });
 		}
 
 		// --- Apply Role ---

@@ -22,6 +22,8 @@ async function executeCraftLogic(interaction) {
     const itemKey = interaction.options.getString('item');
     const amount = interaction.options.getInteger('amount') || 1;
     const userId = interaction.user.id;
+    const allPlayerData = getPlayerData(userId);
+    const player = allPlayerData[userId];
 
     if (!itemKey) {
         const unlocked = Object.keys(recipes).filter(r => player.unlocked_recipes && player.unlocked_recipes.includes(r));
@@ -66,9 +68,6 @@ async function executeCraftLogic(interaction) {
     if (!itemData) {
         return await interaction.reply({ content: `Unknown item: \`${itemKey}\`.`, ephemeral: true });
     }
-
-    const allPlayerData = getPlayerData(userId);
-    const player = allPlayerData[userId];
 
     let validRecipe = null;
     let failureReasons = [];

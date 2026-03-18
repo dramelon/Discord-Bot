@@ -41,7 +41,7 @@ async function executeTreeLogic(interaction) {
     const appleFound = Math.random() < 0.10 ? 1 : 0; // 10% chance
 
     // Update Database
-    const { getPlayerData, savePlayerData, checkAdvancements } = require('../../utils/minecraftData');
+    const { getPlayerData, savePlayerData, checkAdvancements, broadcastAchievement } = require('../../utils/minecraftData');
     const allPlayerData = getPlayerData(userId);
     const player = allPlayerData[userId];
 
@@ -78,12 +78,7 @@ async function executeTreeLogic(interaction) {
 
     if (newAchievements.length > 0) {
         for (const adv of newAchievements) {
-            const advEmbed = new EmbedBuilder()
-                .setTitle('🏆 Advancement Reached!')
-                .setDescription(`**${adv.name}**\n*${adv.description}*`)
-                .addFields({ name: '🔓 Unlocked Recipes', value: adv.unlocks.join(', ').replace(/_/g, ' ') })
-                .setColor(0xf1c40f);
-            await interaction.followUp({ embeds: [advEmbed] });
+            await broadcastAchievement(interaction, interaction.user, adv);
         }
     }
 }

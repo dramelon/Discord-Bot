@@ -3,9 +3,11 @@ const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
 
 const commandsList = require('./commands');
 const handleRandomReply = require('./randomreply');
-const handleLeveling = require('./leveling');
+const { levelSystemListener } = require('./leveling');
 const { logCommand } = require('./logger');
 const { startTracking } = require('./commands/qol/status');
+const memberAdd = require('./events/guild/memberAdd');
+const memberRemove = require('./events/guild/memberRemove');
 
 const token = process.env.DISCORD_TOKEN;
 
@@ -33,8 +35,6 @@ for (const command of commandsList) {
 
 client.on(Events.InteractionCreate, async interaction => {
 	// Only process ChatInputCommand and Autocomplete interactions here.
-	// Other interaction types (buttons, selects, modals) do not have a commandName
-	// and are handled by other event listeners or specific component handlers.
 	if (!interaction.isChatInputCommand() && !interaction.isAutocomplete()) return;
 
 	const command = interaction.client.commands.get(interaction.commandName);
@@ -54,15 +54,11 @@ client.on(Events.InteractionCreate, async interaction => {
 		}
 	} else if (interaction.isChatInputCommand()) {
 		const start = Date.now();
-		
-		// Capture options strictly for logging purposes
-		// We use .data to get the raw structure of arguments provided
 		const commandOptions = interaction.options.data || [];
 
 		try {
 			await command.execute(interaction);
 
-			// Log successful execution
 			logCommand({
 				status: 'success',
 				command: interaction.commandName,
@@ -76,7 +72,6 @@ client.on(Events.InteractionCreate, async interaction => {
 		} catch (error) {
 			console.error(error);
 			
-			// Log error execution
 			logCommand({
 				status: 'error',
 				command: interaction.commandName,
@@ -96,8 +91,24 @@ client.on(Events.InteractionCreate, async interaction => {
 	}
 });
 
+// Handle custom interactions (Buttons, Modals)
+client.on(Events.InteractionCreate, async interaction => {
+	const verificationCommand = client.commands.get('verification');
+	if (!verificationCommand) return;
+
+	if (interaction.isButton() && verificationCommand.handleButton) {
+		await verificationCommand.handleButton(interaction);
+	}
+
+	if (interaction.isModalSubmit() && verificationCommand.handleModal) {
+		await verificationCommand.handleModal(interaction);
+	}
+});
+
 client.on(Events.MessageCreate, handleRandomReply);
-client.on(Events.MessageCreate, handleLeveling);
+client.on(Events.MessageCreate, levelSystemListener);
+client.on(memberAdd.name, (...args) => memberAdd.execute(...args));
+client.on(memberRemove.name, (...args) => memberRemove.execute(...args));
 
 client.once(Events.ClientReady, readyClient => {
 	console.log(`Ready! Logged in as ${readyClient.user.tag}`);
