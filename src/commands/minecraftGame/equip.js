@@ -1,4 +1,4 @@
-const { getPlayerData, savePlayerData } = require('../../utils/minecraftData');
+const { getPlayerData, savePlayerData, autocompleteToolHelper } = require('../../utils/minecraftData');
 
 async function executeEquipLogic(interaction) {
     const userId = interaction.user.id;
@@ -23,21 +23,7 @@ async function executeEquipLogic(interaction) {
 }
 
 async function autocompleteEquipLogic(interaction) {
-    const focusedOption = interaction.options.getFocused(true);
-    const userId = interaction.user.id;
-    const player = getPlayerData(userId)[userId];
-
-    const choices = (player.tools || [])
-        .filter(t => t.durability > 0)
-        .map(t => ({ 
-            name: `${t.type.replace(/_/g, ' ')} [${t.durability}/${t.maxDurability}] (ID: ${t.id})`, 
-            value: t.id 
-        }));
-    
-    choices.unshift({ name: 'None (Unequip)', value: 'none' });
-    
-    const filtered = choices.filter(choice => choice.name.toLowerCase().includes(focusedOption.value.toLowerCase()));
-    await interaction.respond(filtered.slice(0, 25));
+    await autocompleteToolHelper(interaction, t => t.durability > 0, [{ name: 'None (Unequip)', value: 'none' }]);
 }
 
 module.exports = {

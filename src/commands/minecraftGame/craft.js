@@ -196,6 +196,16 @@ async function executeCraftLogic(interaction) {
     embed.addFields({ name: 'Resources Used', value: ingredientList });
 
     await interaction.reply({ embeds: [embed] });
+
+    // Check advancements
+    const { checkAdvancements, broadcastAchievement } = require('../../utils/minecraftData');
+    const newAdvs = checkAdvancements(player, itemKey);
+    if (newAdvs.length > 0) {
+        savePlayerData(allPlayerData); // Save again if advancements changed state
+        for (const adv of newAdvs) {
+            await broadcastAchievement(interaction, interaction.user, adv);
+        }
+    }
 }
 
 module.exports = {

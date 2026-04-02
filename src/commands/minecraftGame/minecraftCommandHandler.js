@@ -11,6 +11,7 @@ const { executeEnchantLogic, autocompleteEnchantLogic } = require('./enchant');
 const { executeDisenchantLogic, autocompleteDisenchantLogic } = require('./disenchant');
 const { executeProfileLogic } = require('./profile');
 const { executeInspectLogic, autocompleteInspectLogic } = require('./inspect');
+const { executeRenameLogic, autocompleteRenameLogic } = require('./rename');
 const { executeHowToLogic } = require('./howto');
 
 const SUBCOMMAND_DESCRIPTIONS = {
@@ -27,6 +28,7 @@ const SUBCOMMAND_DESCRIPTIONS = {
     'profile': 'Show a player\'s Minecraft profile and progress',
     'inspect': 'Wiki: Inspect items and tools for details',
     'howto': 'New to the game? Get a step-by-step guide!',
+    'rename': 'Give your tool a custom name or reset it',
     'help': 'Get general information or help for a specific command'
 };
 
@@ -87,7 +89,7 @@ module.exports = {
                     option.setName('amount')
                         .setDescription('Number of blocks to mine (default 1)')
                         .setMinValue(1)
-                        .setMaxValue(1024)
+                        .setMaxValue(16384)
                         .setRequired(false)
                 )
                 .addStringOption(option =>
@@ -187,6 +189,22 @@ module.exports = {
         )
         .addSubcommand(subcommand =>
             subcommand
+                .setName('rename')
+                .setDescription(SUBCOMMAND_DESCRIPTIONS.rename)
+                .addStringOption(option =>
+                    option.setName('tool')
+                        .setDescription('The tool you want to rename')
+                        .setAutocomplete(true)
+                        .setRequired(true)
+                )
+                .addStringOption(option =>
+                    option.setName('name')
+                        .setDescription('The new name for your tool (leave empty to reset)')
+                        .setRequired(false)
+                )
+        )
+        .addSubcommand(subcommand =>
+            subcommand
                 .setName('howto')
                 .setDescription(SUBCOMMAND_DESCRIPTIONS.howto)
                 .addStringOption(option =>
@@ -236,6 +254,10 @@ module.exports = {
 
         if (subcommand === 'disenchant') {
             return await autocompleteDisenchantLogic(interaction);
+        }
+
+        if (subcommand === 'rename') {
+            return await autocompleteRenameLogic(interaction);
         }
 
         if (subcommand === 'inspect') {
@@ -307,6 +329,10 @@ module.exports = {
             return await executeProfileLogic(interaction);
         }
 
+        if (subcommand === 'rename') {
+            return await executeRenameLogic(interaction);
+        }
+
         if (subcommand === 'inspect') {
             return await executeInspectLogic(interaction);
         }
@@ -334,7 +360,7 @@ module.exports = {
                         },
                         {
                             name: '⚔️ Core Features',
-                            value: '• **Gathering**: `/minecraft tree` & `/minecraft mine`\n• **Economy**: `/minecraft craft` & `/minecraft smelt`\n• **Equipment**: `/minecraft equip`, `/minecraft repair` & `/minecraft enchant`'
+                            value: '• **Gathering**: `/minecraft tree` & `/minecraft mine`\n• **Processing**: `/minecraft craft` & `/minecraft smelt`\n• **Equipment**: `/minecraft equip`, `/minecraft repair` & `/minecraft enchant`'
                         },
                         {
                             name: '📖 Knowledge Base',
@@ -372,7 +398,7 @@ module.exports = {
                     embed.setTitle('⛏️ Command: /minecraft mine')
                         .setDescription(SUBCOMMAND_DESCRIPTIONS.mine)
                         .addFields(
-                            { name: 'Options', value: '`amount`: (1-1024) How many blocks to mine.\n`equip`: (Autocomplete) Instantly swap tools before mining.' },
+                            { name: 'Options', value: '`amount`: (1-16384) How many blocks to mine.\n`equip`: (Autocomplete) Instantly swap tools before mining.' },
                             { name: '💡 Tip', value: 'Equip better pickaxes to find shiny resources!' }
                         );
                     break;
@@ -422,6 +448,14 @@ module.exports = {
                         .addFields(
                             { name: 'Options', value: '`step`: (Optional) Choose a part of the guide: `Gathering`, `Crafting`, `Mining`, or `Processing`.' },
                             { name: '💡 Tip', value: 'Run without options for the "New Player" starter guide!' }
+                        );
+                    break;
+                case 'rename':
+                    embed.setTitle('🏷️ Command: /minecraft rename')
+                        .setDescription(SUBCOMMAND_DESCRIPTIONS.rename)
+                        .addFields(
+                            { name: 'Options', value: '`tool`: (Autocomplete) Select the tool you want to name.\n`name`: (Optional) The new name. Leave blank to reset to default.' },
+                            { name: '📖 Display', value: 'Renamed tools show up in `/minecraft inventory` with their custom name in italics!' }
                         );
                     break;
                 case 'help':

@@ -1,11 +1,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-const { 
-    getRecipes, 
-    getToolTemplates, 
-    getAdvancementData 
-} = require('../../utils/minecraftData');
+const { getRecipes, getToolTemplates, getAdvancementData, getToolDisplayName } = require('../../utils/minecraftData');
 
 const ADMIN_ROLE_ID = '1466814634718658704';
 const ENCHANTMENTS_FILE = path.join(process.cwd(), 'data', 'minecraft', 'core', 'enchantments.json');
@@ -63,6 +59,33 @@ module.exports = {
             } catch (e) {
                 await interaction.respond([]);
             }
+        }
+        
+        if (focusedOption.name === 'user_tool') {
+            const playersFile = path.join(process.cwd(), 'data', 'minecraft', 'playerData', 'players.json');
+            const levelsFile = path.join(process.cwd(), 'data', 'levels.json');
+            if (!fs.existsSync(playersFile) || !fs.existsSync(levelsFile)) return await interaction.respond([]);
+
+            const playersData = JSON.parse(fs.readFileSync(playersFile, 'utf8'));
+            const levelsData = JSON.parse(fs.readFileSync(levelsFile, 'utf8'));
+            const query = focusedOption.value.toLowerCase();
+
+            const choices = [];
+            for (const [uid, p] of Object.entries(playersData)) {
+                if (!p.tools || p.tools.length === 0) continue;
+                
+                const uLevelData = levelsData[uid] || {};
+                const nameLabel = uLevelData.username || uid;
+
+                for (const t of p.tools) {
+                    const tName = getToolDisplayName(t).replace(/\*/g, '');
+                    const choiceName = `${nameLabel} - ${tName} (${t.id})`;
+                    if (choiceName.toLowerCase().includes(query)) {
+                        choices.push({ name: choiceName.slice(0, 100), value: `${uid}:${t.id}` });
+                    }
+                }
+            }
+            return await interaction.respond(choices.slice(0, 25));
         }
     },
 

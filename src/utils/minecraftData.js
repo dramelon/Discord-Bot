@@ -243,16 +243,29 @@ const {
 } = require('../leveling');
 
 function getToolDisplayName(tool) {
-    let name = tool.type.replace(/_/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    let baseName = tool.type.replace(/_/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
     
+    // Add "Enchanted" prefix if the tool has enchantments
+    if (tool.enchantments && Object.keys(tool.enchantments).length > 0) {
+        baseName = `Enchanted ${baseName}`;
+    }
+
     if (tool.enchantments && Object.keys(tool.enchantments).length > 0) {
         const firstEnchant = Object.keys(tool.enchantments)[0];
         const level = tool.enchantments[firstEnchant];
         const roman = ['I', 'II', 'III', 'IV', 'V'][level - 1] || level;
-        name = `${firstEnchant} ${roman} ${name}`;
+        // Prefix with the first enchantment name for the baseName part
+        // Wait, the user said "Enchanted {tool original name}"
+        // So baseName is already "Enchanted Wooden Pickaxe"
+        // Should I still include the first enchantment in the name?
+        // Let's stick to "Enchanted {Original Name}" as the primary part.
     }
     
-    return name;
+    if (tool.displayName) {
+        return `*${tool.displayName}* (${baseName})`;
+    }
+    
+    return baseName;
 }
 
 function getAdvancementData() {
@@ -276,11 +289,13 @@ function checkAdvancements(player, itemGained) {
             player.advancements.push(id);
             newAchievements.push(adv);
             
-            adv.unlocks.forEach(recipe => {
-                if (!player.unlocked_recipes.includes(recipe)) {
-                    player.unlocked_recipes.push(recipe);
-                }
-            });
+            if (adv.unlocks) {
+                adv.unlocks.forEach(recipe => {
+                    if (!player.unlocked_recipes.includes(recipe)) {
+                        player.unlocked_recipes.push(recipe);
+                    }
+                });
+            }
         }
     }
 
@@ -297,8 +312,6 @@ async function broadcastAchievement(context, user, achievement) {
         .setDescription(`**${achievement.name}**\n*${achievement.description}*`)
         .addFields({ name: '🔓 Unlocked Recipes', value: achievement.unlocks.join(', ').replace(/_/g, ' ') })
         .setColor(0xf1c40f);
-        //.setThumbnail('https://i.imgur.com/8YlQpX8.png'); // Minecraft trophie-like icon if possible or just color
-
     try {
         const channel = context.channel;
         if (channel) {
@@ -309,24 +322,36 @@ async function broadcastAchievement(context, user, achievement) {
     }
 }
 
-async function autocompleteToolHelper(interaction) {
+async function autocompleteToolHelper(interaction, filterFn = null, extraChoices = []) {
     const userId = interaction.user.id;
     const player = getPlayerData(userId)[userId];
     const focusedValue = interaction.options.getFocused().toLowerCase();
 
-    if (!player.tools || player.tools.length === 0) {
-        return await interaction.respond([{ name: "No tools owned (use /minecraft craft)", value: "none" }]);
+    if (!player || !player.tools || player.tools.length === 0) {
+        if (extraChoices.length > 0) {
+            const filteredExtra = extraChoices.filter(c => c.name.toLowerCase().includes(focusedValue));
+            return await interaction.respond(filteredExtra.slice(0, 25));
+        }
+        return await interaction.respond([{ name: 'No tools owned (use /minecraft craft)', value: 'none' }]);
     }
 
-    const filtered = player.tools
-        .filter(t => t.type.toLowerCase().includes(focusedValue) || t.id.toLowerCase().includes(focusedValue))
+    let tools = player.tools;
+    if (filterFn) {
+        tools = tools.filter(filterFn);
+    }
+
+    const toolChoices = tools
         .map(t => {
-            const enchantStr = t.enchantments ? ` [Enchanted: ${Object.keys(t.enchantments).join(', ')}]` : '';
+            const displayName = getToolDisplayName(t).replace(/\*/g, '');
             return {
-                name: `${t.type.replace(/_/g, ' ')} (${t.durability}/${t.maxDurability}) [ID: ${t.id}]${enchantStr}`,
+                name: `${displayName} (${t.durability}/${t.maxDurability}) [ID: ${t.id}]`,
                 value: t.id
             };
-        })
+        });
+
+    const allChoices = [...extraChoices, ...toolChoices];
+    const filtered = allChoices
+        .filter(choice => choice.name.toLowerCase().includes(focusedValue))
         .slice(0, 25);
 
     await interaction.respond(filtered);

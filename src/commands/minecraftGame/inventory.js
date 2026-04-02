@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const { getPlayerData } = require('../../utils/minecraftData');
+const { getPlayerData, getToolDisplayName } = require('../../utils/minecraftData');
 
 async function executeInventoryLogic(interaction) {
     const userId = interaction.user.id;
@@ -20,13 +20,15 @@ async function executeInventoryLogic(interaction) {
 
     const stackableItems = Object.entries(player.inventory)
         .filter(([_, amount]) => amount > 0)
+        .sort((a, b) => b[1] - a[1]) // Most amount on top
         .map(([item, amount]) => `**${item.replace(/_/g, ' ')}**: ${amount}`)
         .join('\n');
 
     const toolItems = tools
         .map(t => {
             const isEquipped = t.id === equippedPickId;
-            return `**${isEquipped ? '[E] ' : ''}${t.type.replace(/_/g, ' ')}** (${t.durability}/${t.maxDurability}) \`#${t.id}\``;
+            const displayName = getToolDisplayName(t);
+            return `**${isEquipped ? '[E] ' : ''}${displayName}** (${t.durability}/${t.maxDurability}) \`#${t.id}\``;
         })
         .join('\n');
 
@@ -34,24 +36,6 @@ async function executeInventoryLogic(interaction) {
         { name: '📦 Items', value: stackableItems || '_No stackable items_', inline: true },
         { name: '🛠️ Tools', value: toolItems || '_No tools possessed_', inline: true }
     );
-
-    if (player.inventory.furnace > 0) {
-        const now = Date.now();
-        const finishTime = player.last_smelt_finish || 0;
-        let status = 'Ready';
-        if (finishTime > now) {
-            const rem = Math.ceil((finishTime - now) / 1000);
-            status = `🔥 Smelting... (${rem}s left)`;
-        }
-        embed.addFields({ 
-            name: '🔥 Furnace Status', 
-            value: `Heat: ${player.furnace_heat?.toFixed(1) || 0} units\nStatus: ${status}` 
-        });
-    }
-
-    if (player.stats) {
-        embed.addFields({ name: '📊 Stats', value: `Trees Chopped: ${player.stats.trees_chopped || 0}\nBlocks Mined: ${player.stats.blocks_mined || 0}` });
-    }
 
     await interaction.reply({ embeds: [embed] });
 }
