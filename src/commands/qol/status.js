@@ -3,28 +3,44 @@ const fs = require('fs');
 const path = require('path');
 
 const dataDir = path.join(process.cwd(), 'data');
-const uptimePath = path.join(dataDir, 'uptime.json');
+const uptimePath = path.join(dataDir, 'uptime.jsonl');
 
 // Ensure data directory exists
 if (!fs.existsSync(dataDir)) {
 	fs.mkdirSync(dataDir, { recursive: true });
 }
 
-let heartbeats = [];
+let heartbeats = {};
 
-// Load existing data
+const START_2026_MS = new Date('2026-01-01T00:00:00+07:00').getTime();
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+// Load existing data (Grouped JSONL)
 if (fs.existsSync(uptimePath)) {
 	try {
-		heartbeats = JSON.parse(fs.readFileSync(uptimePath, 'utf8'));
+		const content = fs.readFileSync(uptimePath, 'utf8');
+		const lines = content.split('\n').filter(line => line.trim());
+		lines.forEach(line => {
+			const data = JSON.parse(line);
+			for (const day in data) {
+				if (!heartbeats[day]) heartbeats[day] = [];
+				// Combine and sort ticks
+				heartbeats[day] = [...new Set([...heartbeats[day], ...data[day]])].sort((a, b) => a - b);
+			}
+		});
 	} catch (error) {
 		console.error('Error loading uptime data, resetting:', error);
-		heartbeats = [];
+		heartbeats = {};
 	}
 }
 
 const save = () => {
 	try {
-		fs.writeFileSync(uptimePath, JSON.stringify(heartbeats), 'utf8');
+		// Format: one JSON object per day (one line per day)
+		const lines = Object.keys(heartbeats).sort((a, b) => parseInt(a) - parseInt(b)).map(day => {
+			return JSON.stringify({ [day]: heartbeats[day] });
+		});
+		fs.writeFileSync(uptimePath, lines.join('\n') + '\n', 'utf8');
 	} catch (error) {
 		console.error('Error saving uptime data:', error);
 	}
@@ -34,24 +50,30 @@ const startTracking = () => {
 	// Log a heartbeat every minute
 	setInterval(() => {
 		const now = Date.now();
-		heartbeats.push(now);
+		const diff = now - START_2026_MS;
+		const dayNum = Math.floor(diff / MS_PER_DAY) + 1;
+		
+		// Adjust to Bangkok time (+7h) for hours/minutes calculation
+		const bangkokTime = new Date(now + (7 * 60 * 60 * 1000));
+		const currentHour = bangkokTime.getUTCHours();
+		const currentMin = bangkokTime.getUTCMinutes();
+		const tick = (currentHour * 60) + currentMin;
 
-		// Keep only last 32 days of data (buffer for 30d calc)
-		const cutoff = now - (32 * 24 * 60 * 60 * 1000);
-		if (heartbeats.length > 0 && heartbeats[0] < cutoff) {
-			const splitIndex = heartbeats.findIndex(t => t >= cutoff);
-			if (splitIndex > 0) {
-				heartbeats = heartbeats.slice(splitIndex);
-			}
+		if (!heartbeats[dayNum]) {
+			heartbeats[dayNum] = [];
 		}
-
-		save();
+		
+		if (!heartbeats[dayNum].includes(tick)) {
+			heartbeats[dayNum].push(tick);
+			heartbeats[dayNum].sort((a, b) => a - b);
+			save();
+		}
 	}, 60 * 1000); // 60 seconds
 };
 
 const getHeartbeats = () => {
 	// Return a copy to prevent mutation
-	return [...heartbeats];
+	return JSON.parse(JSON.stringify(heartbeats));
 };
 
 function formatDuration(seconds) {
@@ -69,17 +91,6 @@ function formatDuration(seconds) {
 	return parts.join(' ') || '0s';
 }
 
-function createProgressBar(percent) {
-	const totalBars = 10;
-	const filledBars = Math.round((percent / 100) * totalBars);
-	const emptyBars = totalBars - filledBars;
-	
-	const filledChar = '🟩';
-	const emptyChar = '⬛';
-	
-	return `${filledChar.repeat(filledBars)}${emptyChar.repeat(emptyBars)}`;
-}
-
 module.exports = {
 	startTracking,
 	data: new SlashCommandBuilder()
@@ -91,25 +102,123 @@ module.exports = {
 		// 1. Current Session Uptime
 		const currentUptime = process.uptime();
 		
-		// 2. Historical Uptime Calculation
+		// 2. Constants for calculating windows
 		const now = Date.now();
-		const heartbeats = getHeartbeats();
+		const allHeartbeats = getHeartbeats();
 		
-		// 24 Hours (1440 minutes)
-		const oneDayAgo = now - (24 * 60 * 60 * 1000);
-		const heartbeats24h = heartbeats.filter(t => t >= oneDayAgo).length;
-		// Cap at 100% (1440 minutes)
-		const percent24h = Math.min(100, (heartbeats24h / 1440) * 100);
+		const diff = now - START_2026_MS;
+		const currentDayNum = Math.floor(diff / MS_PER_DAY) + 1;
+		const bangkokTime = new Date(now + (7 * 60 * 60 * 1000));
+		const currentHour = bangkokTime.getUTCHours();
+		const currentMin = bangkokTime.getUTCMinutes();
+		const currentTick = (currentHour * 60) + currentMin;
 
-		// 30 Days (43200 minutes)
-		const thirtyDaysAgo = now - (30 * 24 * 60 * 60 * 1000);
-		const heartbeats30d = heartbeats.filter(t => t >= thirtyDaysAgo).length;
-		const percent30d = Math.min(100, (heartbeats30d / 43200) * 100);
+		// --- 24-HOUR BLOCKS ---
+		const hourlyBlocks = [];
+		for (let i = 23; i >= 0; i--) {
+			// Calculate target hour in UTC+7
+			let targetHour = currentHour - i;
+			let targetDay = currentDayNum;
+			while (targetHour < 0) {
+				targetHour += 24;
+				targetDay -= 1;
+			}
+			
+			// Stay within 2026 limit
+			if (targetDay < 1) {
+				hourlyBlocks.push('⬛');
+				continue;
+			}
+
+			const dayTicks = allHeartbeats[targetDay] || [];
+			const hourTicks = dayTicks.filter(t => t >= targetHour * 60 && t < (targetHour + 1) * 60);
+			const count = hourTicks.length;
+
+			// Logic for "walking hour" vs full hour
+			const GRACE_PERIOD = 3;
+			let possible = 60;
+			if (targetDay === currentDayNum && targetHour === currentHour) {
+				possible = Math.max(0, currentMin + 1 - GRACE_PERIOD);
+			}
+
+			if (count >= possible && possible > 0) hourlyBlocks.push('🟩');
+			else if (count >= 55 && count < 60) hourlyBlocks.push('🟨');
+			else if (count > 0) hourlyBlocks.push('🟥');
+			else hourlyBlocks.push('⬛');
+		}
+
+		// --- 24-DAY BLOCKS ---
+		const dailyBlocks = [];
+		for (let i = 23; i >= 0; i--) {
+			const targetDay = currentDayNum - i;
+			if (targetDay < 1) {
+				dailyBlocks.push('⬛');
+				continue;
+			}
+
+			const dayTicks = allHeartbeats[targetDay] || [];
+			const count = dayTicks.length;
+			
+			// Full day possible is 1440
+			const GRACE_PERIOD = 3;
+			let possible = 1440;
+			if (targetDay === currentDayNum) {
+				possible = Math.max(0, currentTick + 1 - GRACE_PERIOD);
+			}
+
+			const percent = (count / possible) * 100;
+
+			if (percent >= 100) dailyBlocks.push('🟩');
+			else if (percent >= 95) dailyBlocks.push('🟨');
+			else if (count > 0) dailyBlocks.push('🟥');
+			else dailyBlocks.push('⬛');
+		}
+
+		// --- OUTAGE DETECTION (Past 24 Days) ---
+		const outages = [];
+		let inOutage = false;
+		let outageStart = null;
+
+		// We check from Max(1, currentDayNum - 23) up to now
+		const startDayCheck = Math.max(1, currentDayNum - 23);
+		
+		for (let d = startDayCheck; d <= currentDayNum; d++) {
+			const dayTicks = new Set(allHeartbeats[d] || []);
+			const GRACE_PERIOD = 3;
+			const maxTick = (d === currentDayNum) ? currentTick - GRACE_PERIOD : 1439;
+			
+			for (let t = 0; t <= maxTick; t++) {
+				const present = dayTicks.has(t);
+				if (!present && !inOutage) {
+					// Outage started
+					inOutage = true;
+					outageStart = START_2026_MS + ((d - 1) * MS_PER_DAY) + (t * 60 * 1000);
+				} else if (present && inOutage) {
+					// Outage ended
+					const outageEndTs = START_2026_MS + ((d - 1) * MS_PER_DAY) + (t * 60 * 1000) - 60000;
+					outages.push({ start: outageStart, end: outageEndTs });
+					inOutage = false;
+				}
+			}
+		}
+		// If still in outage at the very end
+		if (inOutage) {
+			const finalTs = START_2026_MS + ((currentDayNum - 1) * MS_PER_DAY) + (currentTick * 60 * 1000);
+			outages.push({ start: outageStart, end: finalTs });
+		}
+
+		// Get last 5 outages, formatted
+		const last5Outages = outages.slice(-5).reverse();
+		const outageLines = last5Outages.map(o => {
+			const durationMin = Math.round((o.end - o.start) / 60000) + 1;
+			const startUnix = Math.floor(o.start / 1000);
+			const endUnix = Math.floor(o.end / 1000);
+			return `<t:${startUnix}:f> - offline for ${durationMin} min(s) from <t:${startUnix}:t> to <t:${endUnix}:t>`;
+		});
 
 		const embed = new EmbedBuilder()
 			.setTitle('📊 System Status')
 			.setColor(0x00FF00)
-			.setThumbnail(interaction.client.user.displayAvatarURL())
 			.addFields(
 				{ 
 					name: '⏱️ Current Uptime', 
@@ -117,17 +226,23 @@ module.exports = {
 					inline: false 
 				},
 				{ 
-					name: '📈 24-Hour Reliability', 
-					value: `${createProgressBar(percent24h)} **${percent24h.toFixed(1)}%**`, 
+					name: '📈 Last 24 Hours', 
+					value: `${hourlyBlocks.join('')}\n*Hourly reliability checks.*`, 
 					inline: false 
 				},
 				{ 
-					name: '📅 30-Day Reliability', 
-					value: `${createProgressBar(percent30d)} **${percent30d.toFixed(1)}%**`, 
+					name: '📅 Last 24 Days', 
+					value: `${dailyBlocks.join('')}\n*Daily reliability checks.*`, 
+					inline: false 
+				},
+				{ 
+					name: '⚠️ Recent Outages (Past 24 Days)', 
+					value: outageLines.join('\n') || '✅ No outages detected.', 
 					inline: false 
 				}
 			)
-			.setFooter({ text: 'Reliability is based on minutely heartbeats.' });
+			.setFooter({ text: 'Reliability is based on minutely heartbeats.' })
+			.setTimestamp();
 
 		await interaction.reply({ embeds: [embed] });
 	},

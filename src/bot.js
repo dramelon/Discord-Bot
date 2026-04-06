@@ -114,6 +114,7 @@ client.once(Events.ClientReady, readyClient => {
 	console.log(`Ready! Logged in as ${readyClient.user.tag}`);
 	console.log(`Total slash commands: ${client.commands.size}`);
 	console.log(`Command list: ${client.commands.map(cmd => cmd.data.name).join(', ')}`);
+	console.log(`Online`);
 });
 
 startTracking();
