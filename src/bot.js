@@ -8,6 +8,7 @@ const { logCommand } = require('./logger');
 const { startTracking } = require('./commands/qol/status');
 const memberAdd = require('./events/guild/memberAdd');
 const memberRemove = require('./events/guild/memberRemove');
+const automod = require('./utils/automod');
 
 const token = process.env.DISCORD_TOKEN;
 
@@ -107,6 +108,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
 client.on(Events.MessageCreate, handleRandomReply);
 client.on(Events.MessageCreate, levelSystemListener);
+client.on(Events.MessageCreate, automod);
 client.on(memberAdd.name, (...args) => memberAdd.execute(...args));
 client.on(memberRemove.name, (...args) => memberRemove.execute(...args));
 

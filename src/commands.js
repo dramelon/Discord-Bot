@@ -10,6 +10,9 @@ const minecraft = require('./commands/minecraftGame/minecraftCommandHandler');
 const mineadmin = require('./commands/minecraftGame/mineadminCommandHandler');
 const verification = require('./commands/admin/verification');
 const commandManager = require('./commands/admin/commandManager');
+const sticker = require('./commands/qol/sticker');
+const s = require('./commands/qol/s');
+const clearmessage = require('./commands/admin/clearmessage');
 
 // Add any other commands here
 module.exports = [
@@ -25,4 +28,7 @@ module.exports = [
 	mineadmin,
 	verification,
 	commandManager,
+	sticker,
+	s,
+	clearmessage,
 ];
