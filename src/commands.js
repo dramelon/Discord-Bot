@@ -13,6 +13,7 @@ const commandManager = require('./commands/admin/commandManager');
 const sticker = require('./commands/qol/sticker');
 const s = require('./commands/qol/s');
 const clearmessage = require('./commands/admin/clearmessage');
+const petpet = require('./commands/fun/petpet');
 
 // Add any other commands here
 module.exports = [
@@ -31,4 +32,5 @@ module.exports = [
 	sticker,
 	s,
 	clearmessage,
+	petpet,
 ];
