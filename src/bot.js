@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
+const { Client, Collection, Events, GatewayIntentBits, Partials } = require('discord.js');
 
 const commandsList = require('./commands');
 const handleRandomReply = require('./randomreply');
@@ -9,6 +9,7 @@ const { startTracking } = require('./commands/qol/status');
 const memberAdd = require('./events/guild/memberAdd');
 const memberRemove = require('./events/guild/memberRemove');
 const automod = require('./utils/automod');
+const { handleMessage, handleReaction, handleVoiceState, startActivityTracking } = require('./utils/socialactivity');
 
 const token = process.env.DISCORD_TOKEN;
 
@@ -17,12 +18,22 @@ if (!token) {
 	process.exit(1);
 }
 
-const client = new Client({ intents: [
-	GatewayIntentBits.Guilds,
-	GatewayIntentBits.GuildMessages,
-	GatewayIntentBits.MessageContent,
-	GatewayIntentBits.GuildMembers
-] });
+const client = new Client({ 
+	intents: [
+		GatewayIntentBits.Guilds,
+		GatewayIntentBits.GuildMessages,
+		GatewayIntentBits.MessageContent,
+		GatewayIntentBits.GuildMembers,
+		GatewayIntentBits.GuildMessageReactions,
+		GatewayIntentBits.GuildVoiceStates
+	],
+	partials: [
+		Partials.Message,
+		Partials.Channel,
+		Partials.Reaction,
+		Partials.User
+	]
+});
 
 client.commands = new Collection();
 
@@ -109,6 +120,19 @@ client.on(Events.InteractionCreate, async interaction => {
 client.on(Events.MessageCreate, handleRandomReply);
 client.on(Events.MessageCreate, levelSystemListener);
 client.on(Events.MessageCreate, automod);
+client.on(Events.MessageCreate, handleMessage);
+client.on(Events.MessageReactionAdd, async (reaction, user) => {
+	if (reaction.partial) {
+		try {
+			await reaction.fetch();
+		} catch (error) {
+			console.error('Something went wrong when fetching the message:', error);
+			return;
+		}
+	}
+	handleReaction(reaction, user);
+});
+client.on(Events.VoiceStateUpdate, handleVoiceState);
 client.on(memberAdd.name, (...args) => memberAdd.execute(...args));
 client.on(memberRemove.name, (...args) => memberRemove.execute(...args));
 
@@ -117,6 +141,7 @@ client.once(Events.ClientReady, readyClient => {
 	console.log(`Total slash commands: ${client.commands.size}`);
 	console.log(`Command list: ${client.commands.map(cmd => cmd.data.name).join(', ')}`);
 	console.log(`Online`);
+	startActivityTracking(readyClient);
 });
 
 startTracking();

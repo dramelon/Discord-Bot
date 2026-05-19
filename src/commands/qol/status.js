@@ -47,7 +47,7 @@ const save = () => {
 };
 
 const startTracking = () => {
-	// Log a heartbeat every minute
+	// Log a heartbeat every 30 seconds to ensure no minute is missed
 	setInterval(() => {
 		const now = Date.now();
 		const diff = now - START_2026_MS;
@@ -68,7 +68,7 @@ const startTracking = () => {
 			heartbeats[dayNum].sort((a, b) => a - b);
 			save();
 		}
-	}, 60 * 1000); // 60 seconds
+	}, 30 * 1000); // 30 seconds
 };
 
 const getHeartbeats = () => {
@@ -113,6 +113,10 @@ module.exports = {
 		const currentMin = bangkokTime.getUTCMinutes();
 		const currentTick = (currentHour * 60) + currentMin;
 
+		const GRACE_PERIOD = 3;
+		const currentTotalTicks = (currentDayNum - 1) * 1440 + currentTick;
+		const maxExpectedTotal = currentTotalTicks - GRACE_PERIOD;
+
 		// --- 24-HOUR BLOCKS ---
 		const hourlyBlocks = [];
 		for (let i = 23; i >= 0; i--) {
@@ -134,17 +138,29 @@ module.exports = {
 			const hourTicks = dayTicks.filter(t => t >= targetHour * 60 && t < (targetHour + 1) * 60);
 			const count = hourTicks.length;
 
-			// Logic for "walking hour" vs full hour
-			const GRACE_PERIOD = 3;
+			const targetStartTick = targetHour * 60;
+			const targetEndTick = targetStartTick + 59;
+			const targetTotalStart = (targetDay - 1) * 1440 + targetStartTick;
+			const targetTotalEnd = (targetDay - 1) * 1440 + targetEndTick;
+			
 			let possible = 60;
-			if (targetDay === currentDayNum && targetHour === currentHour) {
-				possible = Math.max(0, currentMin + 1 - GRACE_PERIOD);
+			if (maxExpectedTotal >= targetTotalEnd) {
+				possible = 60;
+			} else if (maxExpectedTotal >= targetTotalStart) {
+				possible = maxExpectedTotal - targetTotalStart + 1;
+			} else {
+				possible = 0;
 			}
 
-			if (count >= possible && possible > 0) hourlyBlocks.push('🟩');
-			else if (count >= 55 && count < 60) hourlyBlocks.push('🟨');
-			else if (count > 0) hourlyBlocks.push('🟥');
-			else hourlyBlocks.push('⬛');
+			if (possible > 0) {
+				if (count >= possible) hourlyBlocks.push('🟩');
+				else if (possible - count <= 5 && possible > 5) hourlyBlocks.push('🟨');
+				else if (count > 0) hourlyBlocks.push('🟥');
+				else hourlyBlocks.push('⬛');
+			} else {
+				if (count > 0) hourlyBlocks.push('🟩');
+				else hourlyBlocks.push('⬛');
+			}
 		}
 
 		// --- 24-DAY BLOCKS ---
@@ -159,19 +175,28 @@ module.exports = {
 			const dayTicks = allHeartbeats[targetDay] || [];
 			const count = dayTicks.length;
 			
-			// Full day possible is 1440
-			const GRACE_PERIOD = 3;
+			const targetTotalStart = (targetDay - 1) * 1440;
+			const targetTotalEnd = (targetDay - 1) * 1440 + 1439;
+			
 			let possible = 1440;
-			if (targetDay === currentDayNum) {
-				possible = Math.max(0, currentTick + 1 - GRACE_PERIOD);
+			if (maxExpectedTotal >= targetTotalEnd) {
+				possible = 1440;
+			} else if (maxExpectedTotal >= targetTotalStart) {
+				possible = maxExpectedTotal - targetTotalStart + 1;
+			} else {
+				possible = 0;
 			}
 
-			const percent = (count / possible) * 100;
-
-			if (percent >= 100) dailyBlocks.push('🟩');
-			else if (percent >= 95) dailyBlocks.push('🟨');
-			else if (count > 0) dailyBlocks.push('🟥');
-			else dailyBlocks.push('⬛');
+			if (possible > 0) {
+				const percent = (count / possible) * 100;
+				if (percent >= 100) dailyBlocks.push('🟩');
+				else if (percent >= 95) dailyBlocks.push('🟨');
+				else if (count > 0) dailyBlocks.push('🟥');
+				else dailyBlocks.push('⬛');
+			} else {
+				if (count > 0) dailyBlocks.push('🟩');
+				else dailyBlocks.push('⬛');
+			}
 		}
 
 		// --- OUTAGE DETECTION (Past 24 Days) ---
