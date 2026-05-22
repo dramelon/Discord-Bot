@@ -184,9 +184,16 @@ module.exports = {
                     return interaction.editReply({ content: 'Cancelled: No sticker detected in your message.' });
                 }
 
-                // If user sent a message, we might want to delete it if the bot has permission, 
-                // but let's keep it simple for now as it might be an external app context.
                 source = sticker.url;
+
+                try {
+                    if (firstMsg.deletable) {
+                        await firstMsg.delete();
+                    }
+                } catch (e) {
+                    console.error('Failed to delete sticker message:', e);
+                }
+
                 await interaction.editReply({ content: 'Sticker received! Generating petpet...' });
             }
 

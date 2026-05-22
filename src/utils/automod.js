@@ -148,16 +148,22 @@ async function handleAutomodViolation(message, reason) {
 		}
 
 		// 2. Punish: Timeout + Role Add + Admin Role Remove
-		// 1-day timeout
-		await member.timeout(24 * 60 * 60 * 1000, `Automod: ${reason}`).catch(console.error);
+		const canPunish = member.moderatable && member.manageable;
 
-		// Add restrictive role
-		const mutedRole = guild.roles.cache.get(MUTED_ROLE_ID);
-		if (mutedRole) await member.roles.add(mutedRole).catch(console.error);
+		if (canPunish) {
+			// 1-day timeout
+			await member.timeout(24 * 60 * 60 * 1000, `Automod: ${reason}`).catch(console.error);
 
-		// Remove admin role if present
-		if (member.roles.cache.has(ADMIN_ROLE_ID)) {
-			await member.roles.remove(ADMIN_ROLE_ID).catch(console.error);
+			// Add restrictive role
+			const mutedRole = guild.roles.cache.get(MUTED_ROLE_ID);
+			if (mutedRole) await member.roles.add(mutedRole).catch(console.error);
+
+			// Remove admin role if present
+			if (member.roles.cache.has(ADMIN_ROLE_ID)) {
+				await member.roles.remove(ADMIN_ROLE_ID).catch(console.error);
+			}
+		} else if (auditChannel) {
+			await auditChannel.send(`⚠️ **Warning**: Skipped timeout and role modifications for <@${author.id}> (Bot lacks permissions or user has higher role).`);
 		}
 
 		// 3. Cleanup: Delete all messages from this user in the last 30s
@@ -180,7 +186,11 @@ async function handleAutomodViolation(message, reason) {
 
 		// 4. Final Audit Log
 		if (auditChannel) {
-			await auditChannel.send(`✅ **Automod Action Applied**: User <@${author.id}> has been timed out for 1 day, stripped of admin roles, and assigned the limited access role. All recent messages removed.`);
+			if (canPunish) {
+				await auditChannel.send(`✅ **Automod Action Applied**: User <@${author.id}> has been timed out for 1 day, stripped of admin roles, and assigned the limited access role. All recent messages removed.`);
+			} else {
+				await auditChannel.send(`✅ **Automod Cleanup Applied**: All recent messages from <@${author.id}> were removed.`);
+			}
 		}
 
 	} catch (error) {

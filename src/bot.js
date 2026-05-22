@@ -8,6 +8,7 @@ const { logCommand } = require('./logger');
 const { startTracking } = require('./commands/qol/status');
 const memberAdd = require('./events/guild/memberAdd');
 const memberRemove = require('./events/guild/memberRemove');
+const tempVoiceStateUpdate = require('./events/guild/voiceStateUpdate');
 const automod = require('./utils/automod');
 const { handleMessage, handleReaction, handleVoiceState, startActivityTracking } = require('./utils/socialactivity');
 
@@ -105,15 +106,34 @@ client.on(Events.InteractionCreate, async interaction => {
 
 // Handle custom interactions (Buttons, Modals)
 client.on(Events.InteractionCreate, async interaction => {
-	const verificationCommand = client.commands.get('verification');
-	if (!verificationCommand) return;
-
-	if (interaction.isButton() && verificationCommand.handleButton) {
-		await verificationCommand.handleButton(interaction);
+	if (interaction.isButton()) {
+		for (const [name, command] of client.commands) {
+			if (interaction.customId.startsWith(name) || (name === 'verification' && interaction.customId.startsWith('verify'))) {
+				if (command.handleButton) {
+					try {
+						await command.handleButton(interaction);
+					} catch (error) {
+						console.error(`Error handling button in command ${name}:`, error);
+					}
+					return;
+				}
+			}
+		}
 	}
 
-	if (interaction.isModalSubmit() && verificationCommand.handleModal) {
-		await verificationCommand.handleModal(interaction);
+	if (interaction.isModalSubmit()) {
+		for (const [name, command] of client.commands) {
+			if (interaction.customId.startsWith(name) || (name === 'verification' && interaction.customId.startsWith('verify'))) {
+				if (command.handleModal) {
+					try {
+						await command.handleModal(interaction);
+					} catch (error) {
+						console.error(`Error handling modal in command ${name}:`, error);
+					}
+					return;
+				}
+			}
+		}
 	}
 });
 
@@ -133,6 +153,7 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
 	handleReaction(reaction, user);
 });
 client.on(Events.VoiceStateUpdate, handleVoiceState);
+client.on(tempVoiceStateUpdate.name, (...args) => tempVoiceStateUpdate.execute(...args));
 client.on(memberAdd.name, (...args) => memberAdd.execute(...args));
 client.on(memberRemove.name, (...args) => memberRemove.execute(...args));
 
@@ -142,6 +163,11 @@ client.once(Events.ClientReady, readyClient => {
 	console.log(`Command list: ${client.commands.map(cmd => cmd.data.name).join(', ')}`);
 	console.log(`Online`);
 	startActivityTracking(readyClient);
+
+	const reminderCommand = client.commands.get('reminder');
+	if (reminderCommand && reminderCommand.startScheduler) {
+		reminderCommand.startScheduler(readyClient);
+	}
 });
 
 startTracking();

@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ChannelType } = require('discord.js');
+const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ChannelType, Collection } = require('discord.js');
 
 /**
  * Parses a duration string like "10m", "1h", "1d" into milliseconds.
@@ -29,6 +29,51 @@ function truncate(text, length = 100) {
     return text.substring(0, length) + '...';
 }
 
+/**
+ * Fetches up to `limit` messages from a channel.
+ * @param {TextChannel} channel 
+ * @param {number} limit 
+ * @returns {Promise<Collection<string, Message>>}
+ */
+async function fetchMessages(channel, limit) {
+    let fetched = new Collection();
+    let lastId = null;
+
+    while (fetched.size < limit) {
+        const remaining = limit - fetched.size;
+        const fetchLimit = Math.min(remaining, 100);
+        
+        const options = { limit: fetchLimit };
+        if (lastId) {
+            options.before = lastId;
+        }
+
+        const messages = await channel.messages.fetch(options);
+        if (messages.size === 0) break;
+
+        fetched = fetched.concat(messages);
+        lastId = messages.lastKey();
+
+        if (messages.size < fetchLimit) break;
+    }
+
+    return fetched;
+}
+
+/**
+ * Safely bulk deletes messages in chunks of 100.
+ * @param {TextChannel} channel 
+ * @param {Collection<string, Message>|Array<Message>} messages 
+ */
+async function safeBulkDelete(channel, messages) {
+    const messageArray = Array.from(messages.values ? messages.values() : messages);
+    const chunkSize = 100;
+    for (let i = 0; i < messageArray.length; i += chunkSize) {
+        const chunk = messageArray.slice(i, i + chunkSize);
+        await channel.bulkDelete(chunk, true);
+    }
+}
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('clearmessage')
@@ -50,14 +95,33 @@ module.exports = {
                 .addBooleanOption(opt => opt.setName('matching').setDescription('If true, must be an exact match'))
                 .addChannelOption(opt => opt.setName('channel').setDescription('Specific channel to clear (default: all)').addChannelTypes(ChannelType.GuildText))
                 .addIntegerOption(opt => opt.setName('limit').setDescription('Max messages to scan per channel (default: 100)').setMinValue(1).setMaxValue(1000))
+        )
+        .addSubcommand(sub =>
+            sub.setName('channel')
+                .setDescription('Clear messages in a specific channel')
+                .addChannelOption(opt => opt.setName('channel').setDescription('The channel to clear').setRequired(true).addChannelTypes(ChannelType.GuildText))
+                .addStringOption(opt => opt.setName('time').setDescription('Look-back duration (e.g., 10m, 1h, 1d) (default: 1h)').setRequired(false))
+                .addIntegerOption(opt => opt.setName('amount').setDescription('Number of messages to delete (default: 20)').setRequired(false).setMinValue(1).setMaxValue(1000))
         ),
 
     async execute(interaction) {
         const subcommand = interaction.options.getSubcommand();
-        const durationStr = interaction.options.getString('duration');
-        const durationMs = parseDuration(durationStr);
-        const scanLimit = interaction.options.getInteger('limit') || 100;
-        const targetChannel = interaction.options.getChannel('channel');
+        let durationStr;
+        let durationMs;
+        let scanLimit;
+        let targetChannel;
+
+        if (subcommand === 'channel') {
+            targetChannel = interaction.options.getChannel('channel');
+            durationStr = interaction.options.getString('time') || '1h';
+            durationMs = parseDuration(durationStr);
+            scanLimit = interaction.options.getInteger('amount') ?? 20;
+        } else {
+            durationStr = interaction.options.getString('duration');
+            durationMs = parseDuration(durationStr);
+            scanLimit = interaction.options.getInteger('limit') || 100;
+            targetChannel = interaction.options.getChannel('channel');
+        }
 
         if (!durationMs) {
             return interaction.reply({ content: '❌ Invalid duration format. Use e.g., `10m`, `1h`, `1d`.', ephemeral: true });
@@ -80,9 +144,9 @@ module.exports = {
         // Determine which channels to scan
         const channelsToScan = targetChannel 
             ? [targetChannel] 
-            : interaction.guild.channels.cache.filter(c => c.isTextBased());
+            : Array.from(interaction.guild.channels.cache.filter(c => c.isTextBased()).values());
 
-        for (const [id, channel] of channelsToScan) {
+        for (const channel of channelsToScan) {
             try {
                 // Ensure bot has permissions
                 const permissions = channel.permissionsFor(interaction.client.user);
@@ -90,7 +154,7 @@ module.exports = {
                     continue;
                 }
 
-                const messages = await channel.messages.fetch({ limit: scanLimit });
+                const messages = await fetchMessages(channel, scanLimit);
                 const toDelete = messages.filter(msg => {
                     // Check duration
                     if (msg.createdTimestamp < cutoff) return false;
@@ -110,6 +174,11 @@ module.exports = {
                         }
                     }
 
+                    // Logic for "channel" subcommand
+                    if (subcommand === 'channel') {
+                        return true;
+                    }
+
                     return false;
                 });
 
@@ -121,11 +190,11 @@ module.exports = {
                     });
 
                     // Bulk delete
-                    await channel.bulkDelete(toDelete, true);
+                    await safeBulkDelete(channel, toDelete);
                     totalDeleted += toDelete.size;
                 }
             } catch (error) {
-                console.error(`Error scanning channel ${id}:`, error);
+                console.error(`Error scanning channel ${channel.id}:`, error);
             }
         }
 
@@ -142,7 +211,7 @@ module.exports = {
             
             if (subcommand === 'user') {
                 description += `👤 **Target User:** ${targetUser}\n`;
-            } else {
+            } else if (subcommand === 'message') {
                 description += `🔍 **Search Context:** "${truncate(context, 50)}"\n`;
                 description += `📏 **Match Mode:** ${exactMatch ? 'Exact' : 'Contains'}\n\n`;
                 
@@ -152,11 +221,14 @@ module.exports = {
                     .join('\n');
                 
                 description += truncate(breakdown, 1800); // Discord limit safety
+            } else if (subcommand === 'channel') {
+                description += `📺 **Target Channel:** ${targetChannel}\n`;
+                description += `🔢 **Max Scan Amount:** ${scanLimit}\n`;
             }
 
             embed.setDescription(description);
         }
 
-        const reply = await interaction.editReply({ embeds: [embed] });
+        await interaction.editReply({ embeds: [embed] });
     }
 };

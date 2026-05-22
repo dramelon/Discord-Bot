@@ -90,12 +90,19 @@ function addXP(userId, amount, userObj = null, notifyContext = null) {
  * Sends a premium Level Up notification
  */
 async function sendLevelUpNotification(context, user, newLevel) {
+	if (newLevel > 5 && newLevel % 5 !== 0) return;
+
 	const embed = new EmbedBuilder()
 		.setTitle('🎊 Level Up!')
 		.setDescription(`Congratulations <@${user.id}>! You have reached **Level ${newLevel}**!`)
 		.setThumbnail(user.displayAvatarURL ? user.displayAvatarURL() : null)
-		.setColor(0x00FF00)
-		.setFooter({ text: 'Keep chatting and playing to unlock more!' });
+		.setColor(0x00FF00);
+
+	if (newLevel <= 5) {
+		embed.setFooter({ text: 'Keep chatting and playing to unlock more!\nHint: You can remove this message by reacting with ❌' });
+	} else {
+		embed.setFooter({ text: 'Keep chatting and playing to unlock more!' });
+	}
 
 	try {
         // If it's an interaction and hasn't been replied to, we might want to followUp
@@ -103,7 +110,17 @@ async function sendLevelUpNotification(context, user, newLevel) {
         // So we use channel.send regardless of context type if possible.
         const channel = context.channel;
         if (channel) {
-            await channel.send({ embeds: [embed] });
+            const msg = await channel.send({ embeds: [embed] });
+            
+            // Add reaction and setup collector
+            await msg.react('❌').catch(() => {});
+            
+            const filter = (reaction, rUser) => reaction.emoji.name === '❌' && rUser.id === user.id;
+            const collector = msg.createReactionCollector({ filter, time: 3 * 24 * 60 * 60 * 1000 });
+            
+            collector.on('collect', () => {
+                msg.delete().catch(() => {});
+            });
         }
 	} catch (e) {
 		console.error('Error sending level up notification:', e);
