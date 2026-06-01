@@ -5,6 +5,8 @@ const { isAdmin } = require('../../utils/adminCheck');
 const { processImage } = require('../../utils/imageProcessor');
 const { syncToDiscord, getStickers, saveStickers } = require('../../utils/stickerSync');
 
+const { BOT_DEV_GUILD_ID } = process.env;
+
 const STICKERS_DIR = path.join(process.cwd(), 'data', 'customStickers', 'files');
 const DATA_FILE = path.join(process.cwd(), 'data', 'customStickers', 'stickers.json');
 
@@ -208,7 +210,7 @@ module.exports = {
         const updatedStickers = getStickers();
         const updatedSticker = updatedStickers.find(s => s.name === name);
 
-        const isTargetGuild = interaction.guildId === '1492101995094610062';
+        const isTargetGuild = interaction.guildId === BOT_DEV_GUILD_ID;
 
         if (isTargetGuild && updatedSticker && updatedSticker.discordStickerId) {
             try {
@@ -259,7 +261,7 @@ module.exports = {
         // Delete from Discord if present
         if (sticker.discordStickerId) {
             try {
-                const guild = await interaction.client.guilds.fetch('1492101995094610062');
+                const guild = await interaction.client.guilds.fetch(BOT_DEV_GUILD_ID);
                 if (guild) await guild.stickers.delete(sticker.discordStickerId, 'Sticker removed by user');
             } catch (e) {
                 console.error('Failed to delete from Discord guild:', e);
@@ -302,7 +304,7 @@ module.exports = {
         // Update on Discord if active
         if (oldId) {
             try {
-                const guild = await interaction.client.guilds.fetch('1492101995094610062');
+                const guild = await interaction.client.guilds.fetch(BOT_DEV_GUILD_ID);
                 if (guild) await guild.stickers.edit(oldId, { name: newName });
             } catch (e) {
                 console.error('Failed to rename on Discord guild:', e);

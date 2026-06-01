@@ -58,13 +58,11 @@ async function updateOlderMessage(client, channelId, messageId, statusText) {
 	}
 }
 
-/**
- * Formats a timestamp into YYYY-MM-DD HH:mm in local timezone.
- */
 function formatLocalTime(ts) {
-	const d = new Date(ts);
+	const ictOffsetMs = 7 * 60 * 60 * 1000;
+	const d = new Date(ts + ictOffsetMs);
 	const pad = n => String(n).padStart(2, '0');
-	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+	return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
 }
 
 /**
@@ -99,6 +97,12 @@ async function saveReminder(interaction, name, description, timestamp, mentions,
 			.setLabel('Stop Repeating')
 			.setStyle(ButtonStyle.Danger);
 		row.addComponents(stopButton);
+	} else {
+		const cancelButton = new ButtonBuilder()
+			.setCustomId(`reminder_cancel_${id}`)
+			.setLabel('Cancel')
+			.setStyle(ButtonStyle.Danger);
+		row.addComponents(cancelButton);
 	}
 	const configButton = new ButtonBuilder()
 		.setCustomId(`reminder_edit_${id}`)
@@ -216,6 +220,12 @@ async function updateReminderDetails(interaction, reminderId, name, description,
 			.setLabel('Stop Repeating')
 			.setStyle(ButtonStyle.Danger);
 		row.addComponents(stopButton);
+	} else {
+		const cancelButton = new ButtonBuilder()
+			.setCustomId(`reminder_cancel_${reminder.id}`)
+			.setLabel('Cancel')
+			.setStyle(ButtonStyle.Danger);
+		row.addComponents(cancelButton);
 	}
 
 	const configButton = new ButtonBuilder()
@@ -411,6 +421,12 @@ module.exports = {
 							.setLabel('Stop Repeating')
 							.setStyle(ButtonStyle.Danger);
 						row.addComponents(stopButton);
+					} else {
+						const cancelButton = new ButtonBuilder()
+							.setCustomId(`reminder_cancel_${existingReminder.id}`)
+							.setLabel('Cancel')
+							.setStyle(ButtonStyle.Danger);
+						row.addComponents(cancelButton);
 					}
 					const configButton = new ButtonBuilder()
 						.setCustomId(`reminder_edit_${existingReminder.id}`)
@@ -640,6 +656,84 @@ module.exports = {
 			await interaction.followUp({
 				content: `✅ The recurring reminder **"${reminder.name}"** has been stopped.`,
 				ephemeral: false
+			});
+			return;
+		}
+
+		if (interaction.customId.startsWith('reminder_cancel_')) {
+			const reminderId = interaction.customId.replace('reminder_cancel_', '');
+
+			if (!fs.existsSync(dataPath)) {
+				return interaction.reply({ content: '❌ No reminders found.', ephemeral: true });
+			}
+
+			let data;
+			try {
+				data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+			} catch (e) {
+				return interaction.reply({ content: '❌ Failed to load reminders database.', ephemeral: true });
+			}
+
+			if (!data.reminders) data.reminders = [];
+			const reminderIndex = data.reminders.findIndex(r => r.id === reminderId);
+
+			if (reminderIndex === -1) {
+				return interaction.reply({ content: '❌ This reminder has already been cancelled or expired.', ephemeral: true });
+			}
+
+			const reminder = data.reminders[reminderIndex];
+
+			// Permissions check: creator or Administrator
+			const isCreator = interaction.user.id === reminder.userId;
+			const isAdmin = interaction.member.permissions.has(PermissionFlagsBits.Administrator);
+
+			if (!isCreator && !isAdmin) {
+				return interaction.reply({ 
+					content: '❌ You do not have permission to cancel this reminder. Only the creator or an Administrator can cancel it.', 
+					ephemeral: true 
+				});
+			}
+
+			// Mark as notified so the scheduler stops checking it, but keep it in database for the template
+			reminder.notified = true;
+			try {
+				fs.writeFileSync(dataPath, JSON.stringify(data, null, 2), 'utf8');
+			} catch (e) {
+				console.error('Failed to save reminders file after cancel:', e);
+				return interaction.reply({ content: '❌ Failed to save changes.', ephemeral: true });
+			}
+
+			// Update the original message to remove buttons and show cancelled status
+			const oldEmbeds = interaction.message.embeds.map(e => EmbedBuilder.from(e));
+			if (oldEmbeds[0]) {
+				const statusFieldIndex = oldEmbeds[0].data.fields?.findIndex(f => f.name === 'ℹ️ Status' || f.name === '⏹️ Stopped');
+				if (statusFieldIndex !== undefined && statusFieldIndex !== -1) {
+					oldEmbeds[0].data.fields[statusFieldIndex].name = 'ℹ️ Status';
+					oldEmbeds[0].data.fields[statusFieldIndex].value = `Cancelled by <@${interaction.user.id}>`;
+				} else {
+					oldEmbeds[0].addFields({ name: 'ℹ️ Status', value: `Cancelled by <@${interaction.user.id}>` });
+				}
+				oldEmbeds[0].setColor('#cccccc');
+			}
+
+			const againButton = new ButtonBuilder()
+				.setCustomId(`reminder_again_${reminder.id}`)
+				.setLabel('Do It Again')
+				.setStyle(ButtonStyle.Primary);
+			const components = [new ActionRowBuilder().addComponents(againButton)];
+
+			try {
+				await interaction.update({
+					embeds: oldEmbeds,
+					components: components
+				});
+			} catch (err) {
+				console.error('Failed to update trigger message:', err);
+			}
+
+			await interaction.followUp({
+				content: `✅ The reminder **"${reminder.name}"** has been cancelled.`,
+				ephemeral: true
 			});
 			return;
 		}

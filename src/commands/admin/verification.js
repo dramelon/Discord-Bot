@@ -1,6 +1,8 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const { generateMathProblem } = require('../../utils/math');
 
+const { HOMETOWN_VERIFIED_ROLE_ID, HOMETOWN_INITIAL_ROLE_ID } = process.env;
+
 const verificationCooldowns = new Map();
 const userQuestions = new Map();
 
@@ -91,18 +93,15 @@ module.exports = {
         verificationCooldowns.set(userId, Date.now());
 
         if (submittedAnswer === answer) {
-            const roleToAddId = '1483380118603960350';
-            const roleToRemoveId = '1483509124678287491';
-            
             try {
                 const member = await interaction.guild.members.fetch(userId);
                 
                 // Add new role
-                await member.roles.add(roleToAddId);
+                await member.roles.add(HOMETOWN_VERIFIED_ROLE_ID);
                 
                 // Remove old role if they have it
-                if (member.roles.cache.has(roleToRemoveId)) {
-                    await member.roles.remove(roleToRemoveId);
+                if (member.roles.cache.has(HOMETOWN_INITIAL_ROLE_ID)) {
+                    await member.roles.remove(HOMETOWN_INITIAL_ROLE_ID);
                 }
 
                 await interaction.reply({ content: 'Verification successful! You have been verified and roles have been updated.', ephemeral: true });

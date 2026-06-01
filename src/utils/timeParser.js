@@ -1,8 +1,17 @@
+const ICT_OFFSET_MS = 7 * 60 * 60 * 1000;
+
+/**
+ * Returns a Date object adjusted to ICT (UTC+7) representation using UTC methods.
+ */
+function getICTDate(date = new Date()) {
+	return new Date(date.getTime() + ICT_OFFSET_MS);
+}
+
 /**
  * Parses an absolute time string (e.g. 14:30, 2:30 PM) relative to a given date.
  * @param {string} timeStr - The time string to parse.
  * @param {Date} date - The base date object.
- * @returns {Date|null} The parsed Date object or null if invalid.
+ * @returns {Date|null} The parsed Date object in standard UTC or null if invalid.
  */
 function parseAbsoluteTime(timeStr, date) {
 	const match = timeStr.trim().toLowerCase().match(/^(\d{1,2}):(\d{2})(?:\s*(am|pm))?$/);
@@ -17,9 +26,18 @@ function parseAbsoluteTime(timeStr, date) {
 		if (ampm === 'am' && hours === 12) hours = 0;
 	}
 
-	const d = new Date(date);
-	d.setHours(hours, minutes, 0, 0);
-	return d;
+	const ictBase = getICTDate(new Date(date));
+	const targetICT = new Date(Date.UTC(
+		ictBase.getUTCFullYear(),
+		ictBase.getUTCMonth(),
+		ictBase.getUTCDate(),
+		hours,
+		minutes,
+		0,
+		0
+	));
+
+	return new Date(targetICT.getTime() - ICT_OFFSET_MS);
 }
 
 /**
@@ -62,15 +80,16 @@ function parseDateTime(input, now = new Date()) {
 
 	// 3. Tomorrow formats: "tomorrow", "tomorrow 14:30"
 	if (input.startsWith('tomorrow')) {
-		const tomorrow = new Date(now);
-		tomorrow.setDate(tomorrow.getDate() + 1);
+		const ictBase = getICTDate(now);
+		ictBase.setUTCDate(ictBase.getUTCDate() + 1);
 
 		const timePart = input.replace('tomorrow', '').trim();
 		if (timePart) {
-			const parsedTime = parseAbsoluteTime(timePart, tomorrow);
+			const baseDate = new Date(ictBase.getTime() - ICT_OFFSET_MS);
+			const parsedTime = parseAbsoluteTime(timePart, baseDate);
 			if (parsedTime) return parsedTime.getTime();
 		}
-		return tomorrow.getTime();
+		return ictBase.getTime() - ICT_OFFSET_MS;
 	}
 
 	// 4. Today formats: "today 14:30" or just "14:30"
@@ -84,7 +103,20 @@ function parseDateTime(input, now = new Date()) {
 		return parsedTime.getTime();
 	}
 
-	// 5. Try standard JS Date parsing (for custom inputs like YYYY-MM-DD HH:mm)
+	// 5. Custom date/time formats like "YYYY-MM-DD HH:mm" or "YYYY/MM/DD HH:mm"
+	const customMatch = input.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})\s+(\d{1,2}):(\d{2})$/);
+	if (customMatch) {
+		const year = parseInt(customMatch[1]);
+		const month = parseInt(customMatch[2]) - 1;
+		const day = parseInt(customMatch[3]);
+		const hours = parseInt(customMatch[4]);
+		const minutes = parseInt(customMatch[5]);
+
+		const targetICT = new Date(Date.UTC(year, month, day, hours, minutes, 0, 0));
+		return targetICT.getTime() - ICT_OFFSET_MS;
+	}
+
+	// 6. Try standard JS Date parsing (for custom inputs)
 	const dateParsed = Date.parse(input);
 	if (!isNaN(dateParsed)) {
 		return dateParsed;

@@ -2,8 +2,9 @@ const fs = require('fs');
 const path = require('path');
 const { EmbedBuilder } = require('discord.js');
 
+const { HOMETOWN_GUILD_ID } = process.env;
+
 const dataPath = path.join(__dirname, '../../data/socialactivity.json');
-const TARGET_GUILD = '1447192381479976993';
 const TARGET_CHANNEL = '1504641296747462840';
 const TARGET_MESSAGE = '1504650859374448843';
 
@@ -37,7 +38,7 @@ function writeData(data) {
 }
 
 function handleMessage(message) {
-    if (!message.guild || message.guild.id !== TARGET_GUILD || message.author.bot) return;
+    if (!message.guild || message.guild.id !== HOMETOWN_GUILD_ID || message.author.bot) return;
 
     let data = readData();
     if (!data) return;
@@ -90,7 +91,7 @@ function handleMessage(message) {
 }
 
 function handleReaction(reaction, user) {
-    if (!reaction.message.guild || reaction.message.guild.id !== TARGET_GUILD || user.bot) return;
+    if (!reaction.message.guild || reaction.message.guild.id !== HOMETOWN_GUILD_ID || user.bot) return;
 
     // Ignore if message is older than 3 days
     const ageMs = Date.now() - reaction.message.createdTimestamp;
@@ -108,7 +109,7 @@ function handleReaction(reaction, user) {
 }
 
 function handleVoiceState(oldState, newState) {
-    if (newState.guild.id !== TARGET_GUILD) return;
+    if (newState.guild.id !== HOMETOWN_GUILD_ID) return;
     if (newState.member?.user?.bot) return;
 
     let data = readData();
@@ -197,7 +198,7 @@ async function updateStatusMessage(client) {
     if (!data) return;
 
     try {
-        const guild = await client.guilds.fetch(TARGET_GUILD).catch(() => null);
+        const guild = await client.guilds.fetch(HOMETOWN_GUILD_ID).catch(() => null);
         const channel = await client.channels.fetch(TARGET_CHANNEL);
         if (!channel) return;
         const message = await channel.messages.fetch(TARGET_MESSAGE);

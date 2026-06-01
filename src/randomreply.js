@@ -1,8 +1,10 @@
+const { HOMETOWN_GUILD_ID } = process.env;
+
 module.exports = async (message) => {
 	if (message.author.bot) return; // Ignore messages from bots
 
 	// Only process messages in the specified guild
-	if (message.guildId !== '1447192381479976993') return;
+	if (message.guildId !== HOMETOWN_GUILD_ID) return;
 
 	const content = message.content;
 

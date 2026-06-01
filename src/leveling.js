@@ -99,9 +99,9 @@ async function sendLevelUpNotification(context, user, newLevel) {
 		.setColor(0x00FF00);
 
 	if (newLevel <= 5) {
-		embed.setFooter({ text: 'Keep chatting and playing to unlock more!\nHint: You can remove this message by reacting with ❌' });
+		embed.setFooter({ text: 'Keep yapping and playing to unlock more!\nHint: You can remove this message by reacting with ❌' });
 	} else {
-		embed.setFooter({ text: 'Keep chatting and playing to unlock more!' });
+		embed.setFooter({ text: 'Keep yapping and playing to unlock more!' });
 	}
 
 	try {
@@ -112,15 +112,8 @@ async function sendLevelUpNotification(context, user, newLevel) {
         if (channel) {
             const msg = await channel.send({ embeds: [embed] });
             
-            // Add reaction and setup collector
+            // Add reaction
             await msg.react('❌').catch(() => {});
-            
-            const filter = (reaction, rUser) => reaction.emoji.name === '❌' && rUser.id === user.id;
-            const collector = msg.createReactionCollector({ filter, time: 3 * 24 * 60 * 60 * 1000 });
-            
-            collector.on('collect', () => {
-                msg.delete().catch(() => {});
-            });
         }
 	} catch (e) {
 		console.error('Error sending level up notification:', e);

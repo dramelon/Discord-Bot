@@ -1,10 +1,10 @@
 require('dotenv').config();
 const { REST, Routes } = require('discord.js');
 
-const { CLIENT_ID, GUILD_ID, DISCORD_TOKEN } = process.env;
+const { CLIENT_ID, HOMETOWN_GUILD_ID, DISCORD_TOKEN } = process.env;
 
-if (!CLIENT_ID || !GUILD_ID || !DISCORD_TOKEN) {
-    console.error('Error: Make sure CLIENT_ID, GUILD_ID, and DISCORD_TOKEN are in your .env file for cleanup.');
+if (!CLIENT_ID || !HOMETOWN_GUILD_ID || !DISCORD_TOKEN) {
+    console.error('Error: Make sure CLIENT_ID, HOMETOWN_GUILD_ID, and DISCORD_TOKEN are in your .env file for cleanup.');
     process.exit(1);
 }
 
@@ -15,9 +15,9 @@ const cleanup = async () => {
         console.log('Starting to clear application commands.');
 
         // Clear guild-specific commands
-        console.log(`--> Clearing commands for guild: ${GUILD_ID}`);
+        console.log(`--> Clearing commands for guild: ${HOMETOWN_GUILD_ID}`);
         await rest.put(
-            Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
+            Routes.applicationGuildCommands(CLIENT_ID, HOMETOWN_GUILD_ID),
             { body: [] },
         );
         console.log('--> Successfully cleared guild commands.');

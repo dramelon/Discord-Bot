@@ -1,7 +1,8 @@
 const { EmbedBuilder, Events } = require('discord.js');
 
+const { HOMETOWN_INITIAL_ROLE_ID } = process.env;
+
 const welcomeChannelId = '1483374462765236327';
-const initialRoleId = '1483509124678287491';
 
 const welcomeMessages = [
     "Halt! 🛡️ A new dragon approaches the clearing. <@user>, please present your scales for inspection and find a cozy spot in the hoard. We are honored by your presence! ✨",
@@ -21,7 +22,7 @@ module.exports = {
     async execute(member) {
         // Add Role
         try {
-            await member.roles.add(initialRoleId);
+            await member.roles.add(HOMETOWN_INITIAL_ROLE_ID);
         } catch (error) {
             console.error(`Error adding initial role to ${member.user.tag}:`, error);
         }

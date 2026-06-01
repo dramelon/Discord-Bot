@@ -3,7 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const { getRecipes, getToolTemplates, getAdvancementData, getToolDisplayName } = require('../../utils/minecraftData');
 
-const ADMIN_ROLE_ID = '1466814634718658704';
+const { HOMETOWN_ADMIN_ROLE_ID, OWNER_PERM } = process.env;
+
 const ENCHANTMENTS_FILE = path.join(process.cwd(), 'data', 'minecraft', 'core', 'enchantments.json');
 
 // Import all subcommands
@@ -91,7 +92,7 @@ module.exports = {
 
     async execute(interaction) {
         // Permission check (Role or specific User ID)
-        if (!interaction.member.roles.cache.has(ADMIN_ROLE_ID) && interaction.user.id !== '389264086753345548') {
+        if (!interaction.member.roles.cache.has(HOMETOWN_ADMIN_ROLE_ID) && interaction.user.id !== OWNER_PERM) {
             return await interaction.reply({ content: "❌ You do not have permission to use admin commands.", ephemeral: true });
         }
 

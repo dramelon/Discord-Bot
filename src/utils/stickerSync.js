@@ -1,9 +1,10 @@
 const fs = require('fs');
 const path = require('path');
 
+const { BOT_DEV_GUILD_ID } = process.env;
+
 const DATA_FILE = path.join(process.cwd(), 'data', 'customStickers', 'stickers.json');
 const STICKERS_DIR = path.join(process.cwd(), 'data', 'customStickers', 'files');
-const TARGET_GUILD_ID = '1492101995094610062';
 const STICKER_LIMIT = 5;
 
 function getStickers() {
@@ -35,9 +36,9 @@ async function syncToDiscord(client, usedStickerName) {
         usedSticker.lastUsedAt = now;
         saveStickers(stickers);
 
-        const guild = await client.guilds.fetch(TARGET_GUILD_ID);
+        const guild = await client.guilds.fetch(BOT_DEV_GUILD_ID);
         if (!guild) {
-            console.error(`Target guild ${TARGET_GUILD_ID} not found.`);
+            console.error(`Target guild ${BOT_DEV_GUILD_ID} not found.`);
             return;
         }
 

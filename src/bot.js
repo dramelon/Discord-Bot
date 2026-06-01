@@ -11,6 +11,7 @@ const memberRemove = require('./events/guild/memberRemove');
 const tempVoiceStateUpdate = require('./events/guild/voiceStateUpdate');
 const automod = require('./utils/automod');
 const { handleMessage, handleReaction, handleVoiceState, startActivityTracking } = require('./utils/socialactivity');
+const { handleAchievementMessage } = require('./utils/achievementTracker');
 
 const token = process.env.DISCORD_TOKEN;
 
@@ -141,6 +142,7 @@ client.on(Events.MessageCreate, handleRandomReply);
 client.on(Events.MessageCreate, levelSystemListener);
 client.on(Events.MessageCreate, automod);
 client.on(Events.MessageCreate, handleMessage);
+client.on(Events.MessageCreate, handleAchievementMessage);
 client.on(Events.MessageReactionAdd, async (reaction, user) => {
 	if (reaction.partial) {
 		try {
@@ -150,6 +152,19 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
 			return;
 		}
 	}
+
+	// Delete level-up notifications when user reacts with ❌
+	if (reaction.emoji.name === '❌' && reaction.message.author?.id === client.user?.id) {
+		const embed = reaction.message.embeds?.[0];
+		if (embed && embed.title === '🎊 Level Up!') {
+			const match = embed.description?.match(/<@!?(\d+)>/);
+			if (match && match[1] === user.id) {
+				await reaction.message.delete().catch(() => {});
+				return;
+			}
+		}
+	}
+
 	handleReaction(reaction, user);
 });
 client.on(Events.VoiceStateUpdate, handleVoiceState);
