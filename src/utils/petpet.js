@@ -11,9 +11,18 @@ const path = require('path');
  * @returns {Promise<Buffer>} - The generated GIF as a Buffer.
  */
 async function generatePetPet(source, speed = 1, squeeze = 1, canvasSize = 112) {
+    // Dynamically scale multiplier to keep frame delay >= 20ms and prevent GIF slowdown bug
+    let multiplier = 3;
+    if (speed > 1.0) {
+        multiplier = 2;
+    }
+    if (speed > 1.5) {
+        multiplier = 1;
+    }
+
     const framesCount = 5;
     const baseDelay = 60; // ms
-    const delay = Math.max(10, Math.floor(baseDelay / speed));
+    const delay = Math.max(20, Math.floor((baseDelay / speed) / multiplier));
 
     const canvas = createCanvas(canvasSize, canvasSize);
     const ctx = canvas.getContext('2d');
@@ -52,23 +61,44 @@ async function generatePetPet(source, speed = 1, squeeze = 1, canvasSize = 112) 
 
     const base = originalTransforms[0];
     const scale = canvasSize / 112;
+    const totalFrames = framesCount * multiplier;
+    const offset = multiplier; // Delay the avatar squeeze by 1 asset frame
 
-    for (let i = 0; i < framesCount; i++) {
+    for (let f = 0; f < totalFrames; f++) {
         ctx.clearRect(0, 0, canvasSize, canvasSize);
 
-        const orig = originalTransforms[i];
+        const indexH = Math.floor(f / multiplier);
         
-        // Calculate dimensions relative to the target canvas size
-        const x = (base[0] + (orig[0] - base[0]) * squeeze) * scale;
-        const y = (base[1] + (orig[1] - base[1]) * squeeze) * scale;
-        const w = (base[2] + (orig[2] - base[2]) * squeeze) * scale;
-        const h = (base[3] + (orig[3] - base[3]) * squeeze) * scale;
+        // Calculate the shifted frame index for the avatar squeeze
+        const avatarFrame = (f - offset + totalFrames) % totalFrames;
+        const indexA = Math.floor(avatarFrame / multiplier);
+        const indexB = (indexA + 1) % framesCount;
+        const t = (avatarFrame % multiplier) / multiplier;
+
+        const origA = originalTransforms[indexA];
+        const origB = originalTransforms[indexB];
+        
+        // Linearly interpolate the transform values
+        const xA = base[0] + (origA[0] - base[0]) * squeeze;
+        const yA = base[1] + (origA[1] - base[1]) * squeeze;
+        const wA = base[2] + (origA[2] - base[2]) * squeeze;
+        const hA = base[3] + (origA[3] - base[3]) * squeeze;
+
+        const xB = base[0] + (origB[0] - base[0]) * squeeze;
+        const yB = base[1] + (origB[1] - base[1]) * squeeze;
+        const wB = base[2] + (origB[2] - base[2]) * squeeze;
+        const hB = base[3] + (origB[3] - base[3]) * squeeze;
+
+        const x = ((1 - t) * xA + t * xB) * scale;
+        const y = ((1 - t) * yA + t * yB) * scale;
+        const w = ((1 - t) * wA + t * wB) * scale;
+        const h = ((1 - t) * hA + t * hB) * scale;
 
         // Draw avatar (square)
         ctx.drawImage(avatar, x, y, Math.max(1, w), Math.max(1, h));
 
         // Draw hand scaled to canvasSize
-        ctx.drawImage(hands[i], 0, 0, canvasSize, canvasSize);
+        ctx.drawImage(hands[indexH], 0, 0, canvasSize, canvasSize);
 
         encoder.addFrame(ctx);
     }

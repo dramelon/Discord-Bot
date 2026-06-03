@@ -9,14 +9,17 @@ const SCOREBOARD_CHANNEL_ID = '1509573689061150770';
 const SCOREBOARD_MESSAGE_ID = '1509573708354818229';
 const COMBAT_MESSAGE_ID = '1509837014109786222';
 
-// File Paths
-const DATA_DIR = path.join(process.cwd(), 'data', 'minecraft');
+// File Paths (Isolate test data when running test suite)
+const DATA_DIR = process.env.NODE_ENV === 'test'
+    ? path.join(process.cwd(), 'data', 'minecraft_test')
+    : path.join(process.cwd(), 'data', 'minecraft');
 const TRACKER_FILE = path.join(DATA_DIR, 'achievements_tracker.json');
 const DISCOVERED_FILE = path.join(DATA_DIR, 'discovered_achievements.json');
 const MAP_FILE = path.join(DATA_DIR, 'username_map.json');
 
-// Regex for parsing Minecraft advancement announcements
+// Regexes
 const ADVANCEMENT_REGEX = /(?<username>\S+)\s+has (?:made the advancement|reached the goal|completed the challenge) \s*\*{0,2}\[(?<advancement>[^\]]+)\]\*{0,2}(?::\s*(?<description>.*))?/i;
+
 
 /**
  * Safely load a JSON file, returning a default value if it does not exist or fails to parse.
@@ -167,7 +170,8 @@ async function updateScoreboard(client) {
 }
 
 /**
- * Update the combat scoreboard message with kills and deaths statistics.
+ * Update the combat scoreboard message with deaths statistics.
+ * Shows only death statistics and ranks players based on most deaths.
  */
 async function updateCombatTracker(client) {
     try {
@@ -175,55 +179,63 @@ async function updateCombatTracker(client) {
         const mapData = loadJSON(MAP_FILE, {});
 
         // Fetch and rank lists
-        const killsList = Object.entries(trackerData.players)
-            .map(([username, p]) => ({ username, kills: p.kills || 0 }))
-            .filter(p => p.kills > 0)
-            .sort((a, b) => b.kills - a.kills);
-
         const deathsList = Object.entries(trackerData.players)
-            .map(([username, p]) => ({ username, deaths: p.deaths || 0 }))
+            .map(([username, p]) => ({
+                username,
+                deaths: p.deaths || 0,
+                lastDeath: p.lastDeath || null,
+                lastUpdated: p.lastUpdated || 0
+            }))
             .filter(p => p.deaths > 0)
-            .sort((a, b) => b.deaths - a.deaths);
+            .sort((a, b) => {
+                if (b.deaths !== a.deaths) {
+                    return b.deaths - a.deaths;
+                }
+                return a.lastUpdated - b.lastUpdated; // Tie-breaker: oldest lastUpdated first
+            });
+
+        const totalDeaths = Object.values(trackerData.players).reduce((sum, p) => sum + (p.deaths || 0), 0);
 
         const embed = new EmbedBuilder()
-            .setTitle('⚔️ MINECRAFT COMBAT & DEATH TRACKER')
-            .setDescription('Live PvP and PvE death statistics directly from the Minecraft server!')
+            .setTitle('💀 MINECRAFT DEATH LEADERBOARD')
+            .setDescription('Live death statistics directly from the Minecraft server!')
             .setColor(0xE74C3C) // Crimson Red
             .setTimestamp();
 
-        // 1. PvP Kills Leaderboard
-        let killsText = '';
-        if (killsList.length === 0) {
-            killsText = '*No PvP kills recorded yet.*';
-        } else {
-            killsText = killsList.map((p, index) => {
-                const rankEmojis = ['🥇', '🥈', '🥉'];
-                const rankEmoji = rankEmojis[index] || '👤';
-                const mappedKey = Object.keys(mapData).find(k => k.toLowerCase() === p.username.toLowerCase());
-                const discordId = mappedKey ? mapData[mappedKey] : null;
-                const displayName = discordId ? `<@${discordId}>` : `\`${p.username}\``;
-                return `${rankEmoji} ${displayName} — **${p.kills}** ${p.kills === 1 ? 'kill' : 'kills'}`;
-            }).join('\n');
-        }
-        embed.addFields({ name: '🗡️ PvP Kills Leaderboard', value: killsText, inline: true });
+        // 1. Server Statistics
+        embed.addFields({
+            name: '📊 Server Statistics',
+            value: `• **Total Deaths Recorded**: ${totalDeaths}`,
+            inline: false
+        });
 
-        // 2. Deaths Leaderboard
+        // 2. Leaderboard
         let deathsText = '';
         if (deathsList.length === 0) {
             deathsText = '*No player deaths recorded yet.*';
         } else {
             deathsText = deathsList.map((p, index) => {
-                const rankEmojis = ['☠️', '💀', '👻'];
+                const rankEmojis = ['🥇', '🥈', '🥉'];
                 const rankEmoji = rankEmojis[index] || '👤';
                 const mappedKey = Object.keys(mapData).find(k => k.toLowerCase() === p.username.toLowerCase());
                 const discordId = mappedKey ? mapData[mappedKey] : null;
                 const displayName = discordId ? `<@${discordId}>` : `\`${p.username}\``;
-                return `${rankEmoji} ${displayName} — **${p.deaths}** ${p.deaths === 1 ? 'death' : 'deaths'}`;
-            }).join('\n');
+                
+                let line = `${rankEmoji} ${displayName} — **${p.deaths}** ${p.deaths === 1 ? 'death' : 'deaths'}`;
+                if (p.lastDeath && p.lastDeath.message) {
+                    line += `\n└ *Last: ${p.lastDeath.message}*`;
+                }
+                return line;
+            }).join('\n\n');
         }
-        embed.addFields({ name: '💀 Deaths Leaderboard', value: deathsText, inline: true });
 
-        // Fetch and edit combat scoreboard message
+        embed.addFields({
+            name: '💀 Deaths Leaderboard',
+            value: deathsText,
+            inline: false
+        });
+
+        // Fetch and edit scoreboard message (COMBAT_MESSAGE_ID)
         const channel = await client.channels.fetch(SCOREBOARD_CHANNEL_ID);
         if (!channel) return;
 
@@ -231,24 +243,27 @@ async function updateCombatTracker(client) {
         if (!message) return;
 
         await message.edit({ embeds: [embed] });
-        console.log(`[AchievementTracker] Combat message edited successfully.`);
+        console.log(`[AchievementTracker] Death scoreboard message edited successfully.`);
     } catch (error) {
-        console.error(`[AchievementTracker] Failed to update combat message:`, error);
+        console.error(`[AchievementTracker] Failed to update death scoreboard message:`, error);
     }
 }
 
+/**
+ * Update the server presence message with online players and recent join/leave logs.
+ */
 // Rate-limiting state variables (Achievements)
 let updateCooldownActive = false;
 let updatePending = false;
 let cooldownTimer = null;
 
-// Rate-limiting state variables (Combat)
+// Rate-limiting state variables (Deaths)
 let combatCooldownActive = false;
 let combatPending = false;
 let combatCooldownTimer = null;
 
 /**
- * Request an update to the scoreboard message.
+ * Request an update to the achievements scoreboard.
  */
 async function requestScoreboardUpdate(client) {
     if (!updateCooldownActive) {
@@ -268,7 +283,7 @@ async function requestScoreboardUpdate(client) {
 }
 
 /**
- * Request an update to the combat message.
+ * Request an update to the death scoreboard.
  */
 async function requestCombatUpdate(client) {
     if (!combatCooldownActive) {
@@ -287,8 +302,9 @@ async function requestCombatUpdate(client) {
     }
 }
 
+
 /**
- * Handle new messages to track Minecraft achievements, kills, and deaths.
+ * Handle new messages to track Minecraft achievements, deaths, joins, and leaves.
  */
 async function handleAchievementMessage(message) {
     // 1. Validate Channel
@@ -338,7 +354,8 @@ async function handleAchievementMessage(message) {
     };
 
     for (const text of textsToProcess) {
-        // A. Check if it's an advancement
+
+        // C. Check if it's an advancement
         const advMatch = text.match(ADVANCEMENT_REGEX);
         if (advMatch) {
             const { username, advancement, description } = advMatch.groups;
@@ -405,42 +422,37 @@ async function handleAchievementMessage(message) {
                     console.log(`[AchievementTracker] Tracked new advancement: ${cleanUsername} unlocked [${cleanAdvancement}]`);
                 }
             }
-            continue; // Skip combat checks for this line
+            continue;
         }
 
-        // B. Check if it's a death message
-        // 1. PvP / PvE Kill (e.g. "_drameloN was slain by wasabliss", "_drameloN was slain by a Zombie")
+        // D. Check if it's a death message
+        // 1. PvP / PvE Kill (e.g. "_drameloN was slain by wasabliss")
         const killerMatch = text.match(/(?<victim>\S+)\s+(?:was slain|was shot|was killed|was blown up|was burnt|was pierced|was stabbed|was mauled|was shoved|was pushed|was thrown|was plunged|was pricked|was stung) by (?<killer>.+)/i);
         if (killerMatch) {
-            const { victim, killer } = killerMatch.groups;
-            if (victim && killer) {
+            const { victim } = killerMatch.groups;
+            if (victim) {
                 const cleanVictim = victim.trim();
-                const cleanKillerRaw = killer.replace(/^(?:a |an |the )/i, '').trim();
 
                 // Increment death for victim
                 const victimKey = ensurePlayerState(cleanVictim);
                 trackerData.players[victimKey].deaths++;
                 trackerData.players[victimKey].lastUpdated = Date.now();
-                combatChanged = true;
 
-                // Check if killer is a known player
-                const isPlayer = Object.keys(mapData).some(k => k.toLowerCase() === cleanKillerRaw.toLowerCase()) ||
-                                 Object.keys(trackerData.players).some(k => k.toLowerCase() === cleanKillerRaw.toLowerCase());
-                
-                if (isPlayer) {
-                    const killerKey = ensurePlayerState(cleanKillerRaw);
-                    trackerData.players[killerKey].kills++;
-                    trackerData.players[killerKey].lastUpdated = Date.now();
-                    console.log(`[AchievementTracker] PvP Kill: ${cleanKillerRaw} killed ${cleanVictim}`);
-                } else {
-                    console.log(`[AchievementTracker] PvE Death: ${cleanVictim} killed by ${cleanKillerRaw}`);
-                }
+                // Clean the death message string (strip player name from the beginning)
+                const cleanDeathMsg = text.replace(new RegExp(`^${cleanVictim}\\s+`, 'i'), '').trim();
+                trackerData.players[victimKey].lastDeath = {
+                    message: cleanDeathMsg,
+                    timestamp: Date.now()
+                };
+
                 trackerData.lastUpdated = Date.now();
+                combatChanged = true;
+                console.log(`[AchievementTracker] Death: ${cleanVictim} killed (slain by killer pattern)`);
             }
             continue;
         }
 
-        // 2. Generic environmental death (e.g. "_drameloN was killed", "_drameloN hit the ground too hard")
+        // 2. Generic environmental death (e.g. "_drameloN hit the ground too hard")
         const genericDeathMatch = text.match(/(?<victim>\S+)\s+(?:was killed|hit the ground too hard|drowned|fell from|burned|flames|swim in lava|suffocated|starved|died|was pricked|was squished|was squashed|blew up|went off with a bang)/i);
         if (genericDeathMatch) {
             const { victim } = genericDeathMatch.groups;
@@ -449,6 +461,14 @@ async function handleAchievementMessage(message) {
                 const victimKey = ensurePlayerState(cleanVictim);
                 trackerData.players[victimKey].deaths++;
                 trackerData.players[victimKey].lastUpdated = Date.now();
+
+                // Save the latest death message
+                const cleanDeathMsg = text.replace(new RegExp(`^${cleanVictim}\\s+`, 'i'), '').trim();
+                trackerData.players[victimKey].lastDeath = {
+                    message: cleanDeathMsg,
+                    timestamp: Date.now()
+                };
+
                 trackerData.lastUpdated = Date.now();
                 combatChanged = true;
                 console.log(`[AchievementTracker] Death: ${cleanVictim} died of environmental damage`);

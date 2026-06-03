@@ -1,5 +1,5 @@
 require('dotenv').config();
-const { Client, Collection, Events, GatewayIntentBits, Partials } = require('discord.js');
+const { Client, Collection, Events, GatewayIntentBits, Partials, AttachmentBuilder } = require('discord.js');
 
 const commandsList = require('./commands');
 const handleRandomReply = require('./randomreply');
@@ -12,6 +12,7 @@ const tempVoiceStateUpdate = require('./events/guild/voiceStateUpdate');
 const automod = require('./utils/automod');
 const { handleMessage, handleReaction, handleVoiceState, startActivityTracking } = require('./utils/socialactivity');
 const { handleAchievementMessage } = require('./utils/achievementTracker');
+const { handlePresenceMessage } = require('./utils/presenceTracker');
 
 const token = process.env.DISCORD_TOKEN;
 
@@ -35,6 +36,71 @@ const client = new Client({
 		Partials.Reaction,
 		Partials.User
 	]
+});
+
+const LOG_CHANNEL_ID = '1495616892369506374';
+
+async function logErrorToDiscord(error, type = 'Error') {
+	// Always print to console
+	console.error(`[${type}]`, error);
+
+	try {
+		if (!client.token || !client.isReady()) {
+			return;
+		}
+
+		const channel = await client.channels.fetch(LOG_CHANNEL_ID).catch(() => null);
+		if (!channel || !channel.isTextBased()) {
+			return;
+		}
+
+		// Prevent infinite loops if logging itself fails
+		if (error && error.stack && error.stack.includes(LOG_CHANNEL_ID)) {
+			return;
+		}
+
+		const errorMessage = error?.message || error?.toString() || 'Unknown error';
+		const errorStack = error?.stack;
+
+		const content = `⚠️ **[Bot ${type}]** ${errorMessage}`;
+		const options = { content };
+
+		if (errorStack) {
+			const attachment = new AttachmentBuilder(Buffer.from(errorStack, 'utf-8'), { name: 'traceback.txt' });
+			options.files = [attachment];
+		}
+
+		await channel.send(options);
+	} catch (logErr) {
+		console.error('Failed to send error log to Discord:', logErr);
+	}
+}
+
+function safeEvent(handler, name) {
+	return async (...args) => {
+		try {
+			await handler(...args);
+		} catch (error) {
+			logErrorToDiscord(error, `Event: ${name}`);
+		}
+	};
+}
+
+// Global process error handling to prevent bot crash
+process.on('unhandledRejection', (reason) => {
+	logErrorToDiscord(reason, 'Unhandled Rejection');
+});
+
+process.on('uncaughtException', (error) => {
+	logErrorToDiscord(error, 'Uncaught Exception');
+});
+
+client.on(Events.Error, (error) => {
+	logErrorToDiscord(error, 'Client Error');
+});
+
+client.on(Events.Warn, (warning) => {
+	logErrorToDiscord(new Error(warning), 'Warning');
 });
 
 client.commands = new Collection();
@@ -63,7 +129,7 @@ client.on(Events.InteractionCreate, async interaction => {
 			try {
 				await command.autocomplete(interaction);
 			} catch (error) {
-				console.error(`Error handling autocomplete for ${interaction.commandName}:`, error);
+				logErrorToDiscord(error, `Autocomplete: /${interaction.commandName}`);
 			}
 		}
 	} else if (interaction.isChatInputCommand()) {
@@ -84,7 +150,7 @@ client.on(Events.InteractionCreate, async interaction => {
 				duration: `${Date.now() - start}ms`
 			});
 		} catch (error) {
-			console.error(error);
+			logErrorToDiscord(error, `Command: /${interaction.commandName}`);
 			
 			logCommand({
 				status: 'error',
@@ -114,7 +180,7 @@ client.on(Events.InteractionCreate, async interaction => {
 					try {
 						await command.handleButton(interaction);
 					} catch (error) {
-						console.error(`Error handling button in command ${name}:`, error);
+						logErrorToDiscord(error, `Button: ${interaction.customId} in ${name}`);
 					}
 					return;
 				}
@@ -129,7 +195,7 @@ client.on(Events.InteractionCreate, async interaction => {
 					try {
 						await command.handleModal(interaction);
 					} catch (error) {
-						console.error(`Error handling modal in command ${name}:`, error);
+						logErrorToDiscord(error, `Modal: ${interaction.customId} in ${name}`);
 					}
 					return;
 				}
@@ -138,41 +204,46 @@ client.on(Events.InteractionCreate, async interaction => {
 	}
 });
 
-client.on(Events.MessageCreate, handleRandomReply);
-client.on(Events.MessageCreate, levelSystemListener);
-client.on(Events.MessageCreate, automod);
-client.on(Events.MessageCreate, handleMessage);
-client.on(Events.MessageCreate, handleAchievementMessage);
+client.on(Events.MessageCreate, safeEvent(handleRandomReply, 'MessageCreate (handleRandomReply)'));
+client.on(Events.MessageCreate, safeEvent(levelSystemListener, 'MessageCreate (levelSystemListener)'));
+client.on(Events.MessageCreate, safeEvent(automod, 'MessageCreate (automod)'));
+client.on(Events.MessageCreate, safeEvent(handleMessage, 'MessageCreate (handleMessage)'));
+client.on(Events.MessageCreate, safeEvent(handleAchievementMessage, 'MessageCreate (handleAchievementMessage)'));
+client.on(Events.MessageCreate, safeEvent(handlePresenceMessage, 'MessageCreate (handlePresenceMessage)'));
 client.on(Events.MessageReactionAdd, async (reaction, user) => {
 	if (reaction.partial) {
 		try {
 			await reaction.fetch();
 		} catch (error) {
-			console.error('Something went wrong when fetching the message:', error);
+			logErrorToDiscord(error, 'Message Reaction Fetch');
 			return;
 		}
 	}
 
 	// Delete level-up notifications when user reacts with ❌
-	if (reaction.emoji.name === '❌' && reaction.message.author?.id === client.user?.id) {
-		const embed = reaction.message.embeds?.[0];
-		if (embed && embed.title === '🎊 Level Up!') {
-			const match = embed.description?.match(/<@!?(\d+)>/);
-			if (match && match[1] === user.id) {
-				await reaction.message.delete().catch(() => {});
-				return;
+	try {
+		if (reaction.emoji.name === '❌' && reaction.message.author?.id === client.user?.id) {
+			const embed = reaction.message.embeds?.[0];
+			if (embed && embed.title === '🎊 Level Up!') {
+				const match = embed.description?.match(/<@!?(\d+)>/);
+				if (match && match[1] === user.id) {
+					await reaction.message.delete().catch(() => {});
+					return;
+				}
 			}
 		}
+
+		await handleReaction(reaction, user);
+	} catch (error) {
+		logErrorToDiscord(error, 'MessageReactionAdd (Reaction/Delete/Handle)');
 	}
-
-	handleReaction(reaction, user);
 });
-client.on(Events.VoiceStateUpdate, handleVoiceState);
-client.on(tempVoiceStateUpdate.name, (...args) => tempVoiceStateUpdate.execute(...args));
-client.on(memberAdd.name, (...args) => memberAdd.execute(...args));
-client.on(memberRemove.name, (...args) => memberRemove.execute(...args));
+client.on(Events.VoiceStateUpdate, safeEvent(handleVoiceState, 'VoiceStateUpdate (handleVoiceState)'));
+client.on(tempVoiceStateUpdate.name, safeEvent(tempVoiceStateUpdate.execute, `VoiceStateUpdate (${tempVoiceStateUpdate.name})`));
+client.on(memberAdd.name, safeEvent(memberAdd.execute, `GuildMemberAdd (${memberAdd.name})`));
+client.on(memberRemove.name, safeEvent(memberRemove.execute, `GuildMemberRemove (${memberRemove.name})`));
 
-client.once(Events.ClientReady, readyClient => {
+client.once(Events.ClientReady, safeEvent(readyClient => {
 	console.log(`Ready! Logged in as ${readyClient.user.tag}`);
 	console.log(`Total slash commands: ${client.commands.size}`);
 	console.log(`Command list: ${client.commands.map(cmd => cmd.data.name).join(', ')}`);
@@ -183,7 +254,11 @@ client.once(Events.ClientReady, readyClient => {
 	if (reminderCommand && reminderCommand.startScheduler) {
 		reminderCommand.startScheduler(readyClient);
 	}
-});
+}, 'ClientReady'));
 
-startTracking();
+try {
+	startTracking();
+} catch (error) {
+	logErrorToDiscord(error, 'Initialization (startTracking)');
+}
 client.login(token);

@@ -127,7 +127,7 @@ module.exports = {
             return interaction.reply({ content: '❌ Invalid duration format. Use e.g., `10m`, `1h`, `1d`.', ephemeral: true });
         }
 
-        await interaction.deferReply();
+        const reply = await interaction.deferReply({ fetchReply: true });
 
         const cutoff = Date.now() - durationMs;
         let totalDeleted = 0;
@@ -156,6 +156,9 @@ module.exports = {
 
                 const messages = await fetchMessages(channel, scanLimit);
                 const toDelete = messages.filter(msg => {
+                    // Do not delete the bot's own interaction reply message
+                    if (reply && msg.id === reply.id) return false;
+
                     // Check duration
                     if (msg.createdTimestamp < cutoff) return false;
                     
