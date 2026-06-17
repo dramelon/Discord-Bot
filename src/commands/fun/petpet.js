@@ -27,7 +27,7 @@ function addCommonOptions(subcommand) {
                 .setRequired(false))
         .addStringOption(option =>
             option.setName('size')
-                .setDescription('Size of the petpet (default: small)')
+                .setDescription('Size of the petpet (default: medium)')
                 .addChoices(
                     { name: 'Extra Tiny (28x28)', value: 'extra_tiny' },
                     { name: 'Tiny (56x56)', value: 'tiny' },
@@ -111,7 +111,7 @@ module.exports = {
         const subcommand = interaction.options.getSubcommand();
         const speed = interaction.options.getNumber('speed') || 1;
         const squeeze = interaction.options.getNumber('squeeze') || 1;
-        const sizeKey = interaction.options.getString('size') || 'small';
+        const sizeKey = interaction.options.getString('size') || 'medium';
         const canvasSize = sizeMap[sizeKey];
         
         let source;
@@ -197,13 +197,7 @@ module.exports = {
                 await interaction.editReply({ content: 'Sticker received! Generating petpet...' });
             }
 
-            const petpetGif = await generatePetPet(source, speed, squeeze, canvasSize);
-            const attachment = new AttachmentBuilder(petpetGif, { name: 'petpet.gif' });
-
-            await interaction.editReply({ 
-                content: notificationText || null,
-                files: [attachment] 
-            });
+            await generatePetpetFromSource(interaction, source, speed, squeeze, canvasSize, notificationText);
         } catch (error) {
             console.error('Error generating petpet:', error);
             const errorMessage = error.message?.includes('decode') || error.message?.includes('load') || error.message?.includes('JSON')
@@ -216,4 +210,15 @@ module.exports = {
             });
         }
     },
+    generatePetpetFromSource,
 };
+
+async function generatePetpetFromSource(interaction, source, speed, squeeze, canvasSize, notificationText) {
+    const petpetGif = await generatePetPet(source, speed, squeeze, canvasSize);
+    const attachment = new AttachmentBuilder(petpetGif, { name: 'petpet.gif' });
+
+    await interaction.editReply({ 
+        content: notificationText || null,
+        files: [attachment] 
+    });
+}

@@ -157,71 +157,121 @@ module.exports = {
 				await interaction.editReply({ content: 'Sticker received! Generating stretch...' });
 			}
 
-			if (!source) {
-				return interaction.editReply({ content: 'Failed to resolve an image source.' });
-			}
-
-			const imagePath = path.join(process.cwd(), 'assets', 'stretch_template.png');
-			const background = await loadImage(imagePath);
-			const avatar = await loadImage(source);
-
-			const canvas = createCanvas(background.width, background.height);
-			const context = canvas.getContext('2d');
-
-			// 1. Draw Background
-			context.drawImage(background, 0, 0);
-
-			// 2. Configure Stretch Area
-			const tl = { x: 280, y: 257 };
-			const tr = { x: 2994, y: 364 };
-			const bl = { x: 245, y: 972 };
-			const br = { x: 3032, y: 1000 };
-
-			// 3. Draw Avatar (Stretched)
-			const numSlices = 500;
-			const step = 1 / numSlices;
-
-			for (let i = 0; i < numSlices; i++) {
-				const t = i * step;
-				const tNext = (i + 1) * step;
-
-				// Source (Avatar) Slice
-				const sx = t * avatar.width;
-				const sw = avatar.width * step;
-				const sy = 0;
-				const sh = avatar.height;
-
-				// Destination Slice Calculation
-				const topX = tl.x + (tr.x - tl.x) * t;
-				const topY = tl.y + (tr.y - tl.y) * t;
-				const botX = bl.x + (br.x - bl.x) * t;
-				const botY = bl.y + (br.y - bl.y) * t;
-
-				const topXNext = tl.x + (tr.x - tl.x) * tNext;
-				const botXNext = bl.x + (br.x - bl.x) * tNext;
-
-				const dwTop = topXNext - topX;
-				const dwBot = botXNext - botX;
-				const dw = Math.max(Math.abs(dwTop), Math.abs(dwBot)) + 1.5;
-
-				const dx = botX - topX;
-				const dy = botY - topY;
-				const height = Math.hypot(dx, dy);
-				const angle = Math.atan2(dy, dx) - Math.PI / 2;
-
-				context.save();
-				context.translate(topX, topY);
-				context.rotate(angle);
-				context.drawImage(avatar, sx, sy, sw, sh, 0, 0, dw, height);
-				context.restore();
-			}
-
-			const attachment = new AttachmentBuilder(await canvas.encode('png'), { name: 'stretch.png' });
-
-			await interaction.editReply({ content: null, files: [attachment] });
+			await generateStretchFromSource(interaction, source);
 		} catch (error) {
 			console.error('Error generating stretch image:', error);
 			await interaction.editReply({ content: `Failed to generate image. Please ensure source is valid and \`assets/stretch_template.png\` exists. Error: ${error.message}` });
 		}
 	},
+	generateStretchFromSource,
+	extractImageSourceFromMessage,
 };
+
+function extractImageSourceFromMessage(message) {
+	// 1. Check attachments
+	const attachment = message.attachments.find(a => a.contentType?.startsWith('image/'));
+	if (attachment) return attachment.url;
+
+	// 2. Check stickers
+	const sticker = message.stickers.first();
+	if (sticker) return sticker.url;
+
+	// 3. Check emojis in content
+	if (message.content) {
+		const customMatch = message.content.match(/<a?:.+?:(\d+)>/);
+		const unicodeMatch = message.content.match(/\p{Emoji_Presentation}/u);
+		const idMatch = message.content.match(/(\d{17,20})/);
+
+		let firstMatch = null;
+		let minIndex = Infinity;
+
+		if (customMatch && customMatch.index < minIndex) {
+			firstMatch = { type: 'custom', value: customMatch[1] };
+			minIndex = customMatch.index;
+		}
+		if (unicodeMatch && unicodeMatch.index < minIndex) {
+			firstMatch = { type: 'unicode', value: unicodeMatch[0] };
+			minIndex = unicodeMatch.index;
+		}
+		if (idMatch && idMatch.index < minIndex) {
+			firstMatch = { type: 'id', value: idMatch[1] };
+			minIndex = idMatch.index;
+		}
+
+		if (firstMatch) {
+			if (firstMatch.type === 'custom' || firstMatch.type === 'id') {
+				return `https://cdn.discordapp.com/emojis/${firstMatch.value}.png`;
+			} else if (firstMatch.type === 'unicode') {
+				const codePoints = [...firstMatch.value].map(c => c.codePointAt(0).toString(16)).join('-');
+				return `https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/${codePoints}.png`;
+			}
+		}
+	}
+
+	return null;
+}
+
+async function generateStretchFromSource(interaction, source) {
+	if (!source) {
+		return interaction.editReply({ content: 'Failed to resolve an image source.' });
+	}
+
+	const imagePath = path.join(process.cwd(), 'assets', 'stretch_template.png');
+	const background = await loadImage(imagePath);
+	const avatar = await loadImage(source);
+
+	const canvas = createCanvas(background.width, background.height);
+	const context = canvas.getContext('2d');
+
+	// 1. Draw Background
+	context.drawImage(background, 0, 0);
+
+	// 2. Configure Stretch Area
+	const tl = { x: 280, y: 257 };
+	const tr = { x: 2994, y: 364 };
+	const bl = { x: 245, y: 972 };
+	const br = { x: 3032, y: 1000 };
+
+	// 3. Draw Avatar (Stretched)
+	const numSlices = 500;
+	const step = 1 / numSlices;
+
+	for (let i = 0; i < numSlices; i++) {
+		const t = i * step;
+		const tNext = (i + 1) * step;
+
+		// Source (Avatar) Slice
+		const sx = t * avatar.width;
+		const sw = avatar.width * step;
+		const sy = 0;
+		const sh = avatar.height;
+
+		// Destination Slice Calculation
+		const topX = tl.x + (tr.x - tl.x) * t;
+		const topY = tl.y + (tr.y - tl.y) * t;
+		const botX = bl.x + (br.x - bl.x) * t;
+		const botY = bl.y + (br.y - bl.y) * t;
+
+		const topXNext = tl.x + (tr.x - tl.x) * tNext;
+		const botXNext = bl.x + (br.x - bl.x) * tNext;
+
+		const dwTop = topXNext - topX;
+		const dwBot = botXNext - botX;
+		const dw = Math.max(Math.abs(dwTop), Math.abs(dwBot)) + 1.5;
+
+		const dx = botX - topX;
+		const dy = botY - topY;
+		const height = Math.hypot(dx, dy);
+		const angle = Math.atan2(dy, dx) - Math.PI / 2;
+
+		context.save();
+		context.translate(topX, topY);
+		context.rotate(angle);
+		context.drawImage(avatar, sx, sy, sw, sh, 0, 0, dw, height);
+		context.restore();
+	}
+
+	const attachment = new AttachmentBuilder(await canvas.encode('png'), { name: 'stretch.png' });
+
+	await interaction.editReply({ content: null, files: [attachment] });
+}

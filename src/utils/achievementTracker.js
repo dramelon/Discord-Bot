@@ -518,6 +518,176 @@ function resetRateLimitState() {
     combatPending = false;
 }
 
+/**
+ * Synchronize achievements from the last 3 days by fetching messages in the tracking channel.
+ * @param {import('discord.js').Client} client
+ * @returns {Promise<{ addedCount: number, playersCount: number }>}
+ */
+async function syncAchievements(client) {
+    const channel = await client.channels.fetch(TRACKING_CHANNEL_ID);
+    if (!channel || !channel.isTextBased()) {
+        throw new Error('Tracking channel not found or is not text-based.');
+    }
+
+    const trackerData = loadJSON(TRACKER_FILE, { players: {}, lastUpdated: 0 });
+    const discoveredData = loadJSON(DISCOVERED_FILE, {});
+
+    const ensurePlayerState = (username) => {
+        let playerKey = Object.keys(trackerData.players).find(
+            k => k.toLowerCase() === username.toLowerCase()
+        );
+        if (!playerKey) {
+            playerKey = username;
+            trackerData.players[playerKey] = {
+                achievements: [],
+                deaths: 0,
+                kills: 0,
+                lastUpdated: 0
+            };
+        }
+        if (trackerData.players[playerKey].deaths === undefined) trackerData.players[playerKey].deaths = 0;
+        if (trackerData.players[playerKey].kills === undefined) trackerData.players[playerKey].kills = 0;
+        return playerKey;
+    };
+
+    const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000;
+    const fetchedMessages = [];
+    let lastMessageId = null;
+    let fetchMore = true;
+
+    while (fetchMore && fetchedMessages.length < 1500) {
+        const options = { limit: 100 };
+        if (lastMessageId) {
+            options.before = lastMessageId;
+        }
+        const batch = await channel.messages.fetch(options);
+        if (batch.size === 0) {
+            break;
+        }
+        for (const msg of batch.values()) {
+            if (msg.createdTimestamp < threeDaysAgo) {
+                fetchMore = false;
+                break;
+            }
+            // Only process messages from the webhook
+            if (msg.author.id === WEBHOOK_USER_ID) {
+                fetchedMessages.push(msg);
+            }
+        }
+        lastMessageId = batch.lastKey();
+    }
+
+    // Process from oldest to newest to maintain chronological ordering
+    fetchedMessages.sort((a, b) => a.createdTimestamp - b.createdTimestamp);
+
+    let addedCount = 0;
+    let achievementsChanged = false;
+    const affectedPlayers = new Set();
+
+    for (const msg of fetchedMessages) {
+        const textsToProcess = [];
+        if (msg.content) {
+            textsToProcess.push(msg.content);
+        }
+        if (msg.embeds && msg.embeds.length > 0) {
+            msg.embeds.forEach(embed => {
+                const text = embed.description || embed.title || '';
+                if (text) textsToProcess.push(text);
+            });
+        }
+
+        for (const text of textsToProcess) {
+            const advMatch = text.match(ADVANCEMENT_REGEX);
+            if (advMatch) {
+                const { username, advancement, description } = advMatch.groups;
+                if (username && advancement) {
+                    const cleanUsername = username.trim();
+                    const cleanAdvancement = advancement.trim();
+                    const cleanDescription = description ? description.trim() : '';
+
+                    // Add to discovered catalog
+                    let discoveredKey = Object.keys(discoveredData).find(
+                        k => k.toLowerCase() === cleanAdvancement.toLowerCase()
+                    );
+                    if (!discoveredKey) {
+                        discoveredKey = cleanAdvancement;
+                        discoveredData[discoveredKey] = {
+                            description: cleanDescription,
+                            firstDiscoveredBy: cleanUsername,
+                            firstDiscoveredAt: msg.createdTimestamp,
+                            unlockedBy: [
+                                {
+                                    username: cleanUsername,
+                                    timestamp: msg.createdTimestamp
+                                }
+                            ]
+                        };
+                        achievementsChanged = true;
+                    } else {
+                        if (cleanDescription && !discoveredData[discoveredKey].description) {
+                            discoveredData[discoveredKey].description = cleanDescription;
+                            achievementsChanged = true;
+                        }
+
+                        if (!discoveredData[discoveredKey].unlockedBy) {
+                            discoveredData[discoveredKey].unlockedBy = [];
+                        }
+
+                        const alreadyUnlocked = discoveredData[discoveredKey].unlockedBy.some(
+                            u => u.username.toLowerCase() === cleanUsername.toLowerCase()
+                        );
+
+                        if (!alreadyUnlocked) {
+                            discoveredData[discoveredKey].unlockedBy.push({
+                                username: cleanUsername,
+                                timestamp: msg.createdTimestamp
+                            });
+                            achievementsChanged = true;
+                        }
+                    }
+
+                    // Find or create player and add achievement
+                    const playerKey = ensurePlayerState(cleanUsername);
+                    const alreadyCompleted = trackerData.players[playerKey].achievements.some(
+                        a => a.name.toLowerCase() === cleanAdvancement.toLowerCase()
+                    );
+
+                    if (!alreadyCompleted) {
+                        trackerData.players[playerKey].achievements.push({
+                            name: cleanAdvancement,
+                            timestamp: msg.createdTimestamp
+                        });
+                        
+                        // Update timestamps if this synced message is newer than what was registered
+                        if (msg.createdTimestamp > trackerData.players[playerKey].lastUpdated) {
+                            trackerData.players[playerKey].lastUpdated = msg.createdTimestamp;
+                        }
+                        if (msg.createdTimestamp > trackerData.lastUpdated) {
+                            trackerData.lastUpdated = msg.createdTimestamp;
+                        }
+                        
+                        achievementsChanged = true;
+                        addedCount++;
+                        affectedPlayers.add(playerKey);
+                        console.log(`[Sync] Found and added achievement: ${cleanUsername} unlocked [${cleanAdvancement}]`);
+                    }
+                }
+            }
+        }
+    }
+
+    if (achievementsChanged) {
+        saveJSON(TRACKER_FILE, trackerData);
+        saveJSON(DISCOVERED_FILE, discoveredData);
+        await requestScoreboardUpdate(client);
+    }
+
+    return {
+        addedCount,
+        playersCount: affectedPlayers.size
+    };
+}
+
 module.exports = {
     TRACKING_CHANNEL_ID,
     WEBHOOK_USER_ID,
@@ -533,5 +703,7 @@ module.exports = {
     handleAchievementMessage,
     ADVANCEMENT_REGEX,
     getRateLimitState,
-    resetRateLimitState
+    resetRateLimitState,
+    syncAchievements
 };
+

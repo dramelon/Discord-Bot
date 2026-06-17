@@ -1,8 +1,7 @@
 const { Events, ChannelType, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const { addChannel, getChannel, updateChannel, removeChannel } = require('../../utils/tempVCManager');
+const { getConfig } = require('../../utils/configManager');
 
-const CREATE_VC_CHANNEL_ID = '1507240107864756244';
-const TEMP_VC_CATEGORY_ID = '1447192383178539070';
 const DELETE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
 module.exports = {
@@ -10,15 +9,28 @@ module.exports = {
     async execute(oldState, newState) {
         const member = newState.member;
         
+        // Load server-specific configurations
+        const guildId = newState.guild.id;
+        const config = getConfig(guildId);
+        const createVcChannelId = config.tempVCCreateChannelId;
+        const tempVcCategoryId = config.tempVCCategoryId;
+        const nameTemplate = config.tempVCNameTemplate;
+        
         // --- 1. Handle user joining the "Create VC" channel ---
-        if (newState.channelId === CREATE_VC_CHANNEL_ID) {
+        if (newState.channelId === createVcChannelId) {
             try {
+                // Resolve name template
+                const displayName = member.nickname || member.user.username;
+                const username = member.user.username;
+                const roomName = nameTemplate
+                    .replace(/{user}/g, displayName)
+                    .replace(/{user-name}/g, username);
+
                 // Create the new channel
-                const roomName = `${member.nickname || member.user.username}'s room`;
                 const newChannel = await newState.guild.channels.create({
                     name: roomName,
                     type: ChannelType.GuildVoice,
-                    parent: TEMP_VC_CATEGORY_ID,
+                    parent: tempVcCategoryId,
                 });
 
                 // Grant the owner full permissions explicitly
@@ -54,7 +66,7 @@ module.exports = {
             } catch (error) {
                 console.error("Error creating temporary voice channel:", error);
                 // Try to disconnect them or move them back if creation fails
-                if (member.voice.channelId === CREATE_VC_CHANNEL_ID) {
+                if (member.voice.channelId === createVcChannelId) {
                     member.voice.disconnect().catch(console.error);
                 }
             }

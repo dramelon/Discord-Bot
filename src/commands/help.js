@@ -56,8 +56,8 @@ module.exports = {
 			);
 		} else if (command.data.name === 'color') {
 			embed.addFields(
-				{ name: 'Description', value: 'Set or update your custom role color. You can use a color name, hex code, RGB values, or a greyscale value.', inline: false },
-				{ name: 'Options', value: '> **name**: Select from a list of predefined colors.\n> **hex**: Use a hex code (e.g. `#FF0000`).\n> **r, g, b**: Define exact RGB values (0-255).\n> **greyscale**: Set a shade of grey (0-255).\n> **remove**: Remove your current color role.', inline: false },
+				{ name: 'Description', value: 'Manage your custom role color and icon using a simple button interface.', inline: false },
+				{ name: 'Usage', value: 'Run `/color` to open the status embed. Click **Customize** to open a modal where you can input a hex color code and a role icon URL, or click **Remove** to delete your custom role.', inline: false },
 			);
 		} else if (command.data.name === 'leaderboard') {
 			embed.addFields(

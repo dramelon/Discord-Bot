@@ -11,8 +11,10 @@ const memberRemove = require('./events/guild/memberRemove');
 const tempVoiceStateUpdate = require('./events/guild/voiceStateUpdate');
 const automod = require('./utils/automod');
 const { handleMessage, handleReaction, handleVoiceState, startActivityTracking } = require('./utils/socialactivity');
-const { handleAchievementMessage } = require('./utils/achievementTracker');
+const { handleAchievementMessage, syncAchievements, TRACKING_CHANNEL_ID } = require('./utils/achievementTracker');
 const { handlePresenceMessage } = require('./utils/presenceTracker');
+const { isAdmin } = require('./utils/adminCheck');
+
 
 const token = process.env.DISCORD_TOKEN;
 
@@ -114,8 +116,8 @@ for (const command of commandsList) {
 }
 
 client.on(Events.InteractionCreate, async interaction => {
-	// Only process ChatInputCommand and Autocomplete interactions here.
-	if (!interaction.isChatInputCommand() && !interaction.isAutocomplete()) return;
+	// Only process ChatInputCommand, ContextMenuCommand, and Autocomplete interactions here.
+	if (!interaction.isChatInputCommand() && !interaction.isContextMenuCommand() && !interaction.isAutocomplete()) return;
 
 	const command = interaction.client.commands.get(interaction.commandName);
 
@@ -132,9 +134,9 @@ client.on(Events.InteractionCreate, async interaction => {
 				logErrorToDiscord(error, `Autocomplete: /${interaction.commandName}`);
 			}
 		}
-	} else if (interaction.isChatInputCommand()) {
+	} else if (interaction.isChatInputCommand() || interaction.isContextMenuCommand()) {
 		const start = Date.now();
-		const commandOptions = interaction.options.data || [];
+		const commandOptions = interaction.isChatInputCommand() ? (interaction.options.data || []) : [];
 
 		try {
 			await command.execute(interaction);
@@ -150,7 +152,8 @@ client.on(Events.InteractionCreate, async interaction => {
 				duration: `${Date.now() - start}ms`
 			});
 		} catch (error) {
-			logErrorToDiscord(error, `Command: /${interaction.commandName}`);
+			const commandTypeStr = interaction.isChatInputCommand() ? 'Command' : 'Context Menu';
+			logErrorToDiscord(error, `${commandTypeStr}: ${interaction.commandName}`);
 			
 			logCommand({
 				status: 'error',
@@ -210,6 +213,23 @@ client.on(Events.MessageCreate, safeEvent(automod, 'MessageCreate (automod)'));
 client.on(Events.MessageCreate, safeEvent(handleMessage, 'MessageCreate (handleMessage)'));
 client.on(Events.MessageCreate, safeEvent(handleAchievementMessage, 'MessageCreate (handleAchievementMessage)'));
 client.on(Events.MessageCreate, safeEvent(handlePresenceMessage, 'MessageCreate (handlePresenceMessage)'));
+client.on(Events.MessageCreate, safeEvent(async (message) => {
+	if (message.content !== '!sync') return;
+	if (message.channelId !== TRACKING_CHANNEL_ID) return;
+	if (!isAdmin(message.author)) {
+		await message.reply('❌ You do not have permission to use this command.').catch(() => {});
+		return;
+	}
+
+	try {
+		const reply = await message.reply('⏳ Syncing achievements from the last 3 days...');
+		const result = await syncAchievements(message.client);
+		await reply.edit(`✅ Sync complete! Added **${result.addedCount}** new achievements for **${result.playersCount}** players.`);
+	} catch (error) {
+		console.error('[Sync] Error during sync:', error);
+		await message.reply(`❌ Sync failed: ${error.message}`).catch(() => {});
+	}
+}, 'MessageCreate (syncAchievements)'));
 client.on(Events.MessageReactionAdd, async (reaction, user) => {
 	if (reaction.partial) {
 		try {

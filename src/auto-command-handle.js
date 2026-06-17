@@ -20,7 +20,7 @@ const [action, commandName] = args;
             result = await deployOne(commandName, commandsList);
             break;
         case 'cleanup':
-            result = await deleteOne(commandName);
+            result = await deleteOne(commandName, commandsList);
             break;
         case 'redeploy':
             result = await redeployOne(commandName, commandsList);
