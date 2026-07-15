@@ -1,0 +1,1730 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Fluffingiously Dragooon - Status Dashboard</title>
+	<!-- Fonts -->
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+	<style>
+		:root {
+			--bg-primary: #090d16;
+			--bg-secondary: #0f172a;
+			--glass-bg: rgba(15, 23, 42, 0.45);
+			--glass-border: rgba(255, 255, 255, 0.06);
+			--glass-glow: rgba(99, 102, 241, 0.05);
+			--text-primary: #f8fafc;
+			--text-secondary: #94a3b8;
+			--text-muted: #64748b;
+
+			/* Accents */
+			--accent-primary: #6366f1;
+			/* Indigo */
+			--accent-secondary: #8b5cf6;
+			/* Violet */
+			--success: #10b981;
+			/* Emerald */
+			--warning: #f59e0b;
+			/* Amber */
+			--danger: #ef4444;
+			/* Rose */
+			--inactive: #334155;
+			/* Slate */
+
+			--sidebar-width: 280px;
+		}
+
+		* {
+			box-sizing: border-box;
+			margin: 0;
+			padding: 0;
+		}
+
+		body {
+			font-family: 'Outfit', sans-serif;
+			background-color: var(--bg-primary);
+			color: var(--text-primary);
+			min-height: 100vh;
+			display: flex;
+			background-image:
+				radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.12) 0%, transparent 40%),
+				radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 45%),
+				radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.03) 0%, transparent 50%);
+			background-attachment: fixed;
+			overflow-x: hidden;
+		}
+
+
+
+		.login-btn {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 0.65rem;
+			width: 100%;
+			padding: 0.7rem 1rem;
+			background: #5865F2;
+			/* Discord Blurple */
+			color: #ffffff;
+			text-decoration: none;
+			font-weight: 600;
+			border-radius: 10px;
+			font-size: 0.85rem;
+			transition: all 0.2s ease;
+			border: 1px solid rgba(255, 255, 255, 0.08);
+			box-shadow: 0 4px 12px rgba(88, 101, 242, 0.15);
+		}
+
+		.login-btn:hover {
+			background: #4752C4;
+			transform: translateY(-1px);
+			box-shadow: 0 6px 16px rgba(88, 101, 242, 0.25);
+		}
+
+		.login-btn:active {
+			transform: translateY(0);
+		}
+
+		.login-btn svg {
+			fill: currentColor;
+			width: 18px;
+			height: 18px;
+		}
+
+
+
+		/* Main Content Wrapper */
+		main {
+			margin-left: var(--sidebar-width);
+			flex-grow: 1;
+			padding: 2.5rem 3rem;
+			width: calc(100% - var(--sidebar-width));
+		}
+
+		header.dashboard-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 2.5rem;
+		}
+
+		.header-title h2 {
+			font-size: 1.8rem;
+			font-weight: 700;
+			letter-spacing: -0.02em;
+			background: linear-gradient(135deg, var(--text-primary) 30%, var(--text-secondary) 100%);
+			-webkit-background-clip: text;
+			background-clip: text;
+			-webkit-text-fill-color: transparent;
+		}
+
+		.header-title p {
+			font-size: 0.9rem;
+			color: var(--text-secondary);
+			margin-top: 0.25rem;
+		}
+
+		.live-badge {
+			display: flex;
+			align-items: center;
+			gap: 0.5rem;
+			padding: 0.5rem 0.85rem;
+			background: rgba(16, 185, 129, 0.08);
+			border: 1px solid rgba(16, 185, 129, 0.15);
+			border-radius: 20px;
+			color: var(--success);
+			font-size: 0.8rem;
+			font-weight: 600;
+			letter-spacing: 0.05em;
+			text-transform: uppercase;
+		}
+
+		.live-badge.starting {
+			background: rgba(245, 158, 11, 0.08);
+			border: 1px solid rgba(245, 158, 11, 0.15);
+			color: var(--warning);
+		}
+
+		.live-badge.offline {
+			background: rgba(239, 68, 68, 0.08);
+			border: 1px solid rgba(239, 68, 68, 0.15);
+			color: var(--danger);
+		}
+
+		.pulse-ring {
+			width: 8px;
+			height: 8px;
+			border-radius: 50%;
+			background-color: currentColor;
+			box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+		}
+
+		.live-badge.online .pulse-ring {
+			animation: pulse-ring-green 2s infinite;
+		}
+
+		.live-badge.starting .pulse-ring {
+			animation: none;
+		}
+
+		@keyframes pulse-ring-green {
+			0% {
+				box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+			}
+
+			70% {
+				box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+			}
+
+			100% {
+				box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+			}
+		}
+
+		/* Grid Layout for Metrics */
+		.metrics-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+			gap: 1.5rem;
+			margin-bottom: 2.5rem;
+		}
+
+		.metric-card {
+			background: var(--glass-bg);
+			border: 1px solid var(--glass-border);
+			border-radius: 16px;
+			padding: 1.5rem;
+			display: flex;
+			flex-direction: column;
+			gap: 0.75rem;
+			transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+			position: relative;
+			overflow: hidden;
+		}
+
+		.metric-card::before {
+			content: '';
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, transparent 50%);
+			pointer-events: none;
+		}
+
+		.metric-card:hover {
+			transform: translateY(-4px);
+			border-color: rgba(99, 102, 241, 0.25);
+			box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+		}
+
+		.metric-icon {
+			font-size: 1.5rem;
+			width: 42px;
+			height: 42px;
+			border-radius: 10px;
+			background: rgba(255, 255, 255, 0.03);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			color: var(--accent-primary);
+			border: 1px solid rgba(255, 255, 255, 0.03);
+		}
+
+		.metric-content {
+			display: flex;
+			flex-direction: column;
+		}
+
+		.metric-title {
+			font-size: 0.85rem;
+			color: var(--text-secondary);
+			font-weight: 500;
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+		}
+
+		.metric-value {
+			font-size: 1.6rem;
+			font-weight: 700;
+			color: var(--text-primary);
+			margin-top: 0.25rem;
+			font-variant-numeric: tabular-nums;
+		}
+
+		.metric-desc {
+			font-size: 0.75rem;
+			color: var(--text-muted);
+			margin-top: 0.25rem;
+		}
+
+		/* Reliability Section */
+		.section-card {
+			background: var(--glass-bg);
+			border: 1px solid var(--glass-border);
+			border-radius: 20px;
+			padding: 2rem;
+			margin-bottom: 2rem;
+		}
+
+		.section-title {
+			font-size: 1.1rem;
+			font-weight: 600;
+			margin-bottom: 1.5rem;
+			display: flex;
+			align-items: center;
+			gap: 0.5rem;
+			border-bottom: 1px solid var(--glass-border);
+			padding-bottom: 0.75rem;
+		}
+
+		.grid-container {
+			display: flex;
+			flex-direction: column;
+			gap: 1.75rem;
+		}
+
+		.grid-row {
+			display: flex;
+			flex-direction: column;
+			gap: 0.75rem;
+		}
+
+		.grid-row-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			font-size: 0.85rem;
+		}
+
+		.grid-label {
+			font-weight: 500;
+			color: var(--text-secondary);
+		}
+
+		.grid-meta {
+			color: var(--text-muted);
+		}
+
+		.reliability-blocks {
+			display: flex;
+			gap: 4px;
+			align-items: center;
+			width: 100%;
+		}
+
+		.block {
+			flex-grow: 1;
+			height: 32px;
+			border-radius: 4px;
+			background-color: var(--inactive);
+			transition: all 0.2s ease;
+			cursor: help;
+			position: relative;
+		}
+
+		.block:hover {
+			transform: scaleY(1.2) scaleX(1.05);
+			filter: brightness(1.2);
+			box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+			z-index: 10;
+		}
+
+		/* Block states */
+		.block.active {
+			background-color: var(--success);
+		}
+
+		.block.degraded {
+			background-color: var(--warning);
+		}
+
+		.block.down {
+			background-color: var(--danger);
+		}
+
+		.block.no-data {
+			background-color: var(--inactive);
+		}
+
+		/* Grid Legends */
+		.grid-legend {
+			display: flex;
+			gap: 1.5rem;
+			margin-top: 0.5rem;
+			font-size: 0.75rem;
+			color: var(--text-muted);
+		}
+
+		.legend-item {
+			display: flex;
+			align-items: center;
+			gap: 0.4rem;
+		}
+
+		.legend-color {
+			width: 10px;
+			height: 10px;
+			border-radius: 2px;
+		}
+
+		.legend-color.active {
+			background-color: var(--success);
+		}
+
+		.legend-color.degraded {
+			background-color: var(--warning);
+		}
+
+		.legend-color.down {
+			background-color: var(--danger);
+		}
+
+		.legend-color.no-data {
+			background-color: var(--inactive);
+		}
+
+		/* Outages lists */
+		.outages-list {
+			margin-top: 1.5rem;
+			display: flex;
+			flex-direction: column;
+			gap: 0.5rem;
+		}
+
+		.outage-item {
+			font-size: 0.85rem;
+			padding: 0.75rem 1rem;
+			border-radius: 8px;
+			background: rgba(239, 68, 68, 0.04);
+			border: 1px solid rgba(239, 68, 68, 0.1);
+			color: var(--text-secondary);
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+		}
+
+		.outage-time {
+			font-weight: 500;
+			color: var(--text-primary);
+		}
+
+		.outage-duration {
+			font-size: 0.8rem;
+			background: rgba(239, 68, 68, 0.1);
+			color: var(--danger);
+			padding: 0.15rem 0.5rem;
+			border-radius: 4px;
+			font-weight: 600;
+		}
+
+		.outage-ok {
+			font-size: 0.85rem;
+			color: var(--success);
+			display: flex;
+			align-items: center;
+			gap: 0.5rem;
+		}
+
+		/* Starting state overlay */
+		.loading-overlay {
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background: var(--bg-primary);
+			z-index: 9999;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			gap: 1.5rem;
+			transition: opacity 0.5s ease, visibility 0.5s;
+		}
+
+		.loading-overlay.hidden {
+			opacity: 0;
+			visibility: hidden;
+		}
+
+		.spinner {
+			width: 50px;
+			height: 50px;
+			border: 3px solid rgba(99, 102, 241, 0.1);
+			border-radius: 50%;
+			border-top-color: var(--accent-primary);
+			animation: spin 1s linear infinite;
+		}
+
+		@keyframes spin {
+			to {
+				transform: rotate(360deg);
+			}
+		}
+
+		.loading-text {
+			font-size: 1.1rem;
+			font-weight: 500;
+			color: var(--text-secondary);
+			letter-spacing: 0.05em;
+		}
+
+		/* Responsive Design */
+		@media (max-width: 1024px) {
+			:root {
+				--sidebar-width: 240px;
+			}
+
+			main {
+				padding: 2rem;
+			}
+		}
+
+		@media (max-width: 768px) {
+			body {
+				flex-direction: column;
+			}
+
+			aside {
+				width: 100%;
+				height: auto;
+				position: relative;
+				border-right: none;
+				border-bottom: 1px solid var(--glass-border);
+				padding: 1.25rem;
+			}
+
+			.bot-brand {
+				margin-bottom: 1.5rem;
+			}
+
+			.nav-menu {
+				flex-direction: row;
+				overflow-x: auto;
+				padding-bottom: 0.5rem;
+				scrollbar-width: none;
+				/* Hide scrollbar for clean tabs */
+			}
+
+			.nav-menu::-webkit-scrollbar {
+				display: none;
+			}
+
+			.nav-item {
+				white-space: nowrap;
+				padding: 0.6rem 1rem;
+			}
+
+			main {
+				margin-left: 0;
+				width: 100%;
+				padding: 1.5rem;
+			}
+
+			header.dashboard-header {
+				flex-direction: column;
+				align-items: flex-start;
+				gap: 1rem;
+				margin-bottom: 2rem;
+			}
+
+			.live-badge {
+				align-self: flex-start;
+			}
+
+			.reliability-blocks {
+				gap: 2px;
+			}
+
+			.block {
+				height: 24px;
+			}
+		}
+
+		/* Modal Overlay */
+		.modal-overlay {
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background: rgba(4, 6, 15, 0.8);
+			backdrop-filter: blur(12px);
+			-webkit-backdrop-filter: blur(12px);
+			z-index: 1000;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			opacity: 0;
+			pointer-events: none;
+			transition: opacity 0.3s ease;
+		}
+
+		.modal-overlay.active {
+			opacity: 1;
+			pointer-events: auto;
+		}
+
+		.modal-content {
+			background: var(--glass-bg);
+			border: 1px solid var(--glass-border);
+			border-radius: 24px;
+			width: 90%;
+			max-width: 400px;
+			padding: 2rem;
+			box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+			backdrop-filter: blur(20px);
+			-webkit-backdrop-filter: blur(20px);
+			transform: scale(0.9);
+			transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+		}
+
+		.modal-overlay.active .modal-content {
+			transform: scale(1);
+		}
+
+		.modal-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 1.5rem;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+			padding-bottom: 0.75rem;
+		}
+
+		.modal-header h3 {
+			font-size: 1.2rem;
+			font-weight: 700;
+			background: linear-gradient(135deg, var(--text-primary) 30%, var(--text-secondary) 100%);
+			-webkit-background-clip: text;
+			background-clip: text;
+			-webkit-text-fill-color: transparent;
+		}
+
+		.close-btn {
+			font-size: 1.5rem;
+			color: var(--text-muted);
+			cursor: pointer;
+			transition: color 0.2s;
+			line-height: 1;
+		}
+
+		.close-btn:hover {
+			color: var(--text-primary);
+		}
+
+		.profile-preview {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 0.75rem;
+			margin-bottom: 2rem;
+			text-align: center;
+		}
+
+		.profile-preview img {
+			width: 90px;
+			height: 90px;
+			border-radius: 50%;
+			border: 2px solid var(--accent-primary);
+			box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+			object-fit: cover;
+		}
+
+		.profile-preview h4 {
+			font-size: 1.15rem;
+			font-weight: 700;
+			color: var(--text-primary);
+		}
+
+		.modal-rank-soft-text {
+			font-size: 0.85rem;
+			color: var(--text-muted);
+			font-weight: 600;
+			opacity: 0.8;
+			letter-spacing: 0.02em;
+		}
+
+		.form-group {
+			display: flex;
+			flex-direction: column;
+			gap: 0.5rem;
+			margin-bottom: 2rem;
+		}
+
+		.form-group label {
+			font-size: 0.8rem;
+			color: var(--text-secondary);
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+		}
+
+		.form-group select {
+			background: rgba(0, 0, 0, 0.4);
+			border: 1px solid var(--glass-border);
+			color: var(--text-primary);
+			padding: 0.8rem 1rem;
+			border-radius: 12px;
+			font-family: inherit;
+			font-size: 0.9rem;
+			outline: none;
+			cursor: pointer;
+			transition: all 0.3s;
+			box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+		}
+
+		.form-group select:focus {
+			border-color: var(--accent-primary);
+			box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+		}
+
+		.modal-footer {
+			display: flex;
+			justify-content: flex-end;
+			gap: 0.75rem;
+			border-top: 1px solid rgba(255, 255, 255, 0.05);
+			padding-top: 1.25rem;
+		}
+
+		.btn {
+			padding: 0.75rem 1.5rem;
+			border-radius: 12px;
+			font-family: inherit;
+			font-size: 0.85rem;
+			font-weight: 600;
+			cursor: pointer;
+			transition: all 0.2s;
+			border: 1px solid transparent;
+		}
+
+		.btn-secondary {
+			background: transparent;
+			border-color: var(--glass-border);
+			color: var(--text-secondary);
+		}
+
+		.btn-secondary:hover {
+			background: rgba(255, 255, 255, 0.03);
+			color: var(--text-primary);
+		}
+
+		.btn-primary {
+			background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+			color: #ffffff;
+			box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+		}
+
+		/* Edit Layout Styles */
+		.edit-layout-btn {
+			padding: 0.5rem 1rem;
+			background: var(--glass-bg);
+			border: 1px solid var(--glass-border);
+			border-radius: 8px;
+			color: var(--text-primary);
+			font-family: inherit;
+			font-size: 0.85rem;
+			font-weight: 600;
+			cursor: pointer;
+			transition: all 0.2s;
+			display: flex;
+			align-items: center;
+			gap: 0.5rem;
+		}
+
+		.edit-layout-btn:hover {
+			border-color: var(--accent-primary);
+			background: rgba(99, 102, 241, 0.08);
+			transform: translateY(-1px);
+		}
+
+		.edit-layout-actions {
+			display: none;
+			align-items: center;
+			gap: 0.75rem;
+		}
+
+		.edit-active .edit-layout-actions {
+			display: flex;
+		}
+
+		.edit-active #editLayoutBtn {
+			display: none !important;
+		}
+
+		/* Category header edit UI */
+		.category-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-top: 2.5rem;
+			margin-bottom: 1rem;
+			border-bottom: 1px solid var(--glass-border);
+			padding-bottom: 0.5rem;
+		}
+
+		.category-title {
+			font-size: 1.15rem;
+			font-weight: 700;
+			color: var(--text-primary);
+			letter-spacing: -0.01em;
+		}
+
+		.category-edit-actions {
+			display: none;
+			gap: 0.5rem;
+		}
+
+		.edit-active .category-edit-actions {
+			display: flex;
+		}
+
+		.btn-cat-action {
+			padding: 0.3rem 0.6rem;
+			font-size: 0.75rem;
+			background: transparent;
+			border: 1px solid var(--glass-border);
+			border-radius: 6px;
+			color: var(--text-secondary);
+			cursor: pointer;
+			transition: all 0.2s;
+		}
+
+		.btn-cat-action:hover {
+			color: var(--text-primary);
+			border-color: var(--accent-primary);
+		}
+
+		.btn-cat-delete:hover {
+			color: var(--danger);
+			border-color: var(--danger);
+			background: rgba(239, 68, 68, 0.05);
+		}
+
+		/* Card edit controls overlay */
+		.metric-card {
+			position: relative;
+		}
+
+		.card-edit-overlay {
+			display: none;
+			position: absolute;
+			top: 0.5rem;
+			right: 0.5rem;
+			background: rgba(15, 23, 42, 0.9);
+			border: 1px solid var(--glass-border);
+			border-radius: 8px;
+			padding: 0.25rem;
+			z-index: 10;
+			gap: 0.25rem;
+			backdrop-filter: blur(10px);
+		}
+
+		.edit-active .card-edit-overlay {
+			display: flex;
+		}
+
+		.btn-card-edit {
+			width: 24px;
+			height: 24px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 0.75rem;
+			background: transparent;
+			border: none;
+			color: var(--text-secondary);
+			cursor: pointer;
+			border-radius: 4px;
+			transition: all 0.2s;
+		}
+
+		.btn-card-edit:hover {
+			color: var(--text-primary);
+			background: rgba(255, 255, 255, 0.08);
+		}
+
+		.btn-card-delete:hover {
+			color: var(--danger);
+			background: rgba(239, 68, 68, 0.15);
+		}
+
+		/* Add category card at bottom of dashboard when editing */
+		.add-category-section {
+			display: none;
+			justify-content: center;
+			margin-top: 2rem;
+			padding: 1.5rem;
+			border: 2px dashed var(--glass-border);
+			border-radius: 20px;
+			cursor: pointer;
+			color: var(--text-secondary);
+			transition: all 0.3s;
+		}
+
+		.edit-active .add-category-section {
+			display: flex;
+		}
+
+		.add-category-section:hover {
+			border-color: var(--accent-primary);
+			color: var(--text-primary);
+			background: rgba(99, 102, 241, 0.02);
+		}
+
+		/* Unused pool style */
+		.unused-pool-section {
+			display: none;
+			margin-top: 3rem;
+			border-top: 1px solid var(--glass-border);
+			padding-top: 1.5rem;
+		}
+
+		.edit-active .unused-pool-section {
+			display: block;
+		}
+
+		.unused-pool-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+			gap: 1.25rem;
+			margin-top: 1rem;
+		}
+	</style>
+</head>
+
+<body>
+
+	<!-- Loading overlay used during bot initialization -->
+	<div id="loadingOverlay" class="loading-overlay">
+		<div class="spinner"></div>
+		<div class="loading-text" id="loadingMessage">Connecting to bot status...</div>
+	</div>
+
+	<!-- INCLUDE_SIDEBAR -->
+
+	<!-- Main content panel -->
+	<main>
+		<header class="dashboard-header">
+			<div class="header-title">
+				<h2>System Status</h2>
+				<p>Real-time reliability metrics and bot diagnostic information.</p>
+			</div>
+			<div style="display: flex; align-items: center; gap: 1rem;">
+				<button id="editLayoutBtn" class="edit-layout-btn admin-only" style="display: none;" onclick="toggleEditMode()">✏️ Edit Layout</button>
+				<div class="edit-layout-actions">
+					<button class="edit-layout-btn" style="background: rgba(16, 185, 129, 0.1); border-color: var(--success); color: var(--success);" onclick="saveLayout()">💾 Save Layout</button>
+					<button class="edit-layout-btn" style="background: rgba(239, 68, 68, 0.1); border-color: var(--danger); color: var(--danger);" onclick="cancelEditLayout()">❌ Cancel</button>
+				</div>
+				<div id="liveStatusBadge" class="live-badge offline">
+					<div class="pulse-ring"></div>
+					<span id="liveStatusText">Offline</span>
+				</div>
+			</div>
+		</header>
+
+		<!-- Dynamic Metrics Widgets Panel -->
+		<div id="dashboardWidgets"></div>
+
+		<!-- Add Category Section (Edit mode only) -->
+		<div class="add-category-section" onclick="addCategory()">
+			<span>➕ Add New Category</span>
+		</div>
+
+		<!-- Unused Widgets Pool Section (Edit mode only) -->
+		<section class="unused-pool-section">
+			<div class="category-header" style="margin-top: 0; border-bottom-style: dashed; padding-bottom: 0.5rem; margin-bottom: 1.5rem;">
+				<span class="category-title" style="color: var(--text-secondary);">📦 Unused Widgets Pool</span>
+			</div>
+			<div id="unusedWidgetsGrid" class="unused-pool-grid"></div>
+		</section>
+
+		<!-- Reliability Grids -->
+		<section class="section-card">
+			<div class="section-title">📊 Reliability &amp; Outage History</div>
+
+			<div class="grid-container">
+				<!-- Hourly Block Grid -->
+				<div class="grid-row">
+					<div class="grid-row-header">
+						<span class="grid-label">Last 24 Hours</span>
+						<span class="grid-meta">Hourly checks based on heartbeat activity</span>
+					</div>
+					<div id="hourlyReliability" class="reliability-blocks">
+						<!-- JavaScript will inject 24 blocks here -->
+					</div>
+					<div style="display: flex; justify-content: space-between; align-items: center;">
+						<div class="grid-legend">
+							<div class="legend-item">
+								<div class="legend-color active"></div><span>Online</span>
+							</div>
+							<div class="legend-item">
+								<div class="legend-color degraded"></div><span>Degraded Uptime</span>
+							</div>
+							<div class="legend-item">
+								<div class="legend-color down"></div><span>Outage</span>
+							</div>
+							<div class="legend-item">
+								<div class="legend-color no-data"></div><span>No Data</span>
+							</div>
+						</div>
+						<div style="font-size: 0.75rem; color: var(--text-muted);">24 hrs ago &rarr; Now</div>
+					</div>
+				</div>
+
+				<!-- Daily Block Grid -->
+				<div class="grid-row" style="margin-top: 0.5rem;">
+					<div class="grid-row-header">
+						<span class="grid-label">Last 24 Days</span>
+						<span class="grid-meta">Daily summary blocks</span>
+					</div>
+					<div id="dailyReliability" class="reliability-blocks">
+						<!-- JavaScript will inject 24 blocks here -->
+					</div>
+					<div style="display: flex; justify-content: space-between; align-items: center;">
+						<div class="grid-legend">
+							<div class="legend-item">
+								<div class="legend-color active"></div><span>100% Online</span>
+							</div>
+							<div class="legend-item">
+								<div class="legend-color degraded"></div><span>&gt;95% Uptime</span>
+							</div>
+							<div class="legend-item">
+								<div class="legend-color down"></div><span>Outages</span>
+							</div>
+							<div class="legend-item">
+								<div class="legend-color no-data"></div><span>No Data</span>
+							</div>
+						</div>
+						<div style="font-size: 0.75rem; color: var(--text-muted);">24 days ago &rarr; Today</div>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- Outages Log -->
+		<section class="section-card">
+			<div class="section-title">⚠️ Recent Outages (Past 24 Days)</div>
+			<div id="outagesLogContainer" class="outages-list">
+				<!-- JavaScript will inject outages log here -->
+			</div>
+		</section>
+	</main>
+
+	<!-- Profile Modal Settings overlay -->
+	<div id="profileModal" class="modal-overlay" onclick="closeProfileModal(event)">
+		<div class="modal-content" onclick="event.stopPropagation()">
+			<div class="modal-header">
+				<h3>Profile Settings</h3>
+				<span class="close-btn" onclick="toggleModal(false)">&times;</span>
+			</div>
+			<div class="modal-body">
+				<div class="profile-preview">
+					<img id="modalAvatar" src="" alt="Avatar">
+					<h4 id="modalUsername">Username</h4>
+					<p id="modalRankText" class="modal-rank-soft-text"></p>
+				</div>
+				<div class="form-group">
+					<label for="rankSelect">Choose Display Rank</label>
+					<select id="rankSelect" onchange="previewRankChange()">
+						<!-- Options loaded dynamically -->
+					</select>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button class="btn btn-secondary" onclick="toggleModal(false)">Cancel</button>
+				<button class="btn btn-primary" onclick="saveProfileConfig()">Save Changes</button>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		let currentLayout = null;
+		let backupLayout = null;
+		let isEditing = false;
+
+		const WIDGET_TEMPLATES = {
+			"uptime": {
+				id: "uptime",
+				title: "Uptime",
+				icon: "⏳",
+				desc: "Uptime since last reboot",
+				valueId: "metricUptime"
+			},
+			"servers": {
+				id: "servers",
+				title: "Servers",
+				icon: "🖥️",
+				desc: "Active guild connections",
+				valueId: "metricServers"
+			},
+			"installs": {
+				id: "installs",
+				title: "Installs",
+				icon: "👤",
+				desc: "Approx. user installations",
+				valueId: "metricInstalls"
+			},
+			"environment": {
+				id: "environment",
+				title: "Environment",
+				icon: "💻",
+				desc: "Host detection environment",
+				valueId: "metricEnv",
+				descId: "metricEnvDesc"
+			},
+			"api_ping": {
+				id: "api_ping",
+				title: "API Ping",
+				icon: "⚡",
+				desc: "WebSocket response latency",
+				valueId: "metricPing"
+			},
+			"ram_usage": {
+				id: "ram_usage",
+				title: "RAM Usage",
+				icon: "🧠",
+				desc: "Memory heap size allocation",
+				valueId: "metricMemory",
+				descId: "metricMemoryDesc"
+			}
+		};
+
+		async function fetchLayoutConfig() {
+			try {
+				const res = await fetch('/api/site/config');
+				if (res.ok) {
+					currentLayout = await res.json();
+					backupLayout = JSON.parse(JSON.stringify(currentLayout));
+					renderWidgets();
+				}
+			} catch (e) {
+				console.error('Failed to load layout configuration:', e);
+			}
+		}
+
+		function renderWidgets() {
+			const container = document.getElementById('dashboardWidgets');
+			if (!container) return;
+			container.innerHTML = '';
+
+			if (!currentLayout || !currentLayout.categories || currentLayout.categories.length === 0) {
+				container.innerHTML = '<div style="color: var(--text-muted); padding: 2rem; text-align: center; border: 1px dashed var(--glass-border); border-radius: 12px; margin-top: 1rem; width: 100%;">No categories configured. Click Edit Layout to add one!</div>';
+				renderUnusedPool();
+				return;
+			}
+
+			currentLayout.categories.forEach((cat, catIndex) => {
+				const catSection = document.createElement('section');
+				catSection.className = 'section-card metrics-section';
+				catSection.style.background = 'transparent';
+				catSection.style.border = 'none';
+				catSection.style.padding = '0';
+				catSection.style.boxShadow = 'none';
+				catSection.style.marginBottom = '2rem';
+
+				const catHeader = document.createElement('div');
+				catHeader.className = 'category-header';
+				
+				const titleSpan = document.createElement('span');
+				titleSpan.className = 'category-title';
+				titleSpan.textContent = cat.name;
+				catHeader.appendChild(titleSpan);
+
+				const actionsDiv = document.createElement('div');
+				actionsDiv.className = 'category-edit-actions';
+
+				const renameBtn = document.createElement('button');
+				renameBtn.className = 'btn-cat-action';
+				renameBtn.textContent = '✏️ Rename';
+				renameBtn.onclick = () => renameCategory(catIndex);
+				actionsDiv.appendChild(renameBtn);
+
+				const deleteBtn = document.createElement('button');
+				deleteBtn.className = 'btn-cat-action btn-cat-delete';
+				deleteBtn.textContent = '🗑️ Delete';
+				deleteBtn.onclick = () => deleteCategory(catIndex);
+				actionsDiv.appendChild(deleteBtn);
+
+				catHeader.appendChild(actionsDiv);
+				catSection.appendChild(catHeader);
+
+				const grid = document.createElement('div');
+				grid.className = 'metrics-grid';
+
+				if (cat.cards.length === 0) {
+					const emptyPlaceholder = document.createElement('div');
+					emptyPlaceholder.style.cssText = 'grid-column: 1 / -1; color: var(--text-muted); font-size: 0.85rem; padding: 1.5rem; text-align: center; border: 1px dashed var(--glass-border); border-radius: 12px; width: 100%;';
+					emptyPlaceholder.textContent = isEditing ? 'Empty Category. Add widgets from the pool below!' : 'No widgets in this category.';
+					grid.appendChild(emptyPlaceholder);
+				} else {
+					cat.cards.forEach((cardId, cardIndex) => {
+						const cardHtml = renderCardHtml(cardId, isEditing, catIndex, cardIndex);
+						grid.insertAdjacentHTML('beforeend', cardHtml);
+					});
+				}
+
+				catSection.appendChild(grid);
+				container.appendChild(catSection);
+			});
+
+			renderUnusedPool();
+		}
+
+		function renderCardHtml(cardId, isInEditMode, catIndex, cardIndex) {
+			const template = WIDGET_TEMPLATES[cardId];
+			if (!template) return '';
+
+			let editOverlay = '';
+			if (isInEditMode) {
+				editOverlay = `
+					<div class="card-edit-overlay">
+						<button class="btn-card-edit" title="Move Up/Left" onclick="moveCard(${catIndex}, ${cardIndex}, -1)">&larr;</button>
+						<button class="btn-card-edit" title="Move Down/Right" onclick="moveCard(${catIndex}, ${cardIndex}, 1)">&rarr;</button>
+						<button class="btn-card-edit" title="Change Category" onclick="changeCardCategoryPrompt(${catIndex}, ${cardIndex})">📁</button>
+						<button class="btn-card-edit btn-card-delete" title="Remove Card" onclick="removeCard(${catIndex}, ${cardIndex})">&times;</button>
+					</div>
+				`;
+			}
+
+			const descIdAttr = template.descId ? `id="${template.descId}"` : '';
+			return `
+				<div class="metric-card" data-card-id="${cardId}">
+					${editOverlay}
+					<div class="metric-icon">${template.icon}</div>
+					<div class="metric-content">
+						<span class="metric-title">${template.title}</span>
+						<span id="${template.valueId}" class="metric-value">--</span>
+						<span ${descIdAttr} class="metric-desc">${template.desc}</span>
+					</div>
+				</div>
+			`;
+		}
+
+		function renderUnusedPool() {
+			const grid = document.getElementById('unusedWidgetsGrid');
+			if (!grid) return;
+			grid.innerHTML = '';
+
+			const usedCards = new Set();
+			if (currentLayout && currentLayout.categories) {
+				currentLayout.categories.forEach(cat => {
+					cat.cards.forEach(cardId => usedCards.add(cardId));
+				});
+			}
+
+			const unusedCards = Object.keys(WIDGET_TEMPLATES).filter(cardId => !usedCards.has(cardId));
+
+			if (unusedCards.length === 0) {
+				grid.innerHTML = '<div style="grid-column: 1 / -1; color: var(--text-muted); font-size: 0.85rem; padding: 1.5rem; text-align: center;">All widgets are currently placed.</div>';
+				return;
+			}
+
+			unusedCards.forEach(cardId => {
+				const template = WIDGET_TEMPLATES[cardId];
+				
+				let catSelectOptions = currentLayout.categories.map((cat, idx) => 
+					`<option value="${idx}">${cat.name}</option>`
+				).join('');
+
+				const cardEl = document.createElement('div');
+				cardEl.className = 'metric-card';
+				cardEl.style.opacity = '0.7';
+				cardEl.innerHTML = `
+					<div class="metric-icon">${template.icon}</div>
+					<div class="metric-content" style="flex-grow: 1;">
+						<span class="metric-title">${template.title}</span>
+						<span class="metric-desc">${template.desc}</span>
+					</div>
+					<div style="display: flex; flex-direction: column; gap: 0.35rem; align-items: flex-end; justify-content: center; min-width: 100px;">
+						<select id="addSelect_${cardId}" style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: var(--text-primary); font-size: 0.75rem; border-radius: 4px; padding: 0.2rem; cursor: pointer; max-width: 100px;">
+							${catSelectOptions}
+						</select>
+						<button class="btn-cat-action" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="addCardToCategory('${cardId}')">➕ Add</button>
+					</div>
+				`;
+				grid.appendChild(cardEl);
+			});
+		}
+
+		function toggleEditMode() {
+			if (!window.currentUser || !window.currentUser.isAdmin) return;
+			isEditing = !isEditing;
+			
+			const mainEl = document.querySelector('main');
+			if (isEditing) {
+				mainEl.classList.add('edit-active');
+			} else {
+				mainEl.classList.remove('edit-active');
+			}
+			renderWidgets();
+		}
+
+		function renameCategory(catIndex) {
+			const cat = currentLayout.categories[catIndex];
+			if (!cat) return;
+			const newName = prompt('Enter new category name:', cat.name);
+			if (newName && newName.trim()) {
+				cat.name = newName.trim();
+				renderWidgets();
+			}
+		}
+
+		function deleteCategory(catIndex) {
+			const cat = currentLayout.categories[catIndex];
+			if (!cat) return;
+			if (confirm(`Are you sure you want to delete category "${cat.name}"? Cards inside will be sent to the pool.`)) {
+				currentLayout.categories.splice(catIndex, 1);
+				renderWidgets();
+			}
+		}
+
+		function addCategory() {
+			const name = prompt('Enter new category name:');
+			if (name && name.trim()) {
+				const newCat = {
+					id: 'cat_' + Date.now(),
+					name: name.trim(),
+					cards: []
+				};
+				currentLayout.categories.push(newCat);
+				renderWidgets();
+			}
+		}
+
+		function removeCard(catIndex, cardIndex) {
+			currentLayout.categories[catIndex].cards.splice(cardIndex, 1);
+			renderWidgets();
+		}
+
+		function addCardToCategory(cardId) {
+			const select = document.getElementById(`addSelect_${cardId}`);
+			if (!select) return;
+			const catIdx = parseInt(select.value);
+			if (isNaN(catIdx) || !currentLayout.categories[catIdx]) return;
+			currentLayout.categories[catIdx].cards.push(cardId);
+			renderWidgets();
+		}
+
+		function moveCard(catIndex, cardIndex, direction) {
+			const cards = currentLayout.categories[catIndex].cards;
+			const targetIndex = cardIndex + direction;
+			if (targetIndex < 0 || targetIndex >= cards.length) return;
+			
+			const temp = cards[cardIndex];
+			cards[cardIndex] = cards[targetIndex];
+			cards[targetIndex] = temp;
+			renderWidgets();
+		}
+
+		function changeCardCategoryPrompt(catIndex, cardIndex) {
+			const cardId = currentLayout.categories[catIndex].cards[cardIndex];
+			const options = currentLayout.categories.map((cat, idx) => `${idx}: ${cat.name}`).join('\n');
+			const choice = prompt(`Select target category number:\n\n${options}`, catIndex);
+			if (choice === null) return;
+			const targetIdx = parseInt(choice);
+			if (isNaN(targetIdx) || !currentLayout.categories[targetIdx]) {
+				alert('Invalid category choice.');
+				return;
+			}
+			currentLayout.categories[catIndex].cards.splice(cardIndex, 1);
+			currentLayout.categories[targetIdx].cards.push(cardId);
+			renderWidgets();
+		}
+
+		async function saveLayout() {
+			try {
+				const res = await fetch('/api/site/config', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(currentLayout)
+				});
+				if (res.ok) {
+					backupLayout = JSON.parse(JSON.stringify(currentLayout));
+					toggleEditMode();
+					updateStatus();
+				} else {
+					alert('Failed to save layout configuration. Server error.');
+				}
+			} catch (e) {
+				alert('Error saving layout: ' + e.message);
+			}
+		}
+
+		function cancelEditLayout() {
+			currentLayout = JSON.parse(JSON.stringify(backupLayout));
+			toggleEditMode();
+		}
+
+		// Setup update interval
+		const POLL_INTERVAL = 60000; // Sync with server every 1 minute
+		let initialLoadDone = false;
+		let currentUptimeSeconds = 0;
+		let lastFetchTime = 0;
+
+		function formatUptime(seconds) {
+			const d = Math.floor(seconds / (3600 * 24));
+			const h = Math.floor((seconds % (3600 * 24)) / 3600);
+			const m = Math.floor((seconds % 3600) / 60);
+			const s = Math.floor(seconds % 60);
+
+			const parts = [];
+			if (d > 0) parts.push(`${d}d`);
+			if (h > 0) parts.push(`${h}h`);
+			if (m > 0) parts.push(`${m}m`);
+			parts.push(`${s}s`);
+
+			return parts.join(' ');
+		}
+
+		function formatTimeAgo(timestamp) {
+			const diff = Date.now() - timestamp;
+			const mins = Math.floor(diff / 60000);
+			if (mins < 1) return 'just now';
+			if (mins < 60) return `${mins}m ago`;
+			const hrs = Math.floor(mins / 60);
+			if (hrs < 24) return `${hrs}h ago`;
+			const days = Math.floor(hrs / 24);
+			return `${days}d ago`;
+		}
+
+		function renderBlocks(containerId, blocksData, isDaily) {
+			const container = document.getElementById(containerId);
+			container.innerHTML = '';
+
+			if (!blocksData || !blocksData.length) {
+				for (let i = 0; i < 24; i++) {
+					const block = document.createElement('div');
+					block.className = 'block no-data';
+					block.title = 'No heartbeat record';
+					container.appendChild(block);
+				}
+				return;
+			}
+
+			blocksData.forEach((item, index) => {
+				const block = document.createElement('div');
+				block.className = `block ${item.status}`;
+
+				// Label tooltip description
+				const timeframe = isDaily ? 'Day' : 'Hour';
+				const unit = isDaily ? 'days' : 'hours';
+				const count = 23 - index;
+				const label = count === 0 ? `Current ${timeframe}` : `${count} ${unit} ago`;
+
+				let tooltip = `${label}: `;
+				if (item.status === 'active') {
+					tooltip += isDaily ? '100% operational' : 'Operational (All checks passed)';
+				} else if (item.status === 'degraded') {
+					tooltip += isDaily ? 'Slightly degraded (>95% operational)' : 'Minor outage detected';
+				} else if (item.status === 'down') {
+					tooltip += 'Outage detected';
+				} else {
+					tooltip += 'No heartbeat recorded';
+				}
+
+				if (item.info) {
+					tooltip += ` (${item.info})`;
+				}
+
+				block.title = tooltip;
+				container.appendChild(block);
+			});
+		}
+
+		async function updateStatus() {
+			try {
+				const res = await fetch('/api/status');
+				if (!res.ok) throw new Error('API server returned status: ' + res.status);
+				const data = await res.json();
+
+				// Hide loading overlay
+				const overlay = document.getElementById('loadingOverlay');
+				if (!overlay.classList.contains('hidden')) {
+					overlay.classList.add('hidden');
+				}
+
+				// User profile section rendering
+				const profileSection = document.getElementById('userProfileSection');
+				const adminOnlyItems = document.querySelectorAll('.admin-only');
+
+				// Keep current user cached globally
+				window.currentUser = data.user;
+
+				if (data.user) {
+					// Format rank label next to username
+					const rankText = data.user.rankText ? ` <span class="rank-soft-text">${data.user.rankText}</span>` : '';
+
+					// Logged in
+					profileSection.innerHTML = `
+						<div class="user-card">
+							<div class="user-details" onclick="openProfileModal()" style="cursor: pointer;">
+								<img src="${data.user.avatarUrl}" alt="User Avatar" class="user-avatar" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+								<span class="user-name" title="${data.user.username}">${data.user.username}${rankText}</span>
+							</div>
+							<a href="/api/auth/logout" class="logout-btn" title="Logout" onclick="event.stopPropagation()">
+								<svg style="width:16px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+									<path d="M16 17v-3H9v-4h7V7l5 5-5 5M14 2a2 2 0 0 1 2 2v2h-2V4H5v16h9v-2h2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9z"/>
+								</svg>
+							</a>
+						</div>
+					`;
+
+					// Control Admin-only tabs visibility
+					if (data.user.isAdmin) {
+						adminOnlyItems.forEach(el => el.style.display = 'block');
+					} else {
+						adminOnlyItems.forEach(el => el.style.display = 'none');
+					}
+				} else {
+					// Logged out
+					profileSection.innerHTML = `
+						<a href="/api/auth/login" class="login-btn">
+							<svg viewBox="0 0 127.14 96.36">
+								<path d="M107.7,8.07A105.15,105.15,0,0,0,77.26,0a77.19,77.19,0,0,0-3.3,6.83A96.67,96.67,0,0,0,53.22,6.83,77.19,77.19,0,0,0,49.88,0,105.15,105.15,0,0,0,19.44,8.07C3.66,31.58-1.86,54.65,1,77.53A105.73,105.73,0,0,0,32,96.36a77.7,77.7,0,0,0,6.63-10.85,68.43,68.43,0,0,1-10.5-5c.91-.67,1.81-1.37,2.67-2.1a75.22,75.22,0,0,0,72.63,0c.86.73,1.76,1.43,2.67,2.1a68.43,68.43,0,0,1-10.5,5,77.7,77.7,0,0,0,6.63,10.85,105.73,105.73,0,0,0,31-18.83C129,54.65,123.51,31.58,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53S36.18,40.36,42.45,40.36,53.83,46,53.83,53,48.72,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.24,60,73.24,53S78.41,40.36,84.69,40.36,96.07,46,96.07,53,91,65.69,84.69,65.69Z"/>
+							</svg>
+							<span>Login with Discord</span>
+						</a>
+					`;
+
+					// Hide Admin-only tabs
+					adminOnlyItems.forEach(el => el.style.display = 'none');
+				}
+
+				// Bot header updating
+				if (data.botTag) {
+					document.getElementById('botTagName').innerText = data.botTag.split('#')[0];
+					document.title = `${data.botTag.split('#')[0]} - Status Dashboard`;
+				}
+				if (data.botAvatar) {
+					document.getElementById('botAvatar').src = data.botAvatar;
+				}
+
+				// Status badges and indicators
+				const sidebarStatusDot = document.getElementById('sidebarStatusDot');
+				const liveStatusBadge = document.getElementById('liveStatusBadge');
+				const liveStatusText = document.getElementById('liveStatusText');
+
+				// Reset status classes
+				sidebarStatusDot.className = 'status-dot';
+				liveStatusBadge.className = 'live-badge';
+
+				if (data.online) {
+					sidebarStatusDot.classList.add('online');
+					liveStatusBadge.classList.add('online');
+					liveStatusText.innerText = 'Online';
+				} else if (data.status === 'starting') {
+					sidebarStatusDot.classList.add('starting');
+					liveStatusBadge.classList.add('starting');
+					liveStatusText.innerText = 'Connecting...';
+					document.getElementById('loadingMessage').innerText = 'Bot is starting up, please wait...';
+					overlay.classList.remove('hidden');
+					return; // Stop updating content since bot is not ready yet
+				} else {
+					liveStatusBadge.classList.add('offline');
+					liveStatusText.innerText = 'Offline';
+				}
+
+				// Populate raw stats cards
+				if (data.uptime !== undefined) {
+					currentUptimeSeconds = data.uptime;
+					lastFetchTime = Date.now();
+					document.getElementById('metricUptime').innerText = formatUptime(currentUptimeSeconds);
+				}
+				document.getElementById('metricServers').innerText = data.servers !== undefined ? data.servers : '0';
+				document.getElementById('metricInstalls').innerText = data.installs !== undefined ? data.installs : '0';
+				document.getElementById('metricEnv').innerText = data.environment || 'Unknown';
+
+				if (data.environment === 'Local PC') {
+					document.getElementById('metricEnvDesc').innerText = 'Running on developer machine';
+				} else {
+					document.getElementById('metricEnvDesc').innerText = 'Running on VPS Hosting';
+				}
+
+				document.getElementById('metricPing').innerText = data.ping !== undefined ? `${data.ping} ms` : 'N/A';
+
+				if (data.memory && data.memory.heapUsed) {
+					document.getElementById('metricMemory').innerText = `${data.memory.heapUsed} MB`;
+					document.getElementById('metricMemoryDesc').innerText = `Heap limit: ${data.memory.heapTotal} MB`;
+				} else {
+					document.getElementById('metricMemory').innerText = 'N/A';
+					document.getElementById('metricMemoryDesc').innerText = 'Memory metrics unavailable';
+				}
+
+				// Render grids
+				renderBlocks('hourlyReliability', data.hourlyBlocks, false);
+				renderBlocks('dailyReliability', data.dailyBlocks, true);
+
+				// Render outages logs
+				const logContainer = document.getElementById('outagesLogContainer');
+				logContainer.innerHTML = '';
+
+				if (data.outages && data.outages.length > 0) {
+					data.outages.forEach(o => {
+						const item = document.createElement('div');
+						item.className = 'outage-item';
+
+						const startStr = new Date(o.start).toLocaleString('en-US', {
+							month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+						});
+						const endStr = new Date(o.end).toLocaleTimeString('en-US', {
+							hour: '2-digit', minute: '2-digit'
+						});
+
+						item.innerHTML = `
+							<div>
+								<span class="outage-time">${startStr} - ${endStr}</span>
+								<span style="color: var(--text-muted); font-size: 0.8rem; margin-left: 0.5rem;">(${formatTimeAgo(o.start)})</span>
+							</div>
+							<span class="outage-duration">${o.durationMin} min(s)</span>
+						`;
+						logContainer.appendChild(item);
+					});
+				} else {
+					logContainer.innerHTML = `
+						<div class="outage-ok">
+							<span>✅</span>
+							<span>No downtime or outages detected in the last 24 days.</span>
+						</div>
+					`;
+				}
+
+				initialLoadDone = true;
+
+			} catch (err) {
+				console.error('[Dashboard] Error polling status:', err);
+
+				// Handle offline visual state
+				const liveStatusBadge = document.getElementById('liveStatusBadge');
+				const liveStatusText = document.getElementById('liveStatusText');
+				const sidebarStatusDot = document.getElementById('sidebarStatusDot');
+
+				if (liveStatusBadge) {
+					liveStatusBadge.className = 'live-badge offline';
+					liveStatusText.innerText = 'Connection Error';
+				}
+				if (sidebarStatusDot) {
+					sidebarStatusDot.className = 'status-dot';
+				}
+
+				// If initial load fails, show connection error message
+				if (!initialLoadDone) {
+					document.getElementById('loadingMessage').innerText = 'Could not connect to bot status API. Retrying...';
+				}
+			}
+		}
+
+		// Live ticker for uptime to update every second on the client side
+		function tickUptime() {
+			if (!currentUptimeSeconds || !lastFetchTime) return;
+			const elapsedSeconds = (Date.now() - lastFetchTime) / 1000;
+			const liveUptime = currentUptimeSeconds + elapsedSeconds;
+			const el = document.getElementById('metricUptime');
+			if (el) {
+				el.innerText = formatUptime(liveUptime);
+			}
+		}
+
+		// Run initially, and start polling intervals
+		fetchLayoutConfig();
+		updateStatus();
+		setInterval(updateStatus, POLL_INTERVAL);
+		setInterval(tickUptime, 1000);
+
+		// Modal Controls for Profile Settings
+		const RANK_LABELS = {
+			"bot dev": "bot dev",
+			"den boundless resident": "den boundless resident",
+			"den disciple echoing": "den disciple echoing",
+			"den journeyer": "den journeyer",
+			"den member": "den member",
+			"member": "member"
+		};
+
+		function toggleModal(show) {
+			const modal = document.getElementById('profileModal');
+			if (show) {
+				modal.classList.add('active');
+			} else {
+				modal.classList.remove('active');
+			}
+		}
+
+		function openProfileModal() {
+			const user = window.currentUser;
+			if (!user) return;
+
+			document.getElementById('modalAvatar').src = user.avatarUrl;
+			document.getElementById('modalUsername').textContent = user.username;
+			document.getElementById('modalRankText').textContent = user.rankText || 'No custom rank active';
+
+			// Populate select
+			const select = document.getElementById('rankSelect');
+			select.innerHTML = '<option value="">None (Empty)</option>';
+
+			if (user.eligibleRanks && user.eligibleRanks.length > 0) {
+				user.eligibleRanks.forEach(rank => {
+					const opt = document.createElement('option');
+					opt.value = rank;
+					opt.textContent = RANK_LABELS[rank] || rank;
+					if (rank === user.displayRank) {
+						opt.selected = true;
+					}
+					select.appendChild(opt);
+				});
+			} else {
+				const opt = document.createElement('option');
+				opt.value = "";
+				opt.textContent = "No eligible ranks";
+				opt.disabled = true;
+				select.appendChild(opt);
+			}
+
+			toggleModal(true);
+		}
+
+		function closeProfileModal(event) {
+			if (event && event.target === document.getElementById('profileModal')) {
+				toggleModal(false);
+			}
+		}
+
+		function previewRankChange() {
+			const select = document.getElementById('rankSelect');
+			const chosen = select.value;
+			const rankTextPreview = chosen ? (RANK_LABELS[chosen] || '') : 'None (Empty)';
+			document.getElementById('modalRankText').textContent = rankTextPreview;
+		}
+
+		async function saveProfileConfig() {
+			const select = document.getElementById('rankSelect');
+			const chosenRank = select.value;
+
+			try {
+				const res = await fetch('/api/user/config', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({ displayRank: chosenRank })
+				});
+
+				if (!res.ok) {
+					throw new Error('Failed to save settings');
+				}
+
+				toggleModal(false);
+				updateStatus();
+			} catch (e) {
+				alert('Error saving rank choice: ' + e.message);
+			}
+		}
+	</script>
+</body>
+
+</html>

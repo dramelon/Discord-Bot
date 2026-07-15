@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Fluffingiously Dragooon - Home</title>
+	<!-- Fonts -->
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+	<style>
+		:root {
+			--bg-primary: #090d16;
+			--bg-secondary: #0f172a;
+			--glass-bg: rgba(15, 23, 42, 0.45);
+			--glass-border: rgba(255, 255, 255, 0.06);
+			--glass-glow: rgba(99, 102, 241, 0.05);
+			--text-primary: #f8fafc;
+			--text-secondary: #94a3b8;
+			--text-muted: #64748b;
+			
+			/* Accents */
+			--accent-primary: #6366f1; /* Indigo */
+			--accent-secondary: #8b5cf6; /* Violet */
+			--success: #10b981; /* Emerald */
+			--warning: #f59e0b; /* Amber */
+			--danger: #ef4444; /* Rose */
+		}
+
+		* {
+			box-sizing: border-box;
+			margin: 0;
+			padding: 0;
+		}
+
+		body {
+			font-family: 'Outfit', sans-serif;
+			background-color: var(--bg-primary);
+			color: var(--text-primary);
+			min-height: 100vh;
+			display: flex;
+			flex-direction: column;
+			background-image: 
+				radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+				radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.12) 0%, transparent 45%),
+				radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.04) 0%, transparent 50%);
+			background-attachment: fixed;
+			overflow-x: hidden;
+		}
+
+		/* Fixed header that changes styles when scrolled */
+		header {
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			height: 80px;
+			display: flex;
+			align-items: center;
+			padding: 0 2rem;
+			z-index: 1000;
+			transition: all 0.3s ease;
+			background: transparent;
+		}
+
+		header.scrolled {
+			background: rgba(9, 13, 22, 0.75);
+			backdrop-filter: blur(12px);
+			-webkit-backdrop-filter: blur(12px);
+			border-bottom: 1px solid var(--glass-border);
+			box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+		}
+
+		.header-container {
+			width: 100%;
+			max-width: 1200px;
+			margin: 0 auto;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+		}
+
+		.brand-logo {
+			display: flex;
+			align-items: center;
+			gap: 0.75rem;
+			font-weight: 700;
+			font-size: 1.25rem;
+			letter-spacing: -0.02em;
+			text-decoration: none;
+			color: var(--text-primary);
+		}
+
+		.logo-icon {
+			font-size: 1.5rem;
+		}
+
+		/* Header CTA Link (Dashboard alternative button) */
+		.header-cta-btn {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.5rem;
+			padding: 0.6rem 1.1rem;
+			background: var(--glass-bg);
+			border: 1px solid var(--glass-border);
+			color: var(--text-primary);
+			text-decoration: none;
+			font-weight: 600;
+			border-radius: 12px;
+			font-size: 0.85rem;
+			transition: all 0.3s ease;
+			backdrop-filter: blur(10px);
+			-webkit-backdrop-filter: blur(10px);
+		}
+
+		.header-cta-btn:hover {
+			background: rgba(99, 102, 241, 0.12);
+			border-color: rgba(99, 102, 241, 0.25);
+			transform: translateY(-1px);
+			box-shadow: 0 4px 12px rgba(99, 102, 241, 0.1);
+		}
+
+		/* Hero Container taking 100vh to isolate view */
+		.hero-container {
+			width: 100%;
+			min-height: 100vh;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			position: relative;
+			padding-top: 80px; /* Offset for fixed header */
+		}
+
+		.hero {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			text-align: center;
+			padding: 2rem;
+			max-width: 800px;
+			margin: 0 auto;
+			position: relative;
+			z-index: 5;
+		}
+
+		.hero-badge {
+			background: rgba(99, 102, 241, 0.08);
+			border: 1px solid rgba(99, 102, 241, 0.2);
+			padding: 0.4rem 1rem;
+			border-radius: 20px;
+			font-size: 0.8rem;
+			font-weight: 600;
+			color: var(--accent-primary);
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+			margin-bottom: 1.5rem;
+		}
+
+		.hero h1 {
+			font-size: 3.5rem;
+			font-weight: 800;
+			letter-spacing: -0.03em;
+			line-height: 1.1;
+			margin-bottom: 1.5rem;
+			background: linear-gradient(135deg, var(--text-primary) 30%, var(--text-secondary) 100%);
+			-webkit-background-clip: text;
+			background-clip: text;
+			-webkit-text-fill-color: transparent;
+		}
+
+		.hero p {
+			font-size: 1.15rem;
+			line-height: 1.6;
+			color: var(--text-secondary);
+			margin-bottom: 2.5rem;
+		}
+
+		.cta-button {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.75rem;
+			padding: 1rem 2rem;
+			background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+			color: #ffffff;
+			text-decoration: none;
+			font-weight: 600;
+			border-radius: 14px;
+			font-size: 1.05rem;
+			transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+			box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
+			border: 1px solid rgba(255, 255, 255, 0.1);
+		}
+
+		.cta-button:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 15px 30px -5px rgba(99, 102, 241, 0.6);
+			filter: brightness(1.1);
+		}
+
+		.cta-button:active {
+			transform: translateY(0);
+		}
+
+		/* Spacing divider to push features down */
+		.section-divider {
+			height: 1px;
+			background: radial-gradient(circle, var(--glass-border) 0%, transparent 70%);
+			width: 100%;
+			margin-top: 4rem;
+			margin-bottom: 6rem;
+		}
+
+		/* Features Cards */
+		.features-section {
+			width: 100%;
+			max-width: 1200px;
+			margin: 0 auto;
+			padding: 4rem 2rem;
+		}
+
+		.features-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+			gap: 1.5rem;
+		}
+
+		.feature-card {
+			background: var(--glass-bg);
+			border: 1px solid var(--glass-border);
+			border-radius: 18px;
+			padding: 2rem;
+			display: flex;
+			flex-direction: column;
+			gap: 0.85rem;
+			transition: all 0.3s ease;
+			backdrop-filter: blur(16px);
+			-webkit-backdrop-filter: blur(16px);
+		}
+
+		.feature-card:hover {
+			transform: translateY(-4px);
+			border-color: rgba(99, 102, 241, 0.2);
+			box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+		}
+
+		.feature-icon {
+			font-size: 1.75rem;
+			width: 46px;
+			height: 46px;
+			border-radius: 12px;
+			background: rgba(255, 255, 255, 0.02);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			color: var(--accent-primary);
+			border: 1px solid rgba(255, 255, 255, 0.02);
+		}
+
+		.feature-card h3 {
+			font-size: 1.15rem;
+			font-weight: 600;
+			color: var(--text-primary);
+		}
+
+		.feature-card p {
+			font-size: 0.9rem;
+			line-height: 1.5;
+			color: var(--text-secondary);
+		}
+
+		/* Footer */
+		footer {
+			width: 100%;
+			max-width: 1200px;
+			margin: 0 auto;
+			padding: 2.5rem 2rem;
+			text-align: center;
+			font-size: 0.8rem;
+			color: var(--text-muted);
+			border-top: 1px solid rgba(255, 255, 255, 0.02);
+		}
+
+		/* Slash Commands Section */
+		.commands-section {
+			width: 100%;
+			max-width: 1200px;
+			margin: 0 auto;
+			padding: 4rem 2rem;
+		}
+
+		.section-heading {
+			font-size: 2.25rem;
+			font-weight: 800;
+			text-align: center;
+			margin-bottom: 0.75rem;
+			background: linear-gradient(135deg, var(--text-primary) 30%, var(--text-secondary) 100%);
+			-webkit-background-clip: text;
+			background-clip: text;
+			-webkit-text-fill-color: transparent;
+		}
+
+		.section-subheading {
+			font-size: 1.05rem;
+			color: var(--text-secondary);
+			text-align: center;
+			margin-bottom: 3.5rem;
+		}
+
+		.commands-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+			gap: 1.5rem;
+			align-items: start;
+		}
+
+		.command-card {
+			background: var(--glass-bg);
+			border: 1px solid var(--glass-border);
+			border-radius: 20px;
+			padding: 1.5rem;
+			cursor: pointer;
+			transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+			overflow: hidden;
+			backdrop-filter: blur(16px);
+			-webkit-backdrop-filter: blur(16px);
+		}
+
+		.command-card:hover {
+			border-color: rgba(99, 102, 241, 0.25);
+			background: rgba(15, 23, 42, 0.6);
+			transform: translateY(-2px);
+		}
+
+		.command-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+		}
+
+		.command-name {
+			font-size: 1.1rem;
+			font-weight: 700;
+			color: var(--accent-primary);
+			display: flex;
+			align-items: center;
+			gap: 0.5rem;
+		}
+
+		.command-name code {
+			font-family: inherit;
+			color: var(--accent-primary);
+			font-size: 1.15rem;
+		}
+
+		.command-chevron {
+			font-size: 0.8rem;
+			color: var(--text-muted);
+			transition: transform 0.3s ease;
+		}
+
+		.command-card.active {
+			border-color: rgba(99, 102, 241, 0.3);
+			background: rgba(15, 23, 42, 0.7);
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+		}
+
+		.command-card.active .command-chevron {
+			transform: rotate(180deg);
+			color: var(--text-primary);
+		}
+
+		.command-body {
+			max-height: 0;
+			opacity: 0;
+			overflow: hidden;
+			transition: max-height 0.3s cubic-bezier(0, 1, 0, 1), opacity 0.2s ease;
+		}
+
+		.command-card.active .command-body {
+			max-height: 800px;
+			opacity: 1;
+			transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+			padding-top: 1rem;
+			border-top: 1px solid rgba(255, 255, 255, 0.05);
+			margin-top: 0.75rem;
+		}
+
+		.command-description {
+			font-size: 0.92rem;
+			line-height: 1.6;
+			color: var(--text-secondary);
+		}
+
+		.command-field {
+			margin-top: 0.75rem;
+			font-size: 0.85rem;
+			background: rgba(0, 0, 0, 0.15);
+			padding: 0.75rem 1rem;
+			border-radius: 12px;
+			border-left: 3px solid var(--accent-primary);
+			box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+		}
+
+		.field-name {
+			font-weight: 700;
+			color: var(--text-primary);
+			text-transform: uppercase;
+			font-size: 0.75rem;
+			letter-spacing: 0.05em;
+			margin-bottom: 0.35rem;
+		}
+
+		.field-value {
+			color: var(--text-secondary);
+			line-height: 1.5;
+		}
+
+		.field-value code {
+			font-family: monospace;
+			background: rgba(255, 255, 255, 0.05);
+			padding: 0.1rem 0.3rem;
+			border-radius: 4px;
+			font-size: 0.8rem;
+			color: var(--text-primary);
+		}
+
+		/* Responsive adjustments */
+		@media (max-width: 768px) {
+			.hero h1 {
+				font-size: 2.5rem;
+			}
+			.hero p {
+				font-size: 1rem;
+			}
+			header {
+				padding: 0 1.5rem;
+			}
+		}
+	</style>
+</head>
+<body>
+
+	<!-- Navigation Header -->
+	<header>
+		<div class="header-container">
+			<a href="/" class="brand-logo">
+				<span class="logo-icon">🐉</span>
+				<span>Fluffingiously Dragooon</span>
+			</a>
+			<a href="#" id="headerDashboardBtn" class="header-cta-btn">Dashboard &rarr;</a>
+		</div>
+	</header>
+
+	<!-- Hero Container for Fullscreen layout -->
+	<div class="hero-container">
+		<section class="hero">
+			<div class="hero-badge">Official Website</div>
+			<h1>Advanced Discord Bot Integration</h1>
+			<p>
+				A lightweight, robust, and highly responsive Discord companion bot designed for community automation, leveling metrics, presence updates, and real-time environment analytics.
+			</p>
+			<a href="#" id="dashboardBtn" class="cta-button">
+				<span>Open Status Dashboard</span>
+				<span>&rarr;</span>
+			</a>
+		</section>
+	</div>
+
+	<div class="section-divider"></div>
+
+	<!-- Features Section -->
+	<section class="features-section">
+		<div class="features-grid">
+			<!-- Feature 1 -->
+			<div class="feature-card">
+				<div class="feature-icon">📊</div>
+				<h3>Status Tracking</h3>
+				<p>Minutely reliability monitoring with historical block grids for both daily operations and hourly heartbeats.</p>
+			</div>
+
+			<!-- Feature 2 -->
+			<div class="feature-card">
+				<div class="feature-icon">🔊</div>
+				<h3>Auto Voice Channels</h3>
+				<p>Dynamic creation and automated lifecycle cleanup for voice channels on Discord guilds to optimize server spacing.</p>
+			</div>
+
+			<!-- Feature 3 -->
+			<div class="feature-card">
+				<div class="feature-icon">✨</div>
+				<h3>Leveling Systems</h3>
+				<p>XP multipliers, level-up card overlays, and messaging synergies connected with activity achievements.</p>
+			</div>
+
+			<!-- Feature 4 -->
+			<div class="feature-card">
+				<div class="feature-icon">🔒</div>
+				<h3>OAuth2 Security</h3>
+				<p>Secure browser cookie mapping utilizing state of the art HTTP-Only session encryption to lock unauthorized control panels.</p>
+			</div>
+		</div>
+	</section>
+
+	<!-- Commands Section Divider -->
+	<div class="section-divider" style="margin-top: 2rem; margin-bottom: 4rem;"></div>
+
+	<!-- Slash Commands Section -->
+	<section class="commands-section">
+		<h2 class="section-heading">Slash Commands</h2>
+		<p class="section-subheading">Browse core interactive commands you can run inside Discord</p>
+		
+		<div class="commands-grid">
+			<!-- Command 1: help -->
+			<div class="command-card" onclick="toggleCommand(this)">
+				<div class="command-header">
+					<span class="command-name"><code>/help</code></span>
+					<span class="command-chevron">▼</span>
+				</div>
+				<div class="command-body">
+					<p class="command-description">Displays a comprehensive list of all available commands, or retrieves detailed info and parameters for a specific command.</p>
+					<div class="command-field">
+						<div class="field-name">Parameters</div>
+						<div class="field-value"><code>command</code> (Optional) - The specific command you want to learn about.</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Command 2: ping -->
+			<div class="command-card" onclick="toggleCommand(this)">
+				<div class="command-header">
+					<span class="command-name"><code>/ping</code></span>
+					<span class="command-chevron">▼</span>
+				</div>
+				<div class="command-body">
+					<p class="command-description">Tests connection latency and response performance between the bot, Discord API, and hosting server.</p>
+					<div class="command-field">
+						<div class="field-name">Latency Diagnostics Returned</div>
+						<div class="field-value">
+							• <strong>Gateway Latency:</strong> Discord WebSocket connection heartbeat duration.<br>
+							• <strong>Round-Trip Response:</strong> Latency between command execution and message response.
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Command 3: clipboard -->
+			<div class="command-card" onclick="toggleCommand(this)">
+				<div class="command-header">
+					<span class="command-name"><code>/clipboard</code></span>
+					<span class="command-chevron">▼</span>
+				</div>
+				<div class="command-body">
+					<p class="command-description">Puts customized text and animated emojis onto a graphic clipboard/sign inside Discord chat.</p>
+					<div class="command-field">
+						<div class="field-name">Parameters</div>
+						<div class="field-value"><code>text</code> (Required) - The message content to render. Supports custom server emojis.</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Command 4: stretch -->
+			<div class="command-card" onclick="toggleCommand(this)">
+				<div class="command-header">
+					<span class="command-name"><code>/stretch</code></span>
+					<span class="command-chevron">▼</span>
+				</div>
+				<div class="command-body">
+					<p class="command-description">Generates a wide-stretched distorted animation of your avatar or a target user's avatar.</p>
+					<div class="command-field">
+						<div class="field-name">Parameters</div>
+						<div class="field-value"><code>target</code> (Optional) - The user whose avatar you want to stretch. Defaults to yourself.</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Command 5: color -->
+			<div class="command-card" onclick="toggleCommand(this)">
+				<div class="command-header">
+					<span class="command-name"><code>/color</code></span>
+					<span class="command-chevron">▼</span>
+				</div>
+				<div class="command-body">
+					<p class="command-description">Manage your personal role name colors and icons through an interactive button interface.</p>
+					<div class="command-field">
+						<div class="field-name">How to Use</div>
+						<div class="field-value">Run the command to open the control panel. Click **Customize** to open a modal where you can input a hex color code or custom icon URL, or click **Remove** to clear your customized role styles.</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Command 6: leaderboard -->
+			<div class="command-card" onclick="toggleCommand(this)">
+				<div class="command-header">
+					<span class="command-name"><code>/leaderboard</code></span>
+					<span class="command-chevron">▼</span>
+				</div>
+				<div class="command-body">
+					<p class="command-description">Displays the server's top 10 users ranked by activity metrics, levels, and total earned XP.</p>
+				</div>
+			</div>
+
+			<!-- Command 7: petpet -->
+			<div class="command-card" onclick="toggleCommand(this)">
+				<div class="command-header">
+					<span class="command-name"><code>/petpet</code></span>
+					<span class="command-chevron">▼</span>
+				</div>
+				<div class="command-body">
+					<p class="command-description">Generates an animated petpet petting hand GIF of your avatar or a chosen user's avatar.</p>
+					<div class="command-field">
+						<div class="field-name">Parameters</div>
+						<div class="field-value"><code>target</code> (Optional) - The user whose profile photo will be petted. Defaults to yourself.</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Command 8: rank -->
+			<div class="command-card" onclick="toggleCommand(this)">
+				<div class="command-header">
+					<span class="command-name"><code>/rank</code></span>
+					<span class="command-chevron">▼</span>
+				</div>
+				<div class="command-body">
+					<p class="command-description">Renders your profile achievement card displaying server ranks, active level tiers, and current XP progression metrics.</p>
+					<div class="command-field">
+						<div class="field-name">Parameters</div>
+						<div class="field-value"><code>target</code> (Optional) - Check another server member's active XP level and profile card.</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Command 9: status -->
+			<div class="command-card" onclick="toggleCommand(this)">
+				<div class="command-header">
+					<span class="command-name"><code>/status</code></span>
+					<span class="command-chevron">▼</span>
+				</div>
+				<div class="command-body">
+					<p class="command-description">Fetch the bot's health check summaries, hosting environment info, and WebSocket heartbeat indicators.</p>
+				</div>
+			</div>
+
+			<!-- Command 10: vc -->
+			<div class="command-card" onclick="toggleCommand(this)">
+				<div class="command-header">
+					<span class="command-name"><code>/vc</code></span>
+					<span class="command-chevron">▼</span>
+				</div>
+				<div class="command-body">
+					<p class="command-description">Configure your dynamic voice channel parameters. Joining the main lobby automatically creates a private voice channel for you.</p>
+					<div class="command-field">
+						<div class="field-name">Channel Controls</div>
+						<div class="field-value">Customize dynamic voice layouts, lock/unlock channels, set member limits, or rename channels via direct slash sub-commands.</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Footer -->
+	<footer>
+		<p>&copy; 2026 Fluffingiously Dragooon. All rights reserved.</p>
+		<p style="margin-top: 0.25rem;">Domain: <a href="https://furred.site" style="color: var(--text-secondary); text-decoration: none;">furred.site</a></p>
+	</footer>
+
+	<script>
+		// Setup dashboard link dynamically based on environment
+		const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+		const dashboardBtn = document.getElementById('dashboardBtn');
+		const headerDashboardBtn = document.getElementById('headerDashboardBtn');
+		
+		const targetUrl = isLocal ? '/dashboard' : 'https://bot.furred.site/';
+		dashboardBtn.href = targetUrl;
+		headerDashboardBtn.href = targetUrl;
+
+		// Listen to scroll position to apply glassy headers background
+		window.addEventListener('scroll', () => {
+			const header = document.querySelector('header');
+			if (window.scrollY > 50) {
+				header.classList.add('scrolled');
+			} else {
+				header.classList.remove('scrolled');
+			}
+		});
+
+		// Toggle Slash Command Card accordion behavior
+		function toggleCommand(card) {
+			const isActive = card.classList.contains('active');
+			
+			// Close other open cards
+			document.querySelectorAll('.command-card').forEach(c => {
+				c.classList.remove('active');
+			});
+			
+			// If the clicked card wasn't active, open it
+			if (!isActive) {
+				card.classList.add('active');
+			}
+		}
+	</script>
+</body>
+</html>

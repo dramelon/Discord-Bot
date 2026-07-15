@@ -17,8 +17,8 @@ module.exports = {
 
 		await interaction.deferReply();
 
-		// Use server avatar if available, otherwise fallback to main profile avatar
-		const source = targetMember
+		// Use server avatar if available and method exists, otherwise fallback to main profile avatar
+		const source = (targetMember && typeof targetMember.displayAvatarURL === 'function')
 			? targetMember.displayAvatarURL({ extension: 'png', size: 256, forceStatic: true })
 			: targetUser.displayAvatarURL({ extension: 'png', size: 256, forceStatic: true });
 

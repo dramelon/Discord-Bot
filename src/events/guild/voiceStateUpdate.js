@@ -1,5 +1,5 @@
 const { Events, ChannelType, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
-const { addChannel, getChannel, updateChannel, removeChannel } = require('../../utils/tempVCManager');
+const { tempChannels, addChannel, getChannel, updateChannel, removeChannel } = require('../../utils/tempVCManager');
 const { getConfig } = require('../../utils/configManager');
 
 const DELETE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
@@ -12,6 +12,8 @@ module.exports = {
         // Load server-specific configurations
         const guildId = newState.guild.id;
         const config = getConfig(guildId);
+        if (!config || !config.tempVCCreateChannelId) return;
+        
         const createVcChannelId = config.tempVCCreateChannelId;
         const tempVcCategoryId = config.tempVCCategoryId;
         const nameTemplate = config.tempVCNameTemplate;
@@ -19,12 +21,35 @@ module.exports = {
         // --- 1. Handle user joining the "Create VC" channel ---
         if (newState.channelId === createVcChannelId) {
             try {
+                // Check if this user already owns an existing temporary VC
+                let existingChannel = null;
+                for (const [chanId, data] of tempChannels.entries()) {
+                    if (data.ownerId === member.id) {
+                        const channel = newState.guild.channels.cache.get(chanId);
+                        if (channel) {
+                            existingChannel = channel;
+                            break;
+                        }
+                    }
+                }
+
+                if (existingChannel) {
+                    // Cancel deletion timer since they joined
+                    const vcData = getChannel(existingChannel.id);
+                    if (vcData && vcData.timer) {
+                        clearTimeout(vcData.timer);
+                        updateChannel(existingChannel.id, { timer: null });
+                    }
+
+                    await member.voice.setChannel(existingChannel);
+                    return;
+                }
                 // Resolve name template
-                const displayName = member.nickname || member.user.username;
+                const displayName = member.user.globalName;
                 const username = member.user.username;
                 const roomName = nameTemplate
-                    .replace(/{user}/g, displayName)
-                    .replace(/{user-name}/g, username);
+                    .replace(/{u}/g, username)
+                    .replace(/{d}/g, displayName);
 
                 // Create the new channel
                 const newChannel = await newState.guild.channels.create({
@@ -52,16 +77,48 @@ module.exports = {
                 await member.voice.setChannel(newChannel);
 
                 // Register the channel in our memory manager
-                addChannel(newChannel.id, member.id, false);
+                addChannel(newChannel.id, newChannel.guild.id, member.id, newChannel.name, false, []);
 
-                // Send the welcome message to the text-in-voice chat
-                const embed = new EmbedBuilder()
-                    .setColor(0x3498DB)
-                    .setTitle(`Welcome to your room, ${member.nickname || member.user.username}!`)
-                    .setDescription(`**Basic Information:**\n- You are the room owner. You have full permissions over this channel.\n- The room will be automatically deleted 5 minutes after everyone leaves.\n\n**Commands List:**\n\`/vc name <new_name>\`: Change room name\n\`/vc add <user>\`: Add a user\n\`/vc remove <user>\`: Remove a user\n\`/vc kick <user>\`: Kick a user\n\`/vc invite <user>\`: Invite a user\n\`/vc lock [state]\`: Lock or unlock the room`)
-                    .setFooter({ text: 'Use these commands via /vc' });
+                // Send the welcome message to the text-in-voice chat using Components V2
+                const welcomePayload = {
+                    components: [
+                        {
+                            type: 17, // Container
+                            components: [
+                                {
+                                    type: 9, // Section
+                                    components: [
+                                        {
+                                            type: 10, // Text Display
+                                            content: `## Welcome to your room, ${member.user.globalName}!\n\n**Basic Information:**\n* You are the room owner with full permissions over this channel.\n* The room will be automatically deleted 5 minutes after everyone leaves.\n\n**Manage Room:**\nClick the button below or use the \`/vc\` command to access the interactive control panel to lock/unlock, rename, add/remove/kick/invite members, and configure room permissions.`
+                                        }
+                                    ],
+                                    accessory: {
+                                        type: 11, // Thumbnail
+                                        media: {
+                                            url: "https://cdn-icons-png.flaticon.com/512/3293/3293810.png"
+                                        },
+                                        description: "Voice room"
+                                    }
+                                },
+                                {
+                                    type: 1, // Action Row
+                                    components: [
+                                        {
+                                            type: 2, // Button
+                                            style: 1, // Primary (Blurple)
+                                            label: "Manage Room",
+                                            custom_id: `vc_btn_manage_${newChannel.id}`
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    flags: 32768
+                };
                 
-                await newChannel.send({ embeds: [embed] });
+                await newChannel.send(welcomePayload);
                 
             } catch (error) {
                 console.error("Error creating temporary voice channel:", error);

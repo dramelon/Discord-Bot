@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Fluffingiously Dragooon - Log Viewer</title>
+	<!-- Fonts -->
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+	<style>
+		:root {
+			--bg-primary: #090d16;
+			--bg-secondary: #0f172a;
+			--glass-bg: rgba(15, 23, 42, 0.45);
+			--glass-border: rgba(255, 255, 255, 0.06);
+			--glass-glow: rgba(99, 102, 241, 0.05);
+			--text-primary: #f8fafc;
+			--text-secondary: #94a3b8;
+			--text-muted: #64748b;
+			
+			/* Accents */
+			--accent-primary: #6366f1; /* Indigo */
+			--accent-secondary: #8b5cf6; /* Violet */
+			--success: #10b981; /* Emerald */
+			--warning: #f59e0b; /* Amber */
+			--danger: #ef4444; /* Rose */
+		}
+
+		* {
+			box-sizing: border-box;
+			margin: 0;
+			padding: 0;
+		}
+
+		body {
+			font-family: 'Outfit', sans-serif;
+			background-color: var(--bg-primary);
+			color: var(--text-primary);
+			min-height: 100vh;
+			display: flex;
+			background-image: 
+				radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
+				radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 40%);
+			background-attachment: fixed;
+			overflow-x: hidden;
+		}
+
+
+
+		/* Main container */
+		main {
+			margin-left: 280px;
+			flex-grow: 1;
+			padding: 2.5rem;
+			max-width: 1200px;
+			display: flex;
+			flex-direction: column;
+		}
+
+		/* Page Header */
+		.page-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 2rem;
+		}
+
+		.page-title h1 {
+			font-size: 1.75rem;
+			font-weight: 700;
+			letter-spacing: -0.02em;
+		}
+
+		.page-title p {
+			color: var(--text-secondary);
+			font-size: 0.9rem;
+			margin-top: 0.25rem;
+		}
+
+		/* Config controls */
+		.log-controls {
+			display: flex;
+			gap: 1rem;
+			align-items: center;
+		}
+
+		.toggle-btn {
+			background: var(--glass-bg);
+			border: 1px solid var(--glass-border);
+			padding: 0.5rem 1rem;
+			border-radius: 8px;
+			color: var(--text-primary);
+			font-family: inherit;
+			font-size: 0.85rem;
+			cursor: pointer;
+			transition: all 0.2s;
+		}
+
+		.toggle-btn:hover {
+			border-color: var(--accent-primary);
+			background: rgba(99, 102, 241, 0.08);
+		}
+
+		.toggle-btn.active {
+			background: rgba(16, 185, 129, 0.1);
+			border-color: var(--success);
+			color: var(--success);
+		}
+
+		/* Terminal screen */
+		.terminal-container {
+			background: #020408;
+			border: 1px solid var(--glass-border);
+			border-radius: 20px;
+			padding: 1.5rem;
+			flex-grow: 1;
+			min-height: 500px;
+			display: flex;
+			flex-direction: column;
+			box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4), inset 0 0 15px rgba(0, 0, 0, 0.6);
+		}
+
+		.terminal-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding-bottom: 1rem;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+			margin-bottom: 1rem;
+		}
+
+		.terminal-dots {
+			display: flex;
+			gap: 0.4rem;
+		}
+
+		.dot {
+			width: 10px;
+			height: 10px;
+			border-radius: 50%;
+		}
+
+		.dot-red { background: #ff5f56; }
+		.dot-yellow { background: #ffbd2e; }
+		.dot-green { background: #27c93f; }
+
+		.terminal-title {
+			font-family: 'Fira Code', monospace;
+			font-size: 0.8rem;
+			color: var(--text-muted);
+		}
+
+		.terminal-body {
+			flex-grow: 1;
+			overflow-y: auto;
+			font-family: 'Fira Code', monospace;
+			font-size: 0.85rem;
+			line-height: 1.6;
+			color: #e2e8f0;
+			white-space: pre-wrap;
+			word-break: break-all;
+			padding-right: 0.5rem;
+		}
+
+		/* Color-coded log levels */
+		.log-info { color: #f8fafc; }
+		.log-warn { color: var(--warning); }
+		.log-error { color: var(--danger); font-weight: 500; }
+		.log-debug { color: #38bdf8; }
+
+		.empty-logs {
+			color: var(--text-muted);
+			text-align: center;
+			margin-top: 10rem;
+			font-style: italic;
+		}
+
+		/* Scrollbar styling */
+		.terminal-body::-webkit-scrollbar {
+			width: 6px;
+		}
+
+		.terminal-body::-webkit-scrollbar-track {
+			background: transparent;
+		}
+
+		.terminal-body::-webkit-scrollbar-thumb {
+			background: rgba(255, 255, 255, 0.08);
+			border-radius: 4px;
+		}
+
+		.terminal-body::-webkit-scrollbar-thumb:hover {
+			background: rgba(255, 255, 255, 0.15);
+		}
+
+		/* Loading Overlay */
+		.loading-overlay {
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background: var(--bg-primary);
+			z-index: 10000;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			gap: 1.5rem;
+			transition: opacity 0.5s ease, visibility 0.5s;
+		}
+
+		.loading-overlay.hidden {
+			opacity: 0;
+			visibility: hidden;
+			pointer-events: none;
+		}
+
+		.spinner {
+			width: 40px;
+			height: 40px;
+			border: 3px solid rgba(99, 102, 241, 0.1);
+			border-top-color: var(--accent-primary);
+			border-radius: 50%;
+			animation: spin 1s linear infinite;
+		}
+
+		@keyframes spin {
+			to { transform: rotate(360deg); }
+		}
+
+		/* Modal Overlay */
+		.modal-overlay {
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background: rgba(4, 6, 15, 0.8);
+			backdrop-filter: blur(12px);
+			-webkit-backdrop-filter: blur(12px);
+			z-index: 1000;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			opacity: 0;
+			pointer-events: none;
+			transition: opacity 0.3s ease;
+		}
+
+		.modal-overlay.active {
+			opacity: 1;
+			pointer-events: auto;
+		}
+
+		.modal-content {
+			background: var(--glass-bg);
+			border: 1px solid var(--glass-border);
+			border-radius: 24px;
+			width: 90%;
+			max-width: 400px;
+			padding: 2rem;
+			box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+			backdrop-filter: blur(20px);
+			-webkit-backdrop-filter: blur(20px);
+			transform: scale(0.9);
+			transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+		}
+
+		.modal-overlay.active .modal-content {
+			transform: scale(1);
+		}
+
+		.modal-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 1.5rem;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+			padding-bottom: 0.75rem;
+		}
+
+		.modal-header h3 {
+			font-size: 1.2rem;
+			font-weight: 700;
+			background: linear-gradient(135deg, var(--text-primary) 30%, var(--text-secondary) 100%);
+			-webkit-background-clip: text;
+			background-clip: text;
+			-webkit-text-fill-color: transparent;
+		}
+
+		.close-btn {
+			font-size: 1.5rem;
+			color: var(--text-muted);
+			cursor: pointer;
+			transition: color 0.2s;
+			line-height: 1;
+		}
+
+		.close-btn:hover {
+			color: var(--text-primary);
+		}
+
+		.profile-preview {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 0.75rem;
+			margin-bottom: 2rem;
+			text-align: center;
+		}
+
+		.profile-preview img {
+			width: 90px;
+			height: 90px;
+			border-radius: 50%;
+			border: 2px solid var(--accent-primary);
+			box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+			object-fit: cover;
+		}
+
+		.profile-preview h4 {
+			font-size: 1.15rem;
+			font-weight: 700;
+			color: var(--text-primary);
+		}
+
+		.modal-rank-soft-text {
+			font-size: 0.85rem;
+			color: var(--text-muted);
+			font-weight: 600;
+			opacity: 0.8;
+			letter-spacing: 0.02em;
+		}
+
+		.form-group {
+			display: flex;
+			flex-direction: column;
+			gap: 0.5rem;
+			margin-bottom: 2rem;
+		}
+
+		.form-group label {
+			font-size: 0.8rem;
+			color: var(--text-secondary);
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+		}
+
+		.form-group select {
+			background: rgba(0, 0, 0, 0.4);
+			border: 1px solid var(--glass-border);
+			color: var(--text-primary);
+			padding: 0.8rem 1rem;
+			border-radius: 12px;
+			font-family: inherit;
+			font-size: 0.9rem;
+			outline: none;
+			cursor: pointer;
+			transition: all 0.3s;
+			box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+		}
+
+		.form-group select:focus {
+			border-color: var(--accent-primary);
+			box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+		}
+
+		.modal-footer {
+			display: flex;
+			justify-content: flex-end;
+			gap: 0.75rem;
+			border-top: 1px solid rgba(255, 255, 255, 0.05);
+			padding-top: 1.25rem;
+		}
+
+		.btn {
+			padding: 0.75rem 1.5rem;
+			border-radius: 12px;
+			font-family: inherit;
+			font-size: 0.85rem;
+			font-weight: 600;
+			cursor: pointer;
+			transition: all 0.2s;
+			border: 1px solid transparent;
+		}
+
+		.btn-secondary {
+			background: transparent;
+			border-color: var(--glass-border);
+			color: var(--text-secondary);
+		}
+
+		.btn-secondary:hover {
+			background: rgba(255, 255, 255, 0.03);
+			color: var(--text-primary);
+		}
+
+		.btn-primary {
+			background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+			color: #ffffff;
+			box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+		}
+
+		.btn-primary:hover {
+			transform: translateY(-1px);
+			box-shadow: 0 6px 16px rgba(99, 102, 241, 0.3);
+		}
+
+		/* Responsive grid adjustments */
+		@media (max-width: 768px) {
+			.page-header {
+				flex-direction: column;
+				align-items: flex-start;
+				gap: 1rem;
+			}
+		}
+	</style>
+</head>
+<body>
+
+	<!-- Loading Screen Overlay -->
+	<div id="loadingOverlay" class="loading-overlay">
+		<div class="spinner"></div>
+		<p id="loadingMessage">Connecting to log output streams...</p>
+	</div>
+
+	<!-- INCLUDE_SIDEBAR -->
+
+	<!-- Main Workspace Panel -->
+	<main>
+		<header class="page-header">
+			<div class="page-title">
+				<h1>Log Viewer</h1>
+				<p>Real-time terminal stream for Fluffingiously Dragooon (UTC+7 Timezone).</p>
+			</div>
+			<div class="log-controls">
+				<button id="refreshBtn" class="toggle-btn" onclick="fetchLogs()">Sync Logs</button>
+				<button id="autoToggleBtn" class="toggle-btn active" onclick="toggleAutoRefresh()">Auto-refresh (3s)</button>
+			</div>
+		</header>
+
+		<!-- Log terminal -->
+		<div class="terminal-container">
+			<div class="terminal-header">
+				<div class="terminal-dots">
+					<div class="dot dot-red"></div>
+					<div class="dot dot-yellow"></div>
+					<div class="dot dot-green"></div>
+				</div>
+				<div class="terminal-title">dragooon@kinetic-container:~/logs/bot.log</div>
+			</div>
+			<div id="terminalBody" class="terminal-body">
+				<!-- Injected by Javascript -->
+			</div>
+		</div>
+	</main>
+
+	<!-- Settings Dialog Overlay -->
+	<div id="profileModal" class="modal-overlay" onclick="closeProfileModal(event)">
+		<div class="modal-content" onclick="event.stopPropagation()">
+			<div class="modal-header">
+				<h3>Profile Settings</h3>
+				<span class="close-btn" onclick="toggleModal(false)">&times;</span>
+			</div>
+			<div class="modal-body">
+				<div class="profile-preview">
+					<img id="modalAvatar" src="" alt="Avatar">
+					<h4 id="modalUsername">Username</h4>
+					<p id="modalRankText" class="modal-rank-soft-text"></p>
+				</div>
+				<div class="form-group">
+					<label for="rankSelect">Choose Display Rank</label>
+					<select id="rankSelect" onchange="previewRankChange()">
+						<!-- Options loaded dynamically -->
+					</select>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button class="btn btn-secondary" onclick="toggleModal(false)">Cancel</button>
+				<button class="btn btn-primary" onclick="saveProfileConfig()">Save Changes</button>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		window.currentUser = null;
+		let refreshInterval = null;
+
+		const RANK_LABELS = {
+			"bot dev": "bot dev",
+			"den boundless resident": "den boundless resident",
+			"den disciple echoing": "den disciple echoing",
+			"den journeyer": "den journeyer",
+			"den member": "den member",
+			"member": "member"
+		};
+
+		// Close loader
+		function hideLoader() {
+			const overlay = document.getElementById('loadingOverlay');
+			if (overlay) overlay.classList.add('hidden');
+		}
+
+		// Update user info and page details
+		async function loadUserProfile() {
+			try {
+				const res = await fetch('/api/status');
+				if (!res.ok) throw new Error();
+				const data = await res.json();
+
+				if (!data.user || !data.user.isAdmin) {
+					// Session expired or unauthorized - redirect to main dashboard
+					window.location.href = '/dashboard';
+					return;
+				}
+
+				window.currentUser = data.user;
+
+				// Sidebar Profile Card
+				const profileSection = document.getElementById('userProfileSection');
+				const rankText = data.user.rankText ? ` <span class="rank-soft-text">${data.user.rankText}</span>` : '';
+				
+				profileSection.innerHTML = `
+					<div class="user-card">
+						<div class="user-details" onclick="openProfileModal()" style="cursor: pointer;">
+							<img src="${data.user.avatarUrl}" alt="User Avatar" class="user-avatar" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+							<span class="user-name" title="${data.user.username}">${data.user.username}${rankText}</span>
+						</div>
+						<a href="/api/auth/logout" class="logout-btn" title="Logout" onclick="event.stopPropagation()">
+							<svg style="width:16px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+								<path d="M16 17v-3H9v-4h7V7l5 5-5 5M14 2a2 2 0 0 1 2 2v2h-2V4H5v16h9v-2h2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9z"/>
+							</svg>
+						</a>
+					</div>
+				`;
+
+				// Update bot info header in sidebar
+				if (data.bot) {
+					document.getElementById('botAvatar').src = data.bot.avatarUrl || 'https://cdn.discordapp.com/embed/avatars/0.png';
+					document.getElementById('botTagName').textContent = data.bot.username || 'Fluffingiously';
+					document.getElementById('sidebarStatusDot').className = `status-dot ${data.bot.status === 'online' ? 'online' : 'offline'}`;
+				}
+
+				// Show admin links if qualified
+				const adminOnlyItems = document.querySelectorAll('.admin-only');
+				if (data.user.isAdmin) {
+					adminOnlyItems.forEach(el => el.style.display = 'block');
+				} else {
+					adminOnlyItems.forEach(el => el.style.display = 'none');
+				}
+
+			} catch (e) {
+				console.error('[LogViewer] Failed to load session status:', e);
+				window.location.href = '/dashboard';
+			} finally {
+				hideLoader();
+			}
+		}
+
+		// Highlight log levels
+		function formatLogLines(text) {
+			if (!text || text.trim() === 'No logs recorded yet.') {
+				return '<div class="empty-logs">No log outputs have been written yet.</div>';
+			}
+
+			return text.split('\n').map(line => {
+				if (!line) return '';
+				
+				let cssClass = 'log-info';
+				if (line.includes('[WARN]')) {
+					cssClass = 'log-warn';
+				} else if (line.includes('[ERROR]')) {
+					cssClass = 'log-error';
+				} else if (line.includes('[DEBUG]')) {
+					cssClass = 'log-debug';
+				}
+				
+				// Escape HTML
+				const escaped = line
+					.replace(/&/g, '&amp;')
+					.replace(/</g, '&lt;')
+					.replace(/>/g, '&gt;');
+				
+				return `<div class="${cssClass}">${escaped}</div>`;
+			}).join('');
+		}
+
+		// Fetch logs from API
+		async function fetchLogs() {
+			const body = document.getElementById('terminalBody');
+			try {
+				const res = await fetch('/api/admin/logs');
+				if (res.status === 401 || res.status === 403) {
+					window.location.href = '/dashboard';
+					return;
+				}
+				const data = await res.text();
+				
+				// Save scroll state
+				const isAtBottom = body.scrollHeight - body.clientHeight <= body.scrollTop + 50;
+				
+				body.innerHTML = formatLogLines(data);
+				
+				// Keep scrolled to bottom if they were already there
+				if (isAtBottom) {
+					body.scrollTop = body.scrollHeight;
+				}
+			} catch (e) {
+				body.innerHTML = `<div class="log-error">Failed to sync log files: ${e.message}</div>`;
+			}
+		}
+
+		// Toggle Auto Refresh
+		function toggleAutoRefresh() {
+			const btn = document.getElementById('autoToggleBtn');
+			if (refreshInterval) {
+				clearInterval(refreshInterval);
+				refreshInterval = null;
+				btn.classList.remove('active');
+				btn.textContent = 'Auto-refresh Off';
+			} else {
+				refreshInterval = setInterval(fetchLogs, 3000);
+				btn.classList.add('active');
+				btn.textContent = 'Auto-refresh (3s)';
+				fetchLogs(); // sync immediately
+			}
+		}
+
+		// Modal Controls for Profile Settings
+		function toggleModal(show) {
+			const modal = document.getElementById('profileModal');
+			if (show) {
+				modal.classList.add('active');
+			} else {
+				modal.classList.remove('active');
+			}
+		}
+
+		function openProfileModal() {
+			const user = window.currentUser;
+			if (!user) return;
+
+			document.getElementById('modalAvatar').src = user.avatarUrl;
+			document.getElementById('modalUsername').textContent = user.username;
+			document.getElementById('modalRankText').textContent = user.rankText || 'No custom rank active';
+
+			// Populate select
+			const select = document.getElementById('rankSelect');
+			select.innerHTML = '<option value="">None (Empty)</option>';
+
+			if (user.eligibleRanks && user.eligibleRanks.length > 0) {
+				user.eligibleRanks.forEach(rank => {
+					const opt = document.createElement('option');
+					opt.value = rank;
+					opt.textContent = RANK_LABELS[rank] || rank;
+					if (rank === user.displayRank) {
+						opt.selected = true;
+					}
+					select.appendChild(opt);
+				});
+			} else {
+				const opt = document.createElement('option');
+				opt.value = "";
+				opt.textContent = "No eligible ranks";
+				opt.disabled = true;
+				select.appendChild(opt);
+			}
+
+			toggleModal(true);
+		}
+
+		function closeProfileModal(event) {
+			if (event && event.target === document.getElementById('profileModal')) {
+				toggleModal(false);
+			}
+		}
+
+		function previewRankChange() {
+			const select = document.getElementById('rankSelect');
+			const chosen = select.value;
+			const rankTextPreview = chosen ? (RANK_LABELS[chosen] || '') : 'None (Empty)';
+			document.getElementById('modalRankText').textContent = rankTextPreview;
+		}
+
+		async function saveProfileConfig() {
+			const select = document.getElementById('rankSelect');
+			const chosenRank = select.value;
+
+			try {
+				const res = await fetch('/api/user/config', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({ displayRank: chosenRank })
+				});
+
+				if (!res.ok) {
+					throw new Error('Failed to save settings');
+				}
+
+				toggleModal(false);
+				
+				// Reload profile changes immediately
+				await loadUserProfile();
+			} catch (e) {
+				alert('Error saving rank choice: ' + e.message);
+			}
+		}
+
+		// Boot setup
+		(async function init() {
+			await loadUserProfile();
+			await fetchLogs();
+			refreshInterval = setInterval(fetchLogs, 3000);
+		})();
+	</script>
+</body>
+</html>

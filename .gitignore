@@ -5,6 +5,9 @@ src/perServerCmd/
 src/dramelon/
 src/futurecmd/
 scripts/
+src/dashboard/config.txt
+src/dashboard/exampledata.txt
+src/dashboard/routes_whitelist.txt
 
 # Dependencies
 node_modules/

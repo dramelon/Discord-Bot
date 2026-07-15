@@ -3,9 +3,7 @@ const path = require('path');
 
 const dataPath = path.join(__dirname, '..', '..', 'data', 'serverConfigs.json');
 
-const DEFAULT_CREATE_VC_CHANNEL_ID = '1507240107864756244';
-const DEFAULT_TEMP_VC_CATEGORY_ID = '1447192383178539070';
-const DEFAULT_TEMP_VC_NAME_TEMPLATE = "{user}'s room";
+const DEFAULT_TEMP_VC_NAME_TEMPLATE = "{d}'s Room";
 
 let serverConfigs = {};
 
@@ -31,10 +29,13 @@ function saveConfigs() {
 }
 
 function getConfig(guildId) {
-    const config = serverConfigs[guildId] || {};
+    const config = serverConfigs[guildId];
+    if (!config) {
+        return null;
+    }
     return {
-        tempVCCreateChannelId: config.tempVCCreateChannelId || DEFAULT_CREATE_VC_CHANNEL_ID,
-        tempVCCategoryId: config.tempVCCategoryId || DEFAULT_TEMP_VC_CATEGORY_ID,
+        tempVCCreateChannelId: config.tempVCCreateChannelId || null,
+        tempVCCategoryId: config.tempVCCategoryId || null,
         tempVCNameTemplate: config.tempVCNameTemplate || DEFAULT_TEMP_VC_NAME_TEMPLATE
     };
 }
@@ -64,7 +65,5 @@ module.exports = {
     getConfig,
     updateConfig,
     updateConfigs,
-    DEFAULT_CREATE_VC_CHANNEL_ID,
-    DEFAULT_TEMP_VC_CATEGORY_ID,
     DEFAULT_TEMP_VC_NAME_TEMPLATE
 };

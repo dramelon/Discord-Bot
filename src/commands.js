@@ -17,9 +17,12 @@ const petpet = require('./commands/fun/petpet');
 const vc = require('./commands/qol/vc');
 const reminder = require('./commands/qol/reminder');
 const config = require('./commands/admin/config');
+const setup = require('./commands/admin/setup');
 const contextMenuClipboard = require('./contextMenu/clipboard');
 const contextMenuPetpet = require('./contextMenu/petpet');
 const contextMenuStretch = require('./contextMenu/stretch');
+const contextMenuUserProfile = require('./contextMenu/userProfile');
+const customWidget = require('./commands/qol/customWidget.js');
 
 // Add any other commands here
 module.exports = [
@@ -42,7 +45,10 @@ module.exports = [
 	vc,
 	reminder,
 	config,
+	setup,
 	contextMenuClipboard,
 	contextMenuPetpet,
 	contextMenuStretch,
+	contextMenuUserProfile,
+	customWidget,
 ];

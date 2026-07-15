@@ -18,6 +18,9 @@ if (!fs.existsSync(manifestPath)) {
 let currentStream = null;
 let currentLogPath = null;
 
+let currentApiStream = null;
+let currentApiLogPath = null;
+
 const getLogStream = () => {
 	const now = new Date();
 	const year = now.getFullYear();
@@ -54,6 +57,42 @@ const getLogStream = () => {
 	return currentStream;
 };
 
+const getApiLogStream = () => {
+	const now = new Date();
+	const year = now.getFullYear();
+	const monthNum = String(now.getMonth() + 1).padStart(2, '0');
+	const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+	const monthName = monthNames[now.getMonth()];
+	const day = String(now.getDate()).padStart(2, '0');
+
+	// Structure: data/logs/YYYY-MM/
+	const folderName = `${year}-${monthNum}`;
+	const folderPath = path.join(logBaseDir, folderName);
+
+	// Filename: DDMonYYYY-API.jsonl (e.g., 13Mar2026-API.jsonl)
+	const fileName = `${day}${monthName}${year}-API.jsonl`;
+	const fullFilePath = path.join(folderPath, fileName);
+
+	// Return existing stream if file hasn't changed
+	if (currentApiStream && currentApiLogPath === fullFilePath) {
+		return currentApiStream;
+	}
+
+	// Rotate: Close old stream if exists
+	if (currentApiStream) currentApiStream.end();
+
+	// Ensure daily folder exists
+	if (!fs.existsSync(folderPath)) fs.mkdirSync(folderPath, { recursive: true });
+
+	// Update Manifest
+	updateManifest(fullFilePath);
+
+	// Open new stream
+	currentApiLogPath = fullFilePath;
+	currentApiStream = fs.createWriteStream(fullFilePath, { flags: 'a' });
+	return currentApiStream;
+};
+
 const updateManifest = (filePath) => {
 	try {
 		const relativePath = path.relative(process.cwd(), filePath);
@@ -85,4 +124,17 @@ const logCommand = (data) => {
 	stream.write(JSON.stringify(entry) + '\n');
 };
 
-module.exports = { logCommand };
+const logApiRequest = (data) => {
+	try {
+		const stream = getApiLogStream();
+		const entry = {
+			timestamp: new Date().toISOString(),
+			...data,
+		};
+		stream.write(JSON.stringify(entry) + '\n');
+	} catch (error) {
+		console.error('Error logging API request:', error);
+	}
+};
+
+module.exports = { logCommand, logApiRequest };

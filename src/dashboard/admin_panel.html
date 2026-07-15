@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Fluffingiously Dragooon - Admin Panel</title>
+	<!-- Fonts -->
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+	<style>
+		:root {
+			--bg-primary: #090d16;
+			--bg-secondary: #0f172a;
+			--glass-bg: rgba(15, 23, 42, 0.45);
+			--glass-border: rgba(255, 255, 255, 0.06);
+			--glass-glow: rgba(99, 102, 241, 0.05);
+			--text-primary: #f8fafc;
+			--text-secondary: #94a3b8;
+			--text-muted: #64748b;
+
+			/* Accents */
+			--accent-primary: #6366f1;
+			/* Indigo */
+			--accent-secondary: #8b5cf6;
+			/* Violet */
+			--success: #10b981;
+			/* Emerald */
+			--warning: #f59e0b;
+			/* Amber */
+			--danger: #ef4444;
+			/* Rose */
+		}
+
+		* {
+			box-sizing: border-box;
+			margin: 0;
+			padding: 0;
+		}
+
+		body {
+			font-family: 'Outfit', sans-serif;
+			background-color: var(--bg-primary);
+			color: var(--text-primary);
+			min-height: 100vh;
+			display: flex;
+			background-image:
+				radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
+				radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 40%);
+			background-attachment: fixed;
+			overflow-x: hidden;
+		}
+
+
+
+		/* Main container */
+		main {
+			margin-left: 280px;
+			flex-grow: 1;
+			padding: 2.5rem;
+			max-width: 1200px;
+		}
+
+		/* Page Header */
+		.page-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 2.5rem;
+		}
+
+		.page-title h1 {
+			font-size: 1.75rem;
+			font-weight: 700;
+			letter-spacing: -0.02em;
+		}
+
+		.page-title p {
+			color: var(--text-secondary);
+			font-size: 0.9rem;
+			margin-top: 0.25rem;
+		}
+
+		/* Admin Panel Grid Layout */
+		.admin-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+			gap: 1.5rem;
+		}
+
+		.admin-card {
+			background: var(--glass-bg);
+			border: 1px solid var(--glass-border);
+			border-radius: 20px;
+			padding: 2rem;
+			backdrop-filter: blur(20px);
+			-webkit-backdrop-filter: blur(20px);
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+			display: flex;
+			flex-direction: column;
+			gap: 1.25rem;
+		}
+
+		.card-header {
+			display: flex;
+			align-items: center;
+			gap: 0.75rem;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+			padding-bottom: 0.75rem;
+		}
+
+		.card-header h3 {
+			font-size: 1.1rem;
+			font-weight: 700;
+		}
+
+		.card-icon {
+			font-size: 1.3rem;
+		}
+
+		/* Info items */
+		.info-list {
+			display: flex;
+			flex-direction: column;
+			gap: 0.85rem;
+		}
+
+		.info-item {
+			display: flex;
+			justify-content: space-between;
+			font-size: 0.9rem;
+		}
+
+		.info-label {
+			color: var(--text-secondary);
+		}
+
+		.info-value {
+			font-weight: 600;
+			color: var(--text-primary);
+			font-family: monospace;
+		}
+
+		/* Buttons & inputs */
+		.form-group {
+			display: flex;
+			flex-direction: column;
+			gap: 0.5rem;
+		}
+
+		.form-group label {
+			font-size: 0.75rem;
+			color: var(--text-secondary);
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+		}
+
+		.form-input {
+			background: rgba(0, 0, 0, 0.3);
+			border: 1px solid var(--glass-border);
+			padding: 0.8rem 1rem;
+			border-radius: 12px;
+			color: var(--text-primary);
+			font-family: inherit;
+			font-size: 0.9rem;
+			outline: none;
+			transition: all 0.3s;
+		}
+
+		.form-input:focus {
+			border-color: var(--accent-primary);
+		}
+
+		.btn-admin {
+			padding: 0.8rem 1.2rem;
+			border-radius: 12px;
+			font-family: inherit;
+			font-weight: 600;
+			font-size: 0.85rem;
+			cursor: pointer;
+			transition: all 0.2s ease;
+			border: 1px solid transparent;
+			text-align: center;
+		}
+
+		.btn-restart {
+			background: rgba(239, 68, 68, 0.1);
+			border: 1px solid rgba(239, 68, 68, 0.25);
+			color: var(--danger);
+			box-shadow: 0 4px 12px rgba(239, 68, 68, 0.05);
+		}
+
+		.btn-restart:hover {
+			background: rgba(239, 68, 68, 0.2);
+			border-color: rgba(239, 68, 68, 0.40);
+			box-shadow: 0 6px 16px rgba(239, 68, 68, 0.1);
+		}
+
+		.btn-save {
+			background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+			color: #ffffff;
+			box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+		}
+
+		.btn-save:hover {
+			transform: translateY(-1px);
+			box-shadow: 0 6px 16px rgba(99, 102, 241, 0.3);
+		}
+
+		/* Loading Overlay */
+		.loading-overlay {
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background: var(--bg-primary);
+			z-index: 10000;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			gap: 1.5rem;
+			transition: opacity 0.5s ease, visibility 0.5s;
+		}
+
+		.loading-overlay.hidden {
+			opacity: 0;
+			visibility: hidden;
+			pointer-events: none;
+		}
+
+		.spinner {
+			width: 40px;
+			height: 40px;
+			border: 3px solid rgba(99, 102, 241, 0.1);
+			border-top-color: var(--accent-primary);
+			border-radius: 50%;
+			animation: spin 1s linear infinite;
+		}
+
+		@keyframes spin {
+			to {
+				transform: rotate(360deg);
+			}
+		}
+
+		/* Modal Overlay */
+		.modal-overlay {
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background: rgba(4, 6, 15, 0.8);
+			backdrop-filter: blur(12px);
+			-webkit-backdrop-filter: blur(12px);
+			z-index: 1000;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			opacity: 0;
+			pointer-events: none;
+			transition: opacity 0.3s ease;
+		}
+
+		.modal-overlay.active {
+			opacity: 1;
+			pointer-events: auto;
+		}
+
+		.modal-content {
+			background: var(--glass-bg);
+			border: 1px solid var(--glass-border);
+			border-radius: 24px;
+			width: 90%;
+			max-width: 400px;
+			padding: 2rem;
+			box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+			backdrop-filter: blur(20px);
+			-webkit-backdrop-filter: blur(20px);
+			transform: scale(0.9);
+			transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+		}
+
+		.modal-overlay.active .modal-content {
+			transform: scale(1);
+		}
+
+		.modal-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 1.5rem;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+			padding-bottom: 0.75rem;
+		}
+
+		.modal-header h3 {
+			font-size: 1.2rem;
+			font-weight: 700;
+			background: linear-gradient(135deg, var(--text-primary) 30%, var(--text-secondary) 100%);
+			-webkit-background-clip: text;
+			background-clip: text;
+			-webkit-text-fill-color: transparent;
+		}
+
+		.close-btn {
+			font-size: 1.5rem;
+			color: var(--text-muted);
+			cursor: pointer;
+			transition: color 0.2s;
+			line-height: 1;
+		}
+
+		.close-btn:hover {
+			color: var(--text-primary);
+		}
+
+		.profile-preview {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 0.75rem;
+			margin-bottom: 2rem;
+			text-align: center;
+		}
+
+		.profile-preview img {
+			width: 90px;
+			height: 90px;
+			border-radius: 50%;
+			border: 2px solid var(--accent-primary);
+			box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+			object-fit: cover;
+		}
+
+		.profile-preview h4 {
+			font-size: 1.15rem;
+			font-weight: 700;
+			color: var(--text-primary);
+		}
+
+		.modal-rank-soft-text {
+			font-size: 0.85rem;
+			color: var(--text-muted);
+			font-weight: 600;
+			opacity: 0.8;
+			letter-spacing: 0.02em;
+		}
+
+		.form-group-modal {
+			display: flex;
+			flex-direction: column;
+			gap: 0.5rem;
+			margin-bottom: 2rem;
+		}
+
+		.form-group-modal label {
+			font-size: 0.8rem;
+			color: var(--text-secondary);
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+		}
+
+		.form-group-modal select {
+			background: rgba(0, 0, 0, 0.4);
+			border: 1px solid var(--glass-border);
+			color: var(--text-primary);
+			padding: 0.8rem 1rem;
+			border-radius: 12px;
+			font-family: inherit;
+			font-size: 0.9rem;
+			outline: none;
+			cursor: pointer;
+			transition: all 0.3s;
+			box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+		}
+
+		.modal-footer {
+			display: flex;
+			justify-content: flex-end;
+			gap: 0.75rem;
+			border-top: 1px solid rgba(255, 255, 255, 0.05);
+			padding-top: 1.25rem;
+		}
+
+		.btn {
+			padding: 0.75rem 1.5rem;
+			border-radius: 12px;
+			font-family: inherit;
+			font-size: 0.85rem;
+			font-weight: 600;
+			cursor: pointer;
+			transition: all 0.2s;
+			border: 1px solid transparent;
+		}
+
+		.btn-secondary {
+			background: transparent;
+			border-color: var(--glass-border);
+			color: var(--text-secondary);
+		}
+
+		.btn-secondary:hover {
+			background: rgba(255, 255, 255, 0.03);
+			color: var(--text-primary);
+		}
+
+		.btn-primary {
+			background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+			color: #ffffff;
+			box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+		}
+
+		.btn-primary:hover {
+			transform: translateY(-1px);
+			box-shadow: 0 6px 16px rgba(99, 102, 241, 0.3);
+		}
+
+		/* Sync controls style */
+		.log-controls {
+			display: flex;
+			gap: 0.75rem;
+			align-items: center;
+		}
+
+		.toggle-btn {
+			background: var(--glass-bg);
+			border: 1px solid var(--glass-border);
+			padding: 0.6rem 1.2rem;
+			border-radius: 12px;
+			color: var(--text-primary);
+			font-family: inherit;
+			font-size: 0.85rem;
+			cursor: pointer;
+			transition: all 0.2s;
+		}
+
+		.toggle-btn:hover {
+			border-color: var(--accent-primary);
+			background: rgba(99, 102, 241, 0.08);
+		}
+
+		.toggle-btn.active {
+			background: rgba(16, 185, 129, 0.1);
+			border-color: var(--success);
+			color: var(--success);
+		}
+
+		.section-title {
+			margin-top: 2rem;
+			margin-bottom: 1.25rem;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+			padding-bottom: 0.5rem;
+		}
+
+		.section-title h2 {
+			font-size: 1.25rem;
+			font-weight: 700;
+			color: var(--text-primary);
+			letter-spacing: -0.01em;
+		}
+
+		/* Real-time API Stream Console Styles */
+		.stream-console {
+			background: rgba(0, 0, 0, 0.45);
+			border: 1px solid var(--glass-border);
+			border-radius: 12px;
+			padding: 1.25rem;
+			font-family: 'Fira Code', 'Courier New', monospace;
+			font-size: 0.8rem;
+			height: 250px;
+			overflow-y: auto;
+			display: flex;
+			flex-direction: column;
+			gap: 0.5rem;
+			box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
+			scroll-behavior: smooth;
+		}
+
+		.stream-placeholder {
+			color: var(--text-muted);
+			text-align: center;
+			margin-top: 60px;
+			font-style: italic;
+		}
+
+		.stream-row {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 0.45rem 0.75rem;
+			border-radius: 8px;
+			background: rgba(255, 255, 255, 0.02);
+			border-left: 3px solid var(--text-muted);
+			animation: fadeIn 0.2s ease-out;
+		}
+
+		.stream-row.discord {
+			border-left-color: var(--accent-primary);
+		}
+
+		.stream-row.dashboard {
+			border-left-color: var(--accent-secondary);
+		}
+
+		.stream-row.external {
+			border-left-color: var(--success);
+		}
+
+		.stream-row.incoming {
+			border-left-color: #06b6d4;
+		}
+
+		.stream-row.ratelimit {
+			border-left-color: var(--danger);
+			background: rgba(239, 68, 68, 0.05);
+		}
+
+		.stream-left {
+			display: flex;
+			align-items: center;
+			gap: 0.5rem;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		.stream-badge {
+			padding: 0.15rem 0.4rem;
+			border-radius: 4px;
+			font-size: 0.65rem;
+			font-weight: 700;
+			text-transform: uppercase;
+		}
+
+		.badge-method-get {
+			background: rgba(16, 185, 129, 0.15);
+			color: var(--success);
+		}
+
+		.badge-method-post {
+			background: rgba(99, 102, 241, 0.15);
+			color: var(--accent-primary);
+		}
+
+		.badge-method-put {
+			background: rgba(245, 158, 11, 0.15);
+			color: var(--warning);
+		}
+
+		.badge-method-delete {
+			background: rgba(239, 68, 68, 0.15);
+			color: var(--danger);
+		}
+
+		.badge-method-any {
+			background: rgba(255, 255, 255, 0.1);
+			color: var(--text-primary);
+		}
+
+		.badge-type {
+			background: rgba(255, 255, 255, 0.06);
+			color: var(--text-secondary);
+			border: 1px solid rgba(255, 255, 255, 0.05);
+			font-family: sans-serif;
+			font-weight: 500;
+		}
+
+		.stream-path {
+			color: var(--text-primary);
+			word-break: break-all;
+		}
+
+		.stream-right {
+			display: flex;
+			align-items: center;
+			gap: 0.75rem;
+			flex-shrink: 0;
+		}
+
+		.badge-status {
+			padding: 0.15rem 0.4rem;
+			border-radius: 4px;
+			font-size: 0.7rem;
+			font-weight: 600;
+		}
+
+		.status-success {
+			background: rgba(16, 185, 129, 0.15);
+			color: var(--success);
+		}
+
+		.status-warning {
+			background: rgba(245, 158, 11, 0.15);
+			color: var(--warning);
+		}
+
+		.status-error {
+			background: rgba(239, 68, 68, 0.15);
+			color: var(--danger);
+		}
+
+		.status-pending {
+			background: rgba(255, 255, 255, 0.08);
+			color: var(--text-secondary);
+		}
+
+		.stream-time {
+			color: var(--text-muted);
+			font-size: 0.7rem;
+		}
+
+		.stream-latency {
+			color: var(--text-secondary);
+			font-size: 0.75rem;
+		}
+
+		/* Pulse indicator */
+		.pulse-indicator {
+			width: 8px;
+			height: 8px;
+			border-radius: 50%;
+			background-color: var(--text-muted);
+			position: relative;
+			transition: background-color 0.3s;
+		}
+
+		.pulse-indicator.active {
+			background-color: var(--success);
+		}
+
+		.pulse-indicator.active::after {
+			content: '';
+			position: absolute;
+			width: 100%;
+			height: 100%;
+			top: 0;
+			left: 0;
+			background-color: var(--success);
+			border-radius: 50%;
+			animation: pulse 1.5s infinite ease-in-out;
+		}
+
+		@keyframes pulse {
+			0% {
+				transform: scale(1);
+				opacity: 0.6;
+			}
+
+			100% {
+				transform: scale(3);
+				opacity: 0;
+			}
+		}
+
+		@keyframes fadeIn {
+			from {
+				opacity: 0;
+				transform: translateY(4px);
+			}
+
+			to {
+				opacity: 1;
+				transform: translateY(0);
+			}
+		}
+
+		/* Responsive grid adjustments */
+		@media (max-width: 768px) {
+			.page-header {
+				flex-direction: column;
+				align-items: flex-start;
+				gap: 1rem;
+			}
+		}
+	</style>
+</head>
+
+<body>
+
+	<!-- Loading Screen Overlay -->
+	<div id="loadingOverlay" class="loading-overlay">
+		<div class="spinner"></div>
+		<p id="loadingMessage">Connecting to bot core parameters...</p>
+	</div>
+
+	<!-- INCLUDE_SIDEBAR -->
+
+	<!-- Main Workspace Panel -->
+	<main>
+		<header class="page-header">
+			<div class="page-title">
+				<h1>Admin Panel</h1>
+				<p>Administrative system controls and live configuration hooks.</p>
+			</div>
+			<div class="log-controls">
+				<button id="refreshBtn" class="toggle-btn" onclick="updateStatus(false)">Sync Stats</button>
+				<button id="autoToggleBtn" class="toggle-btn active" onclick="toggleAutoRefresh()">Auto-refresh
+					(3s)</button>
+			</div>
+		</header>
+
+		<!-- API Telemetry Grid Section -->
+		<div class="section-title" style="margin-top: 0;">
+			<h2>API Telemetry & Performance</h2>
+		</div>
+		<div class="admin-grid telemetry-grid" style="margin-bottom: 2rem;">
+			<!-- Panel 1: API Monitor Stats -->
+			<div class="admin-card">
+				<div class="card-header">
+					<span class="card-icon">📈</span>
+					<h3>API Metrics</h3>
+				</div>
+				<div class="info-list">
+					<div class="info-item">
+						<span class="info-label">Total API Calls</span>
+						<span id="apiTotal" class="info-value">0</span>
+					</div>
+					<div class="info-item">
+						<span class="info-label">Discord Bot REST</span>
+						<span id="apiDiscord" class="info-value">0</span>
+					</div>
+					<div class="info-item">
+						<span class="info-label">Dashboard OAuth</span>
+						<span id="apiDashboard" class="info-value">0</span>
+					</div>
+					<div class="info-item">
+						<span class="info-label">External Fetches</span>
+						<span id="apiExternal" class="info-value">0</span>
+					</div>
+					<div class="info-item">
+						<span class="info-label">Incoming Web Requests</span>
+						<span id="apiIncoming" class="info-value">0</span>
+					</div>
+					<div class="info-item">
+						<span class="info-label">Requests / Min (RPM)</span>
+						<span id="apiRpm" class="info-value">0 RPM</span>
+					</div>
+					<div class="info-item">
+						<span class="info-label">Rate Limits Triggered</span>
+						<span id="apiRateLimits" class="info-value" style="color: var(--warning);">0</span>
+					</div>
+				</div>
+			</div>
+
+			<!-- Panel 2: Large Dynamic Chart -->
+			<div class="admin-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+				<div class="card-header">
+					<span class="card-icon">📊</span>
+					<h3>Traffic Rate (Last 90s)</h3>
+				</div>
+				<div
+					style="flex-grow: 1; display: flex; align-items: center; justify-content: center; margin-top: 1rem;">
+					<canvas id="apiChartCanvas"
+						style="width: 100%; height: 180px; border-radius: 12px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.03);"></canvas>
+				</div>
+			</div>
+		</div>
+
+		<!-- System Management Grid Section -->
+		<div class="section-title">
+			<h2>System Diagnostics & Controls</h2>
+		</div>
+		<div class="admin-grid system-grid" style="margin-bottom: 2rem;">
+			<!-- Panel 3: System Info -->
+			<div class="admin-card">
+				<div class="card-header">
+					<span class="card-icon">🖥️</span>
+					<h3>System Diagnostics</h3>
+				</div>
+				<div class="info-list">
+					<div class="info-item">
+						<span class="info-label">Operating System</span>
+						<span id="sysOs" class="info-value">Loading...</span>
+					</div>
+					<div class="info-item">
+						<span class="info-label">Node Version</span>
+						<span id="sysNode" class="info-value">Loading...</span>
+					</div>
+					<div class="info-item">
+						<span class="info-label">Memory Allocation</span>
+						<span id="sysMemory" class="info-value">Loading...</span>
+					</div>
+					<div class="info-item">
+						<span class="info-label">Server Uptime</span>
+						<span id="sysUptime" class="info-value">Loading...</span>
+					</div>
+				</div>
+			</div>
+
+			<!-- Panel 4: Bot Management -->
+			<div class="admin-card">
+				<div class="card-header">
+					<span class="card-icon">👾</span>
+					<h3>Bot Settings</h3>
+				</div>
+				<div class="form-group">
+					<label for="statusInput">Custom Activity Text</label>
+					<input type="text" id="statusInput" class="form-input" placeholder="e.g. playing games...">
+				</div>
+				<button class="btn-admin btn-save" onclick="saveBotStatus()">Apply Status</button>
+			</div>
+
+			<!-- Panel 5: Process Control -->
+			<div class="admin-card">
+				<div class="card-header">
+					<span class="card-icon">⚠️</span>
+					<h3>Process Controls</h3>
+				</div>
+				<p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;">
+					Trigger a graceful process restart. Hosting controllers (like PM2 or Docker) will automatically boot
+					the bot back online.
+				</p>
+				<button class="btn-admin btn-restart" onclick="restartBot()">Graceful Restart</button>
+			</div>
+		</div>
+
+		<!-- Live API Request Streams -->
+		<div class="admin-card stream-card" style="margin-top: 1.5rem; flex-grow: 1;">
+			<div class="card-header" style="justify-content: space-between;">
+				<div style="display: flex; align-items: center; gap: 0.75rem;">
+					<span class="card-icon">📡</span>
+					<h3>Live Request Streams</h3>
+				</div>
+				<div style="display: flex; align-items: center; gap: 1rem;">
+					<a href="/admin_panel/api" class="btn-admin btn-save" style="font-size: 0.8rem; padding: 0.35rem 0.75rem; text-decoration: none; display: flex; align-items: center; gap: 0.25rem;">
+						<span>📂</span> View All Logs
+					</a>
+					<span class="pulse-indicator" id="streamPulse"></span>
+				</div>
+			</div>
+			<div class="stream-console" id="requestStreamConsole">
+				<div class="stream-placeholder">Listening for active API request streams...</div>
+			</div>
+		</div>
+	</main>
+
+	<!-- Settings Dialog Overlay -->
+	<div id="profileModal" class="modal-overlay" onclick="closeProfileModal(event)">
+		<div class="modal-content" onclick="event.stopPropagation()">
+			<div class="modal-header">
+				<h3>Profile Settings</h3>
+				<span class="close-btn" onclick="toggleModal(false)">&times;</span>
+			</div>
+			<div class="modal-body">
+				<div class="profile-preview">
+					<img id="modalAvatar" src="" alt="Avatar">
+					<h4 id="modalUsername">Username</h4>
+					<p id="modalRankText" class="modal-rank-soft-text"></p>
+				</div>
+				<div class="form-group-modal">
+					<label for="rankSelect">Choose Display Rank</label>
+					<select id="rankSelect" onchange="previewRankChange()">
+						<!-- Options loaded dynamically -->
+					</select>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button class="btn btn-secondary" onclick="toggleModal(false)">Cancel</button>
+				<button class="btn btn-primary" onclick="saveProfileConfig()">Save Changes</button>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		window.currentUser = null;
+
+		const RANK_LABELS = {
+			"bot dev": "bot dev",
+			"den boundless resident": "den boundless resident",
+			"den disciple echoing": "den disciple echoing",
+			"den journeyer": "den journeyer",
+			"den member": "den member",
+			"member": "member"
+		};
+
+		// Close loader
+		function hideLoader() {
+			const overlay = document.getElementById('loadingOverlay');
+			if (overlay) overlay.classList.add('hidden');
+		}
+
+		let updateInterval = null;
+		let lastRequestCount = 0;
+		let rpmHistory = Array(30).fill(0);
+		let localRequests = [];
+		const expandedRows = new Set();
+
+		function escapeHtml(str) {
+			if (!str) return '';
+			return String(str)
+				.replace(/&/g, '&amp;')
+				.replace(/</g, '&lt;')
+				.replace(/>/g, '&gt;')
+				.replace(/"/g, '&quot;')
+				.replace(/'/g, '&#039;');
+		}
+
+		function toggleRowDetails(id) {
+			const el = document.getElementById(`details-${id}`);
+			if (!el) return;
+			if (expandedRows.has(id)) {
+				expandedRows.delete(id);
+				el.style.display = 'none';
+			} else {
+				expandedRows.add(id);
+				el.style.display = 'block';
+			}
+		}
+
+		function drawApiChart(dataPoints) {
+			const canvas = document.getElementById('apiChartCanvas');
+			if (!canvas) return;
+			const ctx = canvas.getContext('2d');
+			const width = canvas.clientWidth;
+			const height = canvas.clientHeight;
+
+			const dpr = window.devicePixelRatio || 1;
+			canvas.width = width * dpr;
+			canvas.height = height * dpr;
+			ctx.scale(dpr, dpr);
+
+			ctx.clearRect(0, 0, width, height);
+
+			const maxVal = Math.max(...dataPoints, 5);
+			const padding = 8;
+			const chartWidth = width - padding * 2;
+			const chartHeight = height - padding * 2;
+
+			const gradient = ctx.createLinearGradient(0, padding, 0, height - padding);
+			gradient.addColorStop(0, 'rgba(99, 102, 241, 0.25)');
+			gradient.addColorStop(1, 'rgba(99, 102, 241, 0)');
+
+			ctx.beginPath();
+			dataPoints.forEach((val, i) => {
+				const x = padding + (i / (dataPoints.length - 1)) * chartWidth;
+				const y = padding + chartHeight - (val / maxVal) * chartHeight;
+				if (i === 0) {
+					ctx.moveTo(x, y);
+				} else {
+					ctx.lineTo(x, y);
+				}
+			});
+
+			ctx.strokeStyle = '#6366f1';
+			ctx.lineWidth = 1.75;
+			ctx.lineJoin = 'round';
+			ctx.lineCap = 'round';
+			ctx.stroke();
+
+			ctx.lineTo(padding + chartWidth, padding + chartHeight);
+			ctx.lineTo(padding, padding + chartHeight);
+			ctx.closePath();
+			ctx.fillStyle = gradient;
+			ctx.fill();
+
+			ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+			ctx.lineWidth = 0.75;
+			ctx.beginPath();
+			ctx.moveTo(padding, padding + chartHeight / 2);
+			ctx.lineTo(padding + chartWidth, padding + chartHeight / 2);
+			ctx.stroke();
+		}
+
+		// Update user info and page details
+		async function updateStatus(isInitial = false) {
+			try {
+				if (isInitial) {
+					localRequests = [];
+				}
+				const since = localRequests.length > 0 ? new Date(localRequests[localRequests.length - 1].timestamp).getTime() : 0;
+				const res = await fetch(`/api/status?since=${since}`);
+				if (!res.ok) throw new Error();
+				const data = await res.json();
+
+				if (isInitial) {
+					if (!data.user || !data.user.isAdmin) {
+						// Session expired or unauthorized - redirect to main dashboard
+						window.location.href = '/dashboard';
+						return;
+					}
+
+					window.currentUser = data.user;
+
+					// Sidebar Profile Card
+					const profileSection = document.getElementById('userProfileSection');
+					const rankText = data.user.rankText ? ` <span class="rank-soft-text">${data.user.rankText}</span>` : '';
+
+					profileSection.innerHTML = `
+						<div class="user-card">
+							<div class="user-details" onclick="openProfileModal()" style="cursor: pointer;">
+								<img src="${data.user.avatarUrl}" alt="User Avatar" class="user-avatar" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+								<span class="user-name" title="${data.user.username}">${data.user.username}${rankText}</span>
+							</div>
+							<a href="/api/auth/logout" class="logout-btn" title="Logout" onclick="event.stopPropagation()">
+								<svg style="width:16px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+									<path d="M16 17v-3H9v-4h7V7l5 5-5 5M14 2a2 2 0 0 1 2 2v2h-2V4H5v16h9v-2h2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9z"/>
+								</svg>
+							</a>
+						</div>
+					`;
+
+					// Show admin links if qualified
+					const adminOnlyItems = document.querySelectorAll('.admin-only');
+					if (data.user.isAdmin) {
+						adminOnlyItems.forEach(el => el.style.display = 'block');
+					} else {
+						adminOnlyItems.forEach(el => el.style.display = 'none');
+					}
+				}
+
+				// Update bot info header in sidebar
+				if (data.bot) {
+					document.getElementById('botAvatar').src = data.bot.avatarUrl || 'https://cdn.discordapp.com/embed/avatars/0.png';
+					document.getElementById('botTagName').textContent = data.bot.username || 'Fluffingiously';
+					document.getElementById('sidebarStatusDot').className = `status-dot ${data.bot.status === 'online' ? 'online' : 'offline'}`;
+				}
+
+				// Populate system diagnostics info
+				if (data.system) {
+					document.getElementById('sysOs').textContent = data.system.platform || 'Linux/Docker';
+					document.getElementById('sysNode').textContent = data.system.nodeVersion || 'v20.x';
+					document.getElementById('sysMemory').textContent = data.system.memoryUsage || '0MB';
+					document.getElementById('sysUptime').textContent = data.system.uptime || '0h';
+				}
+
+				// Populate API tracker info
+				if (data.apiTracker) {
+					const tracker = data.apiTracker;
+					const metrics = tracker.metrics || {};
+
+					document.getElementById('apiTotal').textContent = metrics.totalRequests || 0;
+					document.getElementById('apiDiscord').textContent = metrics.discordClientRequests || 0;
+					document.getElementById('apiDashboard').textContent = metrics.dashboardOAuthRequests || 0;
+					document.getElementById('apiExternal').textContent = metrics.externalRequests || 0;
+					document.getElementById('apiIncoming').textContent = metrics.incomingWebRequests || 0;
+
+					const rpm = tracker.requestsLastMinute || 0;
+					const rpmEl = document.getElementById('apiRpm');
+					rpmEl.textContent = `${rpm} RPM`;
+					if (rpm > 40) {
+						rpmEl.style.color = 'var(--danger)';
+					} else if (rpm > 20) {
+						rpmEl.style.color = 'var(--warning)';
+					} else {
+						rpmEl.style.color = 'var(--success)';
+					}
+
+					// Update graph
+					if (tracker.rpmHistory) {
+						rpmHistory = tracker.rpmHistory;
+					} else {
+						rpmHistory.push(rpm);
+						if (rpmHistory.length > 30) {
+							rpmHistory.shift();
+						}
+					}
+					drawApiChart(rpmHistory);
+
+					document.getElementById('apiRateLimits').textContent = metrics.rateLimitsEncountered || 0;
+
+					// Render request stream console
+					const consoleEl = document.getElementById('requestStreamConsole');
+					const newRequests = tracker.recentRequests || [];
+
+					if (newRequests.length > 0) {
+						const reversedNew = [...newRequests].reverse();
+						localRequests = [...localRequests, ...reversedNew].slice(-500);
+					}
+
+					if (localRequests.length === 0) {
+						consoleEl.innerHTML = '<div class="stream-placeholder">Listening for active API request streams...</div>';
+					} else {
+						// Save scroll state before rendering new elements
+						const isAtBottom = consoleEl.scrollHeight - consoleEl.clientHeight <= consoleEl.scrollTop + 50;
+
+						// Pulse animation if there are new requests since last poll
+						const pulseEl = document.getElementById('streamPulse');
+						if (metrics.totalRequests > lastRequestCount) {
+							pulseEl.classList.add('active');
+							setTimeout(() => pulseEl.classList.remove('active'), 5000);
+							lastRequestCount = metrics.totalRequests;
+						}
+
+						consoleEl.innerHTML = localRequests.map(req => {
+							const date = new Date(req.timestamp);
+							const timeStr = date.toLocaleTimeString([], { hour12: false });
+
+							let badgeMethodClass = 'badge-method-any';
+							const method = (req.method || 'GET').toUpperCase();
+							if (method === 'GET') badgeMethodClass = 'badge-method-get';
+							else if (method === 'POST') badgeMethodClass = 'badge-method-post';
+							else if (method === 'PUT') badgeMethodClass = 'badge-method-put';
+							else if (method === 'DELETE') badgeMethodClass = 'badge-method-delete';
+
+							let badgeStatusClass = 'status-pending';
+							const status = req.statusCode;
+							if (status === 'Pending') badgeStatusClass = 'status-pending';
+							else if (status === 'Failed') badgeStatusClass = 'status-error';
+							else if (status >= 200 && status < 300) badgeStatusClass = 'status-success';
+							else if (status >= 300 && status < 400) badgeStatusClass = 'status-warning';
+							else badgeStatusClass = 'status-error';
+
+							const latencyStr = req.duration > 0 ? `${req.duration}ms` : (status === 'Pending' ? '...' : '<1ms');
+							const pathName = req.path || '/';
+							const ipBadge = req.ip ? `<span class="stream-badge badge-ip" style="background: rgba(255,255,255,0.07); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.1); font-size: 0.7rem; border-radius: 4px; padding: 1px 4px;">${req.ip}</span>` : '';
+
+							const isExpanded = expandedRows.has(req.id);
+							const detailsDisplay = isExpanded ? 'block' : 'none';
+
+							const formatHeaders = (headersObj) => {
+								if (!headersObj || Object.keys(headersObj).length === 0) {
+									return '<div style="color: var(--text-muted); font-style: italic; font-size: 0.75rem;">No headers tracked</div>';
+								}
+								return Object.entries(headersObj).map(([k, v]) => {
+									return `<div style="margin-bottom: 0.15rem; word-break: break-all;"><span style="color: #a5b4fc;">${escapeHtml(k)}:</span> <span style="color: #e2e8f0;">${escapeHtml(v)}</span></div>`;
+								}).join('');
+							};
+
+							const reqHeadersHtml = formatHeaders(req.reqHeaders);
+							const resHeadersHtml = formatHeaders(req.resHeaders);
+							const errorMsgHtml = req.error ? `<div style="margin-top: 0.5rem; padding: 0.4rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 4px; color: var(--danger); font-size: 0.75rem;"><strong>Error:</strong> ${escapeHtml(req.error)}</div>` : '';
+
+							return `
+								<div class="stream-row-container" style="display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 0.25rem;">
+									<div class="stream-row ${req.type}" onclick="toggleRowDetails('${req.id}')" style="cursor: pointer; user-select: none;">
+										<div class="stream-left">
+											<span class="stream-badge ${badgeMethodClass}">${method}</span>
+											<span class="stream-badge badge-type">${req.type}</span>
+											${ipBadge}
+											<span class="stream-path" title="${pathName}">${pathName}</span>
+										</div>
+										<div class="stream-right">
+											<span class="badge-status ${badgeStatusClass}">${status}</span>
+											<span class="stream-latency">${latencyStr}</span>
+											<span class="stream-time">${timeStr}</span>
+										</div>
+									</div>
+									<div id="details-${req.id}" class="stream-details" style="display: ${detailsDisplay}; padding: 0.75rem; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; font-size: 0.75rem; font-family: 'Fira Code', monospace; color: var(--text-secondary);">
+										<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+											<div>
+												<div style="color: var(--accent-primary); font-weight: 600; margin-bottom: 0.25rem; font-size: 0.75rem;">Request Headers</div>
+												<div style="max-height: 120px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 0.4rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.02);">${reqHeadersHtml}</div>
+											</div>
+											<div>
+												<div style="color: var(--success); font-weight: 600; margin-bottom: 0.25rem; font-size: 0.75rem;">Response Headers</div>
+												<div style="max-height: 120px; overflow-y: auto; background: rgba(0,0,0,0.3); padding: 0.4rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.02);">${resHeadersHtml}</div>
+											</div>
+										</div>
+										${errorMsgHtml}
+									</div>
+								</div>
+							`;
+						}).join('');
+
+						// Auto scroll if scrolled to bottom or initial load
+						if (isAtBottom || isInitial) {
+							consoleEl.scrollTop = consoleEl.scrollHeight;
+						}
+					}
+				}
+
+			} catch (e) {
+				console.error('[Admin] Failed to update status:', e);
+				if (isInitial) {
+					window.location.href = '/dashboard';
+				}
+			} finally {
+				if (isInitial) {
+					hideLoader();
+				}
+			}
+		}
+
+		async function loadUserProfile() {
+			await updateStatus(true);
+			// Start polling every 3 seconds for live updates
+			if (updateInterval) clearInterval(updateInterval);
+			updateInterval = setInterval(() => updateStatus(false), 3000);
+		}
+
+		// Toggle Auto Refresh
+		function toggleAutoRefresh() {
+			const btn = document.getElementById('autoToggleBtn');
+			if (updateInterval) {
+				clearInterval(updateInterval);
+				updateInterval = null;
+				btn.classList.remove('active');
+				btn.textContent = 'Auto-refresh Off';
+			} else {
+				updateStatus(false);
+				updateInterval = setInterval(() => updateStatus(false), 3000);
+				btn.classList.add('active');
+				btn.textContent = 'Auto-refresh (3s)';
+			}
+		}
+
+		window.addEventListener('beforeunload', () => {
+			if (updateInterval) clearInterval(updateInterval);
+		});
+
+		// Save bot status
+		async function saveBotStatus() {
+			const statusVal = document.getElementById('statusInput').value;
+			try {
+				const res = await fetch('/api/admin/bot_status', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ statusText: statusVal })
+				});
+				if (res.ok) {
+					alert('Bot activity status updated successfully!');
+				} else {
+					throw new Error('Server rejected operation');
+				}
+			} catch (e) {
+				alert('Error updating status: ' + e.message);
+			}
+		}
+
+		// Restart Bot Process gracefully
+		async function restartBot() {
+			if (!confirm('Are you sure you want to gracefully restart the bot process?')) return;
+			try {
+				const res = await fetch('/api/admin/restart', { method: 'POST' });
+				if (res.ok) {
+					alert('Restart signal sent! The page will disconnect shortly and reconnect when the bot restarts.');
+					setTimeout(() => { window.location.reload(); }, 6000);
+				} else {
+					throw new Error('Server rejected operation');
+				}
+			} catch (e) {
+				alert('Error sending restart: ' + e.message);
+			}
+		}
+
+		// Modal Controls for Profile Settings
+		function toggleModal(show) {
+			const modal = document.getElementById('profileModal');
+			if (show) {
+				modal.classList.add('active');
+			} else {
+				modal.classList.remove('active');
+			}
+		}
+
+		function openProfileModal() {
+			const user = window.currentUser;
+			if (!user) return;
+
+			document.getElementById('modalAvatar').src = user.avatarUrl;
+			document.getElementById('modalUsername').textContent = user.username;
+			document.getElementById('modalRankText').textContent = user.rankText || 'No custom rank active';
+
+			// Populate select
+			const select = document.getElementById('rankSelect');
+			select.innerHTML = '<option value="">None (Empty)</option>';
+
+			if (user.eligibleRanks && user.eligibleRanks.length > 0) {
+				user.eligibleRanks.forEach(rank => {
+					const opt = document.createElement('option');
+					opt.value = rank;
+					opt.textContent = RANK_LABELS[rank] || rank;
+					if (rank === user.displayRank) {
+						opt.selected = true;
+					}
+					select.appendChild(opt);
+				});
+			} else {
+				const opt = document.createElement('option');
+				opt.value = "";
+				opt.textContent = "No eligible ranks";
+				opt.disabled = true;
+				select.appendChild(opt);
+			}
+
+			toggleModal(true);
+		}
+
+		function closeProfileModal(event) {
+			if (event && event.target === document.getElementById('profileModal')) {
+				toggleModal(false);
+			}
+		}
+
+		function previewRankChange() {
+			const select = document.getElementById('rankSelect');
+			const chosen = select.value;
+			const rankTextPreview = chosen ? (RANK_LABELS[chosen] || '') : 'None (Empty)';
+			document.getElementById('modalRankText').textContent = rankTextPreview;
+		}
+
+		async function saveProfileConfig() {
+			const select = document.getElementById('rankSelect');
+			const chosenRank = select.value;
+
+			try {
+				const res = await fetch('/api/user/config', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({ displayRank: chosenRank })
+				});
+
+				if (!res.ok) {
+					throw new Error('Failed to save settings');
+				}
+
+				toggleModal(false);
+
+				// Reload profile changes immediately
+				await loadUserProfile();
+			} catch (e) {
+				alert('Error saving rank choice: ' + e.message);
+			}
+		}
+
+		// Boot setup
+		loadUserProfile();
+	</script>
+</body>
+
+</html>

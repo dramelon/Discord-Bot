@@ -88,7 +88,7 @@ module.exports = {
 				const targetMember = interaction.options.getMember('target') || interaction.member;
 				const useServerAvatar = interaction.options.getBoolean('use_server_avatar') ?? false;
 
-				if (useServerAvatar && targetMember) {
+				if (useServerAvatar && targetMember && typeof targetMember.displayAvatarURL === 'function') {
 					source = targetMember.displayAvatarURL({ extension: 'png', size: 1024, forceStatic: true });
 				} else {
 					source = targetUser.displayAvatarURL({ extension: 'png', size: 1024, forceStatic: true });

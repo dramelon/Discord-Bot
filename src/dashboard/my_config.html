@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Fluffingiously Dragooon - My Configuration</title>
+	<!-- Fonts -->
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+	<style>
+		:root {
+			--bg-primary: #090d16;
+			--bg-secondary: #0f172a;
+			--glass-bg: rgba(15, 23, 42, 0.45);
+			--glass-border: rgba(255, 255, 255, 0.06);
+			--glass-glow: rgba(99, 102, 241, 0.05);
+			--text-primary: #f8fafc;
+			--text-secondary: #94a3b8;
+			--text-muted: #64748b;
+			
+			/* Accents */
+			--accent-primary: #6366f1; /* Indigo */
+			--accent-secondary: #8b5cf6; /* Violet */
+			--success: #10b981; /* Emerald */
+			--warning: #f59e0b; /* Amber */
+			--danger: #ef4444; /* Rose */
+		}
+
+		* {
+			box-sizing: border-box;
+			margin: 0;
+			padding: 0;
+		}
+
+		body {
+			font-family: 'Outfit', sans-serif;
+			background-color: var(--bg-primary);
+			color: var(--text-primary);
+			min-height: 100vh;
+			display: flex;
+			background-image: 
+				radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
+				radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 40%);
+			background-attachment: fixed;
+			overflow-x: hidden;
+		}
+
+
+
+		/* Main container */
+		main {
+			margin-left: 280px;
+			flex-grow: 1;
+			padding: 2.5rem;
+			max-width: 1200px;
+		}
+
+		/* Page Header */
+		.page-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 2.5rem;
+		}
+
+		.page-title h1 {
+			font-size: 1.75rem;
+			font-weight: 700;
+			letter-spacing: -0.02em;
+		}
+
+		.page-title p {
+			color: var(--text-secondary);
+			font-size: 0.9rem;
+			margin-top: 0.25rem;
+		}
+
+		/* Config Section Card */
+		.config-section {
+			background: var(--glass-bg);
+			border: 1px solid var(--glass-border);
+			border-radius: 20px;
+			padding: 2.5rem;
+			backdrop-filter: blur(20px);
+			-webkit-backdrop-filter: blur(20px);
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+			text-align: center;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 1.25rem;
+		}
+
+		.config-icon {
+			font-size: 3rem;
+			margin-bottom: 0.5rem;
+			animation: float 3s ease-in-out infinite;
+		}
+
+		@keyframes float {
+			0%, 100% { transform: translateY(0); }
+			50% { transform: translateY(-8px); }
+		}
+
+		.config-section h2 {
+			font-size: 1.4rem;
+			font-weight: 700;
+		}
+
+		.config-section p {
+			font-size: 0.95rem;
+			color: var(--text-secondary);
+			max-width: 500px;
+			line-height: 1.6;
+		}
+
+		/* Loading Overlay */
+		.loading-overlay {
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background: var(--bg-primary);
+			z-index: 10000;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			gap: 1.5rem;
+			transition: opacity 0.5s ease, visibility 0.5s;
+		}
+
+		.loading-overlay.hidden {
+			opacity: 0;
+			visibility: hidden;
+			pointer-events: none;
+		}
+
+		.spinner {
+			width: 40px;
+			height: 40px;
+			border: 3px solid rgba(99, 102, 241, 0.1);
+			border-top-color: var(--accent-primary);
+			border-radius: 50%;
+			animation: spin 1s linear infinite;
+		}
+
+		@keyframes spin {
+			to { transform: rotate(360deg); }
+		}
+
+		/* Modal Overlay */
+		.modal-overlay {
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background: rgba(4, 6, 15, 0.8);
+			backdrop-filter: blur(12px);
+			-webkit-backdrop-filter: blur(12px);
+			z-index: 1000;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			opacity: 0;
+			pointer-events: none;
+			transition: opacity 0.3s ease;
+		}
+
+		.modal-overlay.active {
+			opacity: 1;
+			pointer-events: auto;
+		}
+
+		.modal-content {
+			background: var(--glass-bg);
+			border: 1px solid var(--glass-border);
+			border-radius: 24px;
+			width: 90%;
+			max-width: 400px;
+			padding: 2rem;
+			box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+			backdrop-filter: blur(20px);
+			-webkit-backdrop-filter: blur(20px);
+			transform: scale(0.9);
+			transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+		}
+
+		.modal-overlay.active .modal-content {
+			transform: scale(1);
+		}
+
+		.modal-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 1.5rem;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+			padding-bottom: 0.75rem;
+		}
+
+		.modal-header h3 {
+			font-size: 1.2rem;
+			font-weight: 700;
+			background: linear-gradient(135deg, var(--text-primary) 30%, var(--text-secondary) 100%);
+			-webkit-background-clip: text;
+			background-clip: text;
+			-webkit-text-fill-color: transparent;
+		}
+
+		.close-btn {
+			font-size: 1.5rem;
+			color: var(--text-muted);
+			cursor: pointer;
+			transition: color 0.2s;
+			line-height: 1;
+		}
+
+		.close-btn:hover {
+			color: var(--text-primary);
+		}
+
+		.profile-preview {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 0.75rem;
+			margin-bottom: 2rem;
+			text-align: center;
+		}
+
+		.profile-preview img {
+			width: 90px;
+			height: 90px;
+			border-radius: 50%;
+			border: 2px solid var(--accent-primary);
+			box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+			object-fit: cover;
+		}
+
+		.profile-preview h4 {
+			font-size: 1.15rem;
+			font-weight: 700;
+			color: var(--text-primary);
+		}
+
+		.modal-rank-soft-text {
+			font-size: 0.85rem;
+			color: var(--text-muted);
+			font-weight: 600;
+			opacity: 0.8;
+			letter-spacing: 0.02em;
+		}
+
+		.form-group {
+			display: flex;
+			flex-direction: column;
+			gap: 0.5rem;
+			margin-bottom: 2rem;
+		}
+
+		.form-group label {
+			font-size: 0.8rem;
+			color: var(--text-secondary);
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+		}
+
+		.form-group select {
+			background: rgba(0, 0, 0, 0.4);
+			border: 1px solid var(--glass-border);
+			color: var(--text-primary);
+			padding: 0.8rem 1rem;
+			border-radius: 12px;
+			font-family: inherit;
+			font-size: 0.9rem;
+			outline: none;
+			cursor: pointer;
+			transition: all 0.3s;
+			box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+		}
+
+		.form-group select:focus {
+			border-color: var(--accent-primary);
+			box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+		}
+
+		.modal-footer {
+			display: flex;
+			justify-content: flex-end;
+			gap: 0.75rem;
+			border-top: 1px solid rgba(255, 255, 255, 0.05);
+			padding-top: 1.25rem;
+		}
+
+		.btn {
+			padding: 0.75rem 1.5rem;
+			border-radius: 12px;
+			font-family: inherit;
+			font-size: 0.85rem;
+			font-weight: 600;
+			cursor: pointer;
+			transition: all 0.2s;
+			border: 1px solid transparent;
+		}
+
+		.btn-secondary {
+			background: transparent;
+			border-color: var(--glass-border);
+			color: var(--text-secondary);
+		}
+
+		.btn-secondary:hover {
+			background: rgba(255, 255, 255, 0.03);
+			color: var(--text-primary);
+		}
+
+		.btn-primary {
+			background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+			color: #ffffff;
+			box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+		}
+
+		.btn-primary:hover {
+			transform: translateY(-1px);
+			box-shadow: 0 6px 16px rgba(99, 102, 241, 0.3);
+		}
+
+		/* Responsive grid adjustments */
+		@media (max-width: 768px) {
+			.page-header {
+				flex-direction: column;
+				align-items: flex-start;
+				gap: 1rem;
+			}
+		}
+
+		/* Switch Slider styles */
+		.toggle-container {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			width: 100%;
+			max-width: 100%;
+			padding: 0.75rem 1rem;
+			background: rgba(255, 255, 255, 0.02);
+			border: 1px solid var(--glass-border);
+			border-radius: 12px;
+			margin-bottom: 0.75rem;
+		}
+
+		.toggle-label {
+			display: flex;
+			flex-direction: column;
+			text-align: left;
+			gap: 0.15rem;
+		}
+
+		.toggle-title {
+			font-size: 0.95rem;
+			font-weight: 600;
+			color: var(--text-primary);
+		}
+
+		.toggle-desc {
+			font-size: 0.8rem;
+			color: var(--text-muted);
+		}
+
+		.switch {
+			position: relative;
+			display: inline-block;
+			width: 44px;
+			height: 24px;
+			flex-shrink: 0;
+		}
+
+		.switch input {
+			opacity: 0;
+			width: 0;
+			height: 0;
+		}
+
+		.slider {
+			position: absolute;
+			cursor: pointer;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background-color: #334155;
+			transition: .3s;
+			border-radius: 24px;
+		}
+
+		.slider:before {
+			position: absolute;
+			content: "";
+			height: 18px;
+			width: 18px;
+			left: 3px;
+			bottom: 3px;
+			background-color: white;
+			transition: .3s;
+			border-radius: 50%;
+		}
+
+		input:checked + .slider {
+			background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+		}
+
+		input:checked + .slider:before {
+			transform: translateX(20px);
+		}
+
+		.widget-card-container {
+			display: grid;
+			grid-template-columns: 1fr;
+			gap: 2rem;
+			width: 100%;
+			margin-top: 1.5rem;
+		}
+
+		@media (min-width: 900px) {
+			.widget-card-container {
+				grid-template-columns: 1fr 1fr;
+			}
+		}
+
+		.settings-panel {
+			background: var(--glass-bg);
+			border: 1px solid var(--glass-border);
+			border-radius: 20px;
+			padding: 2rem;
+			backdrop-filter: blur(20px);
+			-webkit-backdrop-filter: blur(20px);
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+			text-align: left;
+			display: flex;
+			flex-direction: column;
+			gap: 1.25rem;
+		}
+
+		.settings-panel h2 {
+			font-size: 1.3rem;
+			font-weight: 700;
+			display: flex;
+			align-items: center;
+			gap: 0.5rem;
+		}
+
+		.status-badge {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.35rem;
+			padding: 0.35rem 0.75rem;
+			border-radius: 20px;
+			font-size: 0.8rem;
+			font-weight: 600;
+			background: rgba(255, 255, 255, 0.03);
+			border: 1px solid var(--glass-border);
+			margin-top: 0.25rem;
+			align-self: flex-start;
+		}
+
+		.status-badge.synced {
+			color: var(--success);
+			background: rgba(16, 185, 129, 0.05);
+			border-color: rgba(16, 185, 129, 0.2);
+		}
+	</style>
+</head>
+<body>
+
+	<!-- Loading Screen Overlay -->
+	<div id="loadingOverlay" class="loading-overlay">
+		<div class="spinner"></div>
+		<p id="loadingMessage">Fetching configuration settings...</p>
+	</div>
+
+	<!-- INCLUDE_SIDEBAR -->
+
+	<!-- Main Workspace Panel -->
+	<main>
+		<header class="page-header">
+			<div class="page-title">
+				<h1>My Configuration</h1>
+				<p>Configure command preferences and personalized bot operations.</p>
+			</div>
+		</header>
+
+		<!-- Config Grid Panel -->
+		<div class="widget-card-container">
+			<!-- Panel 1: Profile Rank Settings -->
+			<div class="settings-panel">
+				<h2>👤 Profile Rank Configuration</h2>
+				<p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 0.5rem;">
+					Customize how your role rank is displayed across the bot web panel and server cards.
+				</p>
+				
+				<div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: 12px; border: 1px solid var(--glass-border); width: 100%;">
+					<img id="configAvatar" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Avatar" style="width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--accent-primary);">
+					<div>
+						<h4 id="configUsername" style="font-size: 1.1rem; font-weight: 700;">Username</h4>
+						<p id="configRankText" class="modal-rank-soft-text" style="margin-top: 0.15rem; color: var(--text-muted); font-size: 0.85rem;"></p>
+					</div>
+				</div>
+
+				<div class="form-group" style="margin-bottom: 1.5rem; width: 100%;">
+					<label for="pageRankSelect" style="margin-bottom: 0.5rem; display: block;">Select Active Rank</label>
+					<select id="pageRankSelect" onchange="previewPageRankChange()" style="width: 100%;">
+						<!-- Options loaded dynamically -->
+					</select>
+				</div>
+
+				<button class="btn btn-primary" onclick="savePageRankConfig()" style="align-self: flex-start;">Save Rank Details</button>
+			</div>
+
+			<!-- Panel 2: Profile Connection Widget -->
+			<div class="settings-panel">
+				<h2>🆔 Profile Connection & Custom Widget</h2>
+				<p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 0.5rem;">
+					Select which live statistics should sync to your Discord profile. This will update both your standard **Role Connections** and your **Custom Profile Board Widget** (Social Layer SDK).
+				</p>
+
+				<div class="status-badge synced" id="syncStatusBadge" style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start;">
+					<span>✨ Discord Sync Active</span>
+				</div>
+
+				<div style="margin-top: 1rem; width: 100%;">
+					<div class="toggle-container">
+						<div class="toggle-label">
+							<span class="toggle-title">Sync Level</span>
+							<span class="toggle-desc">Show your bot level and rank</span>
+						</div>
+						<label class="switch">
+							<input type="checkbox" id="syncLevel" checked>
+							<span class="slider"></span>
+						</label>
+					</div>
+
+					<div class="toggle-container">
+						<div class="toggle-label">
+							<span class="toggle-title">Sync XP Progress</span>
+							<span class="toggle-desc">Show level XP percentage and total XP</span>
+						</div>
+						<label class="switch">
+							<input type="checkbox" id="syncXP" checked>
+							<span class="slider"></span>
+						</label>
+					</div>
+
+					<div class="toggle-container">
+						<div class="toggle-label">
+							<span class="toggle-title">Sync Achievements</span>
+							<span class="toggle-desc">Show server achievements and ranking</span>
+						</div>
+						<label class="switch">
+							<input type="checkbox" id="syncAchievements" checked>
+							<span class="slider"></span>
+						</label>
+					</div>
+
+					<div class="toggle-container">
+						<div class="toggle-label">
+							<span class="toggle-title">Sync Messages Seen</span>
+							<span class="toggle-desc">Show message counts and message rank</span>
+						</div>
+						<label class="switch">
+							<input type="checkbox" id="syncMessages" checked>
+							<span class="slider"></span>
+						</label>
+					</div>
+
+					<div class="toggle-container">
+						<div class="toggle-label">
+							<span class="toggle-title">Sync Emojis Used</span>
+							<span class="toggle-desc">Show count of emojis used and emoji rank</span>
+						</div>
+						<label class="switch">
+							<input type="checkbox" id="syncEmojis" checked>
+							<span class="slider"></span>
+						</label>
+					</div>
+
+					<div class="toggle-container">
+						<div class="toggle-label">
+							<span class="toggle-title">Sync Stickers Used</span>
+							<span class="toggle-desc">Show count of stickers used and sticker rank</span>
+						</div>
+						<label class="switch">
+							<input type="checkbox" id="syncStickers" checked>
+							<span class="slider"></span>
+						</label>
+					</div>
+				</div>
+
+				<button class="btn btn-primary" onclick="saveConnectionsConfig()" style="align-self: flex-start; margin-top: 0.5rem;">Save & Sync with Discord</button>
+				<p style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.4; margin-top: 0.25rem;">
+					ℹ️ Don't forget to enable "Display on profile" in your Discord Connection Settings for **Fluffingiously Dragooon**!<br>
+					🌐 To use the Custom Profile Board Widget, make sure to authorize the Social SDK first.
+				</p>
+			</div>
+		</div>
+	</main>
+
+	<!-- Settings Dialog Overlay -->
+	<div id="profileModal" class="modal-overlay" onclick="closeProfileModal(event)">
+		<div class="modal-content" onclick="event.stopPropagation()">
+			<div class="modal-header">
+				<h3>Profile Settings</h3>
+				<span class="close-btn" onclick="toggleModal(false)">&times;</span>
+			</div>
+			<div class="modal-body">
+				<div class="profile-preview">
+					<img id="modalAvatar" src="" alt="Avatar">
+					<h4 id="modalUsername">Username</h4>
+					<p id="modalRankText" class="modal-rank-soft-text"></p>
+				</div>
+				<div class="form-group">
+					<label for="rankSelect">Choose Display Rank</label>
+					<select id="rankSelect" onchange="previewRankChange()">
+						<!-- Options loaded dynamically -->
+					</select>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button class="btn btn-secondary" onclick="toggleModal(false)">Cancel</button>
+				<button class="btn btn-primary" onclick="saveProfileConfig()">Save Changes</button>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		window.currentUser = null;
+
+		const RANK_LABELS = {
+			"bot dev": "bot dev",
+			"den boundless resident": "den boundless resident",
+			"den disciple echoing": "den disciple echoing",
+			"den journeyer": "den journeyer",
+			"den member": "den member",
+			"member": "member"
+		};
+
+		// Close loader
+		function hideLoader() {
+			const overlay = document.getElementById('loadingOverlay');
+			if (overlay) overlay.classList.add('hidden');
+		}
+
+		// Update user info and page details
+		async function loadUserProfile() {
+			try {
+				const res = await fetch('/api/status');
+				if (!res.ok) throw new Error();
+				const data = await res.json();
+
+				if (!data.user) {
+					// Session expired or logged out - send back to login/dashboard
+					window.location.href = '/dashboard';
+					return;
+				}
+
+				window.currentUser = data.user;
+
+				// Sidebar Profile Card
+				const profileSection = document.getElementById('userProfileSection');
+				const rankText = data.user.rankText ? ` <span class="rank-soft-text">${data.user.rankText}</span>` : '';
+				
+				profileSection.innerHTML = `
+					<div class="user-card">
+						<div class="user-details" onclick="openProfileModal()" style="cursor: pointer;">
+							<img src="${data.user.avatarUrl}" alt="User Avatar" class="user-avatar" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+							<span class="user-name" title="${data.user.username}">${data.user.username}${rankText}</span>
+						</div>
+						<a href="/api/auth/logout" class="logout-btn" title="Logout" onclick="event.stopPropagation()">
+							<svg style="width:16px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+								<path d="M16 17v-3H9v-4h7V7l5 5-5 5M14 2a2 2 0 0 1 2 2v2h-2V4H5v16h9v-2h2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9z"/>
+							</svg>
+						</a>
+					</div>
+				`;
+
+				// Update bot info header in sidebar
+				if (data.bot) {
+					document.getElementById('botAvatar').src = data.bot.avatarUrl || 'https://cdn.discordapp.com/embed/avatars/0.png';
+					document.getElementById('botTagName').textContent = data.bot.username || 'Fluffingiously';
+					document.getElementById('sidebarStatusDot').className = `status-dot ${data.bot.status === 'online' ? 'online' : 'offline'}`;
+				}
+
+				// Show admin links if qualified
+				const adminOnlyItems = document.querySelectorAll('.admin-only');
+				if (data.user.isAdmin) {
+					adminOnlyItems.forEach(el => el.style.display = 'block');
+				} else {
+					adminOnlyItems.forEach(el => el.style.display = 'none');
+				}
+
+				// Update page config panel details
+				document.getElementById('configAvatar').src = data.user.avatarUrl;
+				document.getElementById('configUsername').textContent = data.user.username;
+				document.getElementById('configRankText').textContent = data.user.rankText || 'No custom rank active';
+
+				// Populate rank select on the main page
+				const pageSelect = document.getElementById('pageRankSelect');
+				pageSelect.innerHTML = '<option value="">None (Empty)</option>';
+
+				if (data.user.eligibleRanks && data.user.eligibleRanks.length > 0) {
+					data.user.eligibleRanks.forEach(rank => {
+						const opt = document.createElement('option');
+						opt.value = rank;
+						opt.textContent = RANK_LABELS[rank] || rank;
+						if (rank === data.user.displayRank) {
+							opt.selected = true;
+						}
+						pageSelect.appendChild(opt);
+					});
+				} else {
+					const opt = document.createElement('option');
+					opt.value = "";
+					opt.textContent = "No eligible ranks";
+					opt.disabled = true;
+					pageSelect.appendChild(opt);
+				}
+
+				// Populate connection widget toggles
+				const conn = data.user.connectionsConfig || {
+					syncLevel: true,
+					syncXP: true,
+					syncAchievements: true,
+					syncMessages: true,
+					syncEmojis: true,
+					syncStickers: true
+				};
+
+				document.getElementById('syncLevel').checked = conn.syncLevel !== false;
+				document.getElementById('syncXP').checked = conn.syncXP !== false;
+				document.getElementById('syncAchievements').checked = conn.syncAchievements !== false;
+				document.getElementById('syncMessages').checked = conn.syncMessages !== false;
+				document.getElementById('syncEmojis').checked = conn.syncEmojis !== false;
+				document.getElementById('syncStickers').checked = conn.syncStickers !== false;
+
+			} catch (e) {
+				console.error('[MyConfig] Failed to load session status:', e);
+				window.location.href = '/dashboard';
+			} finally {
+				hideLoader();
+			}
+		}
+
+		// Main page Rank Controls
+		function previewPageRankChange() {
+			const select = document.getElementById('pageRankSelect');
+			const chosen = select.value;
+			const rankTextPreview = chosen ? (RANK_LABELS[chosen] || '') : 'None (Empty)';
+			document.getElementById('configRankText').textContent = rankTextPreview;
+		}
+
+		async function savePageRankConfig() {
+			const select = document.getElementById('pageRankSelect');
+			const chosenRank = select.value;
+
+			try {
+				const res = await fetch('/api/user/config', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({ displayRank: chosenRank })
+				});
+
+				if (!res.ok) {
+					throw new Error('Failed to save settings');
+				}
+
+				alert('Success: Rank settings updated!');
+				// Reload profile changes immediately
+				await loadUserProfile();
+			} catch (e) {
+				alert('Error saving rank choice: ' + e.message);
+			}
+		}
+
+		// Profile Connection Widget Controls
+		async function saveConnectionsConfig() {
+			const config = {
+				connectionsConfig: {
+					syncLevel: document.getElementById('syncLevel').checked,
+					syncXP: document.getElementById('syncXP').checked,
+					syncAchievements: document.getElementById('syncAchievements').checked,
+					syncMessages: document.getElementById('syncMessages').checked,
+					syncEmojis: document.getElementById('syncEmojis').checked,
+					syncStickers: document.getElementById('syncStickers').checked
+				}
+			};
+
+			try {
+				const res = await fetch('/api/user/connections-config', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify(config)
+				});
+
+				if (!res.ok) {
+					throw new Error('Failed to sync widget configuration');
+				}
+
+				const result = await res.json();
+				let msg = 'Success: Connection widget configuration saved!';
+				if (result.roleConnectionSuccess && result.widgetSuccess) {
+					msg += '\n✨ Stats synced with both Discord Role Connections and Custom Profile Widget!';
+				} else if (result.roleConnectionSuccess) {
+					msg += '\n✨ Stats synced with Discord Role Connections!';
+				} else if (result.widgetSuccess) {
+					msg += '\n✨ Stats synced with Custom Profile Widget!';
+				} else {
+					msg += '\n⚠️ Connection updated locally, but failed to sync to Discord APIs.';
+				}
+
+				alert(msg);
+				await loadUserProfile();
+			} catch (e) {
+				alert('Error synchronizing connection widget: ' + e.message);
+			}
+		}
+
+		// Modal Controls for Profile Settings
+		function toggleModal(show) {
+			const modal = document.getElementById('profileModal');
+			if (show) {
+				modal.classList.add('active');
+			} else {
+				modal.classList.remove('active');
+			}
+		}
+
+		function openProfileModal() {
+			const user = window.currentUser;
+			if (!user) return;
+
+			document.getElementById('modalAvatar').src = user.avatarUrl;
+			document.getElementById('modalUsername').textContent = user.username;
+			document.getElementById('modalRankText').textContent = user.rankText || 'No custom rank active';
+
+			// Populate select
+			const select = document.getElementById('rankSelect');
+			select.innerHTML = '<option value="">None (Empty)</option>';
+
+			if (user.eligibleRanks && user.eligibleRanks.length > 0) {
+				user.eligibleRanks.forEach(rank => {
+					const opt = document.createElement('option');
+					opt.value = rank;
+					opt.textContent = RANK_LABELS[rank] || rank;
+					if (rank === user.displayRank) {
+						opt.selected = true;
+					}
+					select.appendChild(opt);
+				});
+			} else {
+				const opt = document.createElement('option');
+				opt.value = "";
+				opt.textContent = "No eligible ranks";
+				opt.disabled = true;
+				select.appendChild(opt);
+			}
+
+			toggleModal(true);
+		}
+
+		function closeProfileModal(event) {
+			if (event && event.target === document.getElementById('profileModal')) {
+				toggleModal(false);
+			}
+		}
+
+		function previewRankChange() {
+			const select = document.getElementById('rankSelect');
+			const chosen = select.value;
+			const rankTextPreview = chosen ? (RANK_LABELS[chosen] || '') : 'None (Empty)';
+			document.getElementById('modalRankText').textContent = rankTextPreview;
+		}
+
+		async function saveProfileConfig() {
+			const select = document.getElementById('rankSelect');
+			const chosenRank = select.value;
+
+			try {
+				const res = await fetch('/api/user/config', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({ displayRank: chosenRank })
+				});
+
+				if (!res.ok) {
+					throw new Error('Failed to save settings');
+				}
+
+				toggleModal(false);
+				
+				// Reload profile changes immediately
+				await loadUserProfile();
+			} catch (e) {
+				alert('Error saving rank choice: ' + e.message);
+			}
+		}
+
+		// Boot setup
+		loadUserProfile();
+	</script>
+</body>
+</html>

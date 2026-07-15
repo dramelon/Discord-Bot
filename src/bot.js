@@ -1,4 +1,9 @@
 require('dotenv').config();
+const logger = require('./utils/customLogger');
+console.log = logger.info;
+console.info = logger.info;
+console.warn = logger.warn;
+console.error = logger.error;
 const { Client, Collection, Events, GatewayIntentBits, Partials, AttachmentBuilder } = require('discord.js');
 
 const commandsList = require('./commands');
@@ -14,7 +19,9 @@ const { handleMessage, handleReaction, handleVoiceState, startActivityTracking }
 const { handleAchievementMessage, syncAchievements, TRACKING_CHANNEL_ID } = require('./utils/achievementTracker');
 const { handlePresenceMessage } = require('./utils/presenceTracker');
 const { isAdmin } = require('./utils/adminCheck');
-
+const { startStatusChannelUpdater } = require('./utils/statusChannelUpdater');
+const { startDashboard } = require('./dashboard');
+const apiTracker = require('./utils/apiTracker');
 
 const token = process.env.DISCORD_TOKEN;
 
@@ -39,6 +46,8 @@ const client = new Client({
 		Partials.User
 	]
 });
+
+apiTracker.initDiscordClient(client);
 
 const LOG_CHANNEL_ID = '1495616892369506374';
 
@@ -108,10 +117,11 @@ client.on(Events.Warn, (warning) => {
 client.commands = new Collection();
 
 for (const command of commandsList) {
-	if ('data' in command && 'execute' in command) {
+	if (command && 'data' in command && 'execute' in command) {
+		console.log(`[DEBUG] Registering command: "${command.data.name}"`);
 		client.commands.set(command.data.name, command);
 	} else {
-		console.log(`[WARNING] A command is missing a required "data" or "execute" property.`);
+		console.log(`[WARNING] A command is missing a required "data" or "execute" property. Details:`, command);
 	}
 }
 
@@ -119,10 +129,12 @@ client.on(Events.InteractionCreate, async interaction => {
 	// Only process ChatInputCommand, ContextMenuCommand, and Autocomplete interactions here.
 	if (!interaction.isChatInputCommand() && !interaction.isContextMenuCommand() && !interaction.isAutocomplete()) return;
 
-	const command = interaction.client.commands.get(interaction.commandName);
+	const commandName = interaction.commandName;
+	console.log(`[DEBUG] Received interaction for command: "${commandName}" (Type: ${interaction.type})`);
+	const command = interaction.client.commands.get(commandName);
 
 	if (!command) {
-		console.error(`No command matching ${interaction.commandName} was found.`);
+		console.error(`No command matching "${commandName}" was found. Registered commands: ${Array.from(interaction.client.commands.keys()).join(', ')}`);
 		return;
 	}
 
@@ -140,6 +152,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
 		try {
 			await command.execute(interaction);
+			console.log(`[Interaction] Command /${interaction.commandName} executed by ${interaction.user.tag} in guild ${interaction.guildId || 'DM'} successfully.`);
 
 			logCommand({
 				status: 'success',
@@ -154,6 +167,7 @@ client.on(Events.InteractionCreate, async interaction => {
 		} catch (error) {
 			const commandTypeStr = interaction.isChatInputCommand() ? 'Command' : 'Context Menu';
 			logErrorToDiscord(error, `${commandTypeStr}: ${interaction.commandName}`);
+			console.error(`[Interaction] Command /${interaction.commandName} executed by ${interaction.user.tag} failed: ${error.message}`);
 			
 			logCommand({
 				status: 'error',
@@ -199,6 +213,21 @@ client.on(Events.InteractionCreate, async interaction => {
 						await command.handleModal(interaction);
 					} catch (error) {
 						logErrorToDiscord(error, `Modal: ${interaction.customId} in ${name}`);
+					}
+					return;
+				}
+			}
+		}
+	}
+
+	if (interaction.isAnySelectMenu()) {
+		for (const [name, command] of client.commands) {
+			if (interaction.customId.startsWith(name)) {
+				if (command.handleSelectMenu) {
+					try {
+						await command.handleSelectMenu(interaction);
+					} catch (error) {
+						logErrorToDiscord(error, `SelectMenu: ${interaction.customId} in ${name}`);
 					}
 					return;
 				}
@@ -274,6 +303,8 @@ client.once(Events.ClientReady, safeEvent(readyClient => {
 	if (reminderCommand && reminderCommand.startScheduler) {
 		reminderCommand.startScheduler(readyClient);
 	}
+
+	startStatusChannelUpdater(readyClient);
 }, 'ClientReady'));
 
 try {
@@ -281,4 +312,19 @@ try {
 } catch (error) {
 	logErrorToDiscord(error, 'Initialization (startTracking)');
 }
+
+try {
+	startDashboard(client);
+} catch (error) {
+	logErrorToDiscord(error, 'Initialization (startDashboard)');
+}
+
+client.on(Events.GuildCreate, (guild) => {
+	console.log(`[Guild] Bot was invited/added to guild: ${guild.name} (ID: ${guild.id}) with ${guild.memberCount} members.`);
+});
+
+client.on(Events.GuildDelete, (guild) => {
+	console.log(`[Guild] Bot was removed from guild: ${guild.name} (ID: ${guild.id}).`);
+});
+
 client.login(token);

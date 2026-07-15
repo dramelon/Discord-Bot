@@ -16,11 +16,11 @@ const { getConfig, updateConfigs } = require('../../utils/configManager');
 const { isAdmin } = require('../../utils/adminCheck');
 
 // Helper to show the dynamic configurations modal
-function showConfigModal(interaction, modalType, config, guild) {
+function showSetupModal(interaction, modalType, config, guild) {
     if (modalType === 'main') {
         const modal = new ModalBuilder()
-            .setCustomId('config_modal_main')
-            .setTitle('Main - TempVC Configuration');
+            .setCustomId('setup_modal_main')
+            .setTitle('Quick Setup - TempVC Settings');
 
         const createLabel = new LabelBuilder()
             .setLabel('Voice Channel to create temporary VC')
@@ -64,8 +64,8 @@ function showConfigModal(interaction, modalType, config, guild) {
 
     if (modalType === 'create_channel') {
         const modal = new ModalBuilder()
-            .setCustomId('config_modal_create_channel')
-            .setTitle('TempVC : Create Channel');
+            .setCustomId('setup_modal_create_channel')
+            .setTitle('Setup: Create Channel');
 
         const createLabel = new LabelBuilder()
             .setLabel('Voice Channel to create temporary VC')
@@ -85,8 +85,8 @@ function showConfigModal(interaction, modalType, config, guild) {
 
     if (modalType === 'category') {
         const modal = new ModalBuilder()
-            .setCustomId('config_modal_category')
-            .setTitle('TempVC : Category');
+            .setCustomId('setup_modal_category')
+            .setTitle('Setup: VC Category');
 
         const categoryLabel = new LabelBuilder()
             .setLabel('Category where temporary VCs will be')
@@ -106,8 +106,8 @@ function showConfigModal(interaction, modalType, config, guild) {
 
     if (modalType === 'name_template') {
         const modal = new ModalBuilder()
-            .setCustomId('config_modal_name_template')
-            .setTitle('TempVC : Default Name');
+            .setCustomId('setup_modal_name_template')
+            .setTitle('Setup: Default VC Name');
 
         const nameLabel = new LabelBuilder()
             .setLabel('Default name of the temporary VC')
@@ -128,23 +128,22 @@ function showConfigModal(interaction, modalType, config, guild) {
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('config')
-        .setDescription('View and update the bot configuration for this server.')
+        .setName('setup')
+        .setDescription('Configure per-server settings for temporary voice channels.')
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
-        .addStringOption(option => 
+        .addStringOption(option =>
             option.setName('setting')
-                .setDescription('Select a setting to edit directly')
+                .setDescription('Select a specific setting to configure immediately via modal')
                 .setRequired(false)
                 .addChoices(
-                    { name: 'Main - TempVC', value: 'tempvc_main' },
-                    { name: 'TempVC : voice channel to create temporary voice channel', value: 'tempvc_create_channel' },
-                    { name: 'TempVC : category where temporary voice channels will be', value: 'tempvc_category' },
-                    { name: 'TempVC : default name of the temporary voice channel', value: 'tempvc_name_template' }
+                    { name: 'All Settings (Quick Setup)', value: 'main' },
+                    { name: 'Set Create VC Channel', value: 'create_channel' },
+                    { name: 'Set Category', value: 'category' },
+                    { name: 'Set Default VC Name', value: 'name_template' }
                 )
         ),
 
     async execute(interaction) {
-        // Check Admin Permissions
         if (!isAdmin(interaction.member)) {
             return interaction.reply({ content: '❌ You do not have permission to use this command.', ephemeral: true });
         }
@@ -153,39 +152,38 @@ module.exports = {
         const guildId = interaction.guildId;
         const config = getConfig(guildId);
 
-        if (!config) {
-            return interaction.reply({
-                content: '❌ This server has not been configured yet. Please run the `/setup` command to initialize settings.',
-                ephemeral: true
-            });
-        }
-
-        // 1. Direct Quick Edit via Modal
+        // 1. Direct modal popup if option was specified
         if (setting) {
-            const modalType = setting.replace('tempvc_', '');
-            return showConfigModal(interaction, modalType, config, interaction.guild);
+            return showSetupModal(interaction, setting, config, interaction.guild);
         }
 
-        // 2. Overview Embed with Buttons
+        // 2. Otherwise display setup overview embed with button triggers
+        const isConfigured = !!(config && config.tempVCCreateChannelId && config.tempVCCategoryId);
+        
         const embed = new EmbedBuilder()
-            .setTitle('⚙️ Server Configurations')
-            .setDescription('Manage configurations for this server. Use `/config setting:<choice>` to edit directly, or click the buttons below to change settings.')
-            .setColor(0x3498DB)
+            .setTitle('🛠️ Bot Server Setup')
+            .setDescription('Configure the bot settings for this server. Setting up the temporary voice channels requires configuring a voice generator channel, a category, and a name template.')
+            .setColor(isConfigured ? 0x2ECC71 : 0xE74C3C)
             .addFields(
-                { 
-                    name: '🔊 Voice Channel to Create Temp VC', 
-                    value: `**ID:** \`${config.tempVCCreateChannelId}\`\n**Channel:** <#${config.tempVCCreateChannelId}>\n*The channel members join to trigger creation.*`, 
-                    inline: false 
+                {
+                    name: '📋 Setup Status',
+                    value: isConfigured ? '✅ **Fully Configured**' : '❌ **Not Configured / Incomplete**',
+                    inline: false
                 },
-                { 
-                    name: '📁 Category for Temporary VCs', 
-                    value: `**ID:** \`${config.tempVCCategoryId}\`\n**Category:** <#${config.tempVCCategoryId}>\n*The category where new channels will be created.*`, 
-                    inline: false 
+                {
+                    name: '🔊 Voice Channel to Create Temp VC',
+                    value: config?.tempVCCreateChannelId ? `<#${config.tempVCCreateChannelId}> (\`${config.tempVCCreateChannelId}\`)` : '`Not Set`',
+                    inline: true
                 },
-                { 
-                    name: '📝 Default VC Name Template', 
-                    value: `**Template:** \`${config.tempVCNameTemplate}\`\n*Tip: Use \`{u}\` for their username and \`{d}\` for their displayname. Example: \`{d}'s Room\`.*`, 
-                    inline: false 
+                {
+                    name: '📁 Category for Temporary VCs',
+                    value: config?.tempVCCategoryId ? `<#${config.tempVCCategoryId}> (\`${config.tempVCCategoryId}\`)` : '`Not Set`',
+                    inline: true
+                },
+                {
+                    name: '📝 Default VC Name Template',
+                    value: `\`${config?.tempVCNameTemplate || "{d}'s Room"}\``,
+                    inline: false
                 }
             )
             .setFooter({ text: `Guild ID: ${guildId}` })
@@ -193,23 +191,23 @@ module.exports = {
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
-                .setCustomId('config_btn_main')
-                .setLabel('Edit All')
+                .setCustomId('setup_btn_main')
+                .setLabel(isConfigured ? 'Edit All' : 'Quick Setup')
                 .setStyle(ButtonStyle.Success)
                 .setEmoji('⚙️'),
             new ButtonBuilder()
-                .setCustomId('config_btn_create_channel')
-                .setLabel('Edit Create Channel')
+                .setCustomId('setup_btn_create_channel')
+                .setLabel('Set Create Channel')
                 .setStyle(ButtonStyle.Primary)
                 .setEmoji('🔊'),
             new ButtonBuilder()
-                .setCustomId('config_btn_category')
-                .setLabel('Edit Category')
+                .setCustomId('setup_btn_category')
+                .setLabel('Set Category')
                 .setStyle(ButtonStyle.Primary)
                 .setEmoji('📁'),
             new ButtonBuilder()
-                .setCustomId('config_btn_name_template')
-                .setLabel('Edit Default Name')
+                .setCustomId('setup_btn_name_template')
+                .setLabel('Set Default Name')
                 .setStyle(ButtonStyle.Primary)
                 .setEmoji('📝')
         );
@@ -218,39 +216,29 @@ module.exports = {
     },
 
     async handleButton(interaction) {
-        if (!interaction.customId.startsWith('config_btn_')) return;
+        if (!interaction.customId.startsWith('setup_btn_')) return;
 
-        // Check Admin Permissions
         if (!isAdmin(interaction.member)) {
             return interaction.reply({ content: '❌ You do not have permission to use this command.', ephemeral: true });
         }
 
-        const btnType = interaction.customId.replace('config_btn_', '');
+        const btnType = interaction.customId.replace('setup_btn_', '');
         const config = getConfig(interaction.guildId);
 
-        if (!config) {
-            return interaction.reply({
-                content: '❌ Server configurations could not be found. Please run the `/setup` command.',
-                ephemeral: true
-            });
-        }
-
-        return showConfigModal(interaction, btnType, config, interaction.guild);
+        return showSetupModal(interaction, btnType, config, interaction.guild);
     },
 
     async handleModal(interaction) {
-        if (!interaction.customId.startsWith('config_modal_')) return;
+        if (!interaction.customId.startsWith('setup_modal_')) return;
 
-        // Check Admin Permissions
         if (!isAdmin(interaction.member)) {
             return interaction.reply({ content: '❌ You do not have permission to use this command.', ephemeral: true });
         }
 
-        const modalType = interaction.customId.replace('config_modal_', '');
+        const modalType = interaction.customId.replace('setup_modal_', '');
         const guild = interaction.guild;
         const updates = {};
 
-        // Defer interaction since validation/database update is performed
         await interaction.deferReply({ ephemeral: true });
 
         try {
@@ -349,9 +337,9 @@ module.exports = {
 
             if (changes.length > 0) {
                 successEmbed
-                    .setTitle('✅ Configuration Updated Successfully')
+                    .setTitle('✅ Setup Configuration Updated')
                     .setColor(0x2ECC71)
-                    .setDescription('The settings have been updated for this server:')
+                    .setDescription('The settings have been configured successfully:')
                     .addFields(changes);
             } else {
                 successEmbed
@@ -363,8 +351,8 @@ module.exports = {
 
             await interaction.editReply({ embeds: [successEmbed] });
         } catch (error) {
-            console.error('Error handling config modal submit:', error);
-            await interaction.editReply({ content: '❌ An error occurred while saving the configuration.' });
+            console.error('Error handling setup modal submit:', error);
+            await interaction.editReply({ content: '❌ An error occurred while saving the setup configuration.' });
         }
     }
 };

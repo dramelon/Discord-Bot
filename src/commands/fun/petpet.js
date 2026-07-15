@@ -132,7 +132,7 @@ module.exports = {
                 const useServerAvatar = interaction.options.getBoolean('use_server_avatar') ?? true;
                 const notify = interaction.options.getBoolean('notify_user') ?? true;
 
-                if (useServerAvatar && targetMember) {
+                if (useServerAvatar && targetMember && typeof targetMember.displayAvatarURL === 'function') {
                     source = targetMember.displayAvatarURL({ extension: 'png', size: 256, forceStatic: true });
                 } else {
                     source = targetUser.displayAvatarURL({ extension: 'png', size: 256, forceStatic: true });

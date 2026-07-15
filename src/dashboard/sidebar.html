@@ -1,0 +1,380 @@
+<style>
+	:root {
+		--sidebar-width: 280px;
+		--inactive: #334155; /* Slate */
+	}
+
+	/* Sidebar Layout */
+	aside {
+		width: var(--sidebar-width);
+		background: rgba(15, 23, 42, 0.6);
+		backdrop-filter: blur(20px);
+		-webkit-backdrop-filter: blur(20px);
+		border-right: 1px solid var(--glass-border);
+		display: flex;
+		flex-direction: column;
+		position: fixed;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		z-index: 100;
+		padding: 2rem 1.5rem;
+		transition: all 0.3s ease;
+	}
+
+	.bot-brand {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		margin-bottom: 3rem;
+		padding: 0.5rem;
+	}
+
+	.avatar-container {
+		position: relative;
+		width: 48px;
+		height: 48px;
+		flex-shrink: 0;
+	}
+
+	.bot-avatar {
+		width: 100%;
+		height: 100%;
+		border-radius: 50%;
+		border: 2px solid var(--accent-primary);
+		object-fit: cover;
+		background: var(--bg-secondary);
+	}
+
+	.status-dot {
+		position: absolute;
+		bottom: 2px;
+		right: 2px;
+		width: 12px;
+		height: 12px;
+		border-radius: 50%;
+		background-color: var(--inactive);
+		border: 2px solid var(--bg-secondary);
+		transition: background-color 0.3s;
+	}
+
+	.status-dot.online {
+		background-color: var(--success);
+		box-shadow: 0 0 10px var(--success);
+		animation: pulse-dot 2s infinite;
+	}
+
+	.status-dot.starting {
+		background-color: var(--warning);
+		box-shadow: 0 0 10px var(--warning);
+	}
+
+	@keyframes pulse-dot {
+		0% { transform: scale(1); opacity: 1; }
+		50% { transform: scale(1.2); opacity: 0.7; }
+		100% { transform: scale(1); opacity: 1; }
+	}
+
+	.bot-info h1 {
+		font-size: 1.1rem;
+		font-weight: 600;
+		letter-spacing: -0.01em;
+		color: var(--text-primary);
+	}
+
+	.bot-info p {
+		font-size: 0.8rem;
+		color: var(--text-secondary);
+	}
+
+	.nav-menu {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		list-style: none;
+		flex-grow: 1;
+	}
+
+	.nav-item {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.8rem 1rem;
+		border-radius: 12px;
+		color: var(--text-secondary);
+		text-decoration: none;
+		font-weight: 500;
+		font-size: 0.9rem;
+		transition: all 0.2s ease;
+		border: 1px solid transparent;
+	}
+
+	.nav-item:hover {
+		background: rgba(255, 255, 255, 0.03);
+		color: var(--text-primary);
+	}
+
+	.nav-item.active {
+		background: rgba(99, 102, 241, 0.08);
+		border: 1px solid rgba(99, 102, 241, 0.15);
+		color: var(--text-primary);
+		font-weight: 600;
+	}
+
+	.nav-item-content {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+	}
+
+	.nav-item.disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+
+	.nav-item.disabled:hover {
+		background: transparent;
+		color: var(--text-secondary);
+	}
+
+	.lock-icon {
+		font-size: 0.75rem;
+		color: var(--text-muted);
+	}
+
+	/* User profile section */
+	.user-profile-section {
+		margin-top: auto;
+		padding: 1.25rem 0;
+		border-top: 1px solid var(--glass-border);
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.user-card {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		background: rgba(255, 255, 255, 0.02);
+		border: 1px solid var(--glass-border);
+		padding: 0.6rem 0.8rem;
+		border-radius: 12px;
+	}
+
+	.user-details {
+		display: flex;
+		align-items: center;
+		gap: 0.65rem;
+		overflow: hidden;
+	}
+
+	.user-avatar {
+		width: 32px;
+		height: 32px;
+		border-radius: 50%;
+		border: 1.5px solid var(--accent-primary);
+		object-fit: cover;
+		flex-shrink: 0;
+	}
+
+	.user-name {
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: var(--text-primary);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		max-width: 120px;
+	}
+
+	.rank-soft-text {
+		font-size: 0.75rem;
+		color: var(--text-muted);
+		font-weight: 500;
+		margin-left: 0.25rem;
+	}
+
+	.logout-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		border-radius: 6px;
+		background: rgba(239, 68, 68, 0.08);
+		border: 1px solid rgba(239, 68, 68, 0.15);
+		color: var(--danger);
+		cursor: pointer;
+		text-decoration: none;
+		transition: all 0.2s ease;
+		font-size: 0.8rem;
+	}
+
+	.logout-btn:hover {
+		background: rgba(239, 68, 68, 0.15);
+		color: #ff5c5c;
+	}
+
+	.sidebar-footer {
+		margin-top: 1rem;
+		padding-top: 1rem;
+		border-top: 1px solid var(--glass-border);
+		text-align: center;
+		font-size: 0.75rem;
+		color: var(--text-muted);
+	}
+
+	.sidebar-footer a {
+		color: var(--text-secondary);
+		text-decoration: none;
+	}
+
+	/* Make sure main layout shifts matching the sidebar width */
+	main {
+		margin-left: var(--sidebar-width);
+		transition: all 0.3s ease;
+	}
+
+	/* Responsive sidebar design */
+	@media (max-width: 1024px) {
+		:root {
+			--sidebar-width: 240px;
+		}
+	}
+
+	@media (max-width: 768px) {
+		aside {
+			width: 100% !important;
+			height: auto !important;
+			position: relative !important;
+			border-right: none !important;
+			border-bottom: 1px solid var(--glass-border) !important;
+			padding: 1.25rem !important;
+		}
+		.bot-brand {
+			margin-bottom: 1.5rem !important;
+		}
+		.nav-menu {
+			flex-direction: row !important;
+			overflow-x: auto !important;
+			padding-bottom: 0.5rem !important;
+			scrollbar-width: none !important;
+		}
+		.nav-menu::-webkit-scrollbar {
+			display: none !important;
+		}
+		.nav-item {
+			white-space: nowrap !important;
+			padding: 0.6rem 1rem !important;
+		}
+		.user-profile-section {
+			margin-top: 1rem !important;
+			border-top: 1px solid var(--glass-border) !important;
+			padding-top: 1rem !important;
+		}
+		.sidebar-footer {
+			display: none !important;
+		}
+		main {
+			margin-left: 0 !important;
+			width: 100% !important;
+		}
+	}
+</style>
+
+<aside>
+	<a href="/dashboard" class="bot-brand" style="text-decoration: none; color: inherit;">
+		<div class="avatar-container">
+			<img id="botAvatar" src="" alt="Bot Avatar" class="bot-avatar" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+			<div id="sidebarStatusDot" class="status-dot"></div>
+		</div>
+		<div class="bot-info">
+			<h1 id="botTagName">Fluffingiously</h1>
+			<p>Discord Bot</p>
+		</div>
+	</a>
+
+	<ul class="nav-menu">
+		<li>
+			<a href="/dashboard" class="nav-item" id="navStatus">
+				<span class="nav-item-content">
+					<span>📊</span>
+					<span>Status Dashboard</span>
+				</span>
+			</a>
+		</li>
+		<li>
+			<a href="/my_server" class="nav-item" id="navMyServer">
+				<span class="nav-item-content">
+					<span>🖥️</span>
+					<span>My Servers</span>
+				</span>
+			</a>
+		</li>
+		<li>
+			<a href="/my_config" class="nav-item" id="navMyConfig">
+				<span class="nav-item-content">
+					<span>⚙️</span>
+					<span>My Configuration</span>
+				</span>
+			</a>
+		</li>
+		<li class="admin-only" style="display: none;">
+			<a href="/log_viewer" class="nav-item" id="navLogViewer">
+				<span class="nav-item-content">
+					<span>📜</span>
+					<span>Log Viewer</span>
+				</span>
+			</a>
+		</li>
+		<li class="admin-only" style="display: none;">
+			<a href="/admin_panel" class="nav-item" id="navAdminPanel">
+				<span class="nav-item-content">
+					<span>👑</span>
+					<span>Admin Panel</span>
+				</span>
+			</a>
+		</li>
+	</ul>
+
+	<!-- User Profile Section -->
+	<div id="userProfileSection" class="user-profile-section">
+		<!-- JavaScript will inject dynamic user status here -->
+	</div>
+
+	<div class="sidebar-footer">
+		<p>Website: <a href="https://furred.site" target="_blank">furred.site</a></p>
+		<p style="margin-top: 0.25rem;">Powered by Node.js &amp; CSS</p>
+	</div>
+</aside>
+
+<script>
+	// Auto-highlight active sidebar navigation item based on path
+	(function() {
+		const path = window.location.pathname;
+		const navStatus = document.getElementById('navStatus');
+		const navMyServer = document.getElementById('navMyServer');
+		const navMyConfig = document.getElementById('navMyConfig');
+		const navLogViewer = document.getElementById('navLogViewer');
+		const navAdminPanel = document.getElementById('navAdminPanel');
+		
+		const navItems = [
+			{ el: navStatus, active: !path.includes('my_server') && !path.includes('my_config') && !path.includes('log_viewer') && !path.includes('admin_panel') },
+			{ el: navMyServer, active: path.includes('my_server') },
+			{ el: navMyConfig, active: path.includes('my_config') },
+			{ el: navLogViewer, active: path.includes('log_viewer') },
+			{ el: navAdminPanel, active: path.includes('admin_panel') }
+		];
+
+		navItems.forEach(item => {
+			if (item.el) {
+				if (item.active) {
+					item.el.classList.add('active');
+				} else {
+					item.el.classList.remove('active');
+				}
+			}
+		});
+	})();
+</script>

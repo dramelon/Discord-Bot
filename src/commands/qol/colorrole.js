@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
+const apiTracker = require('../../utils/apiTracker');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -138,7 +139,7 @@ module.exports = {
 				return interaction.editReply({ content: 'Invalid image URL. It must start with `http://` or `https://`.' });
 			}
 			try {
-				const response = await fetch(iconUrl);
+				const response = await apiTracker.fetch(iconUrl);
 				if (!response.ok) {
 					return interaction.editReply({ content: `Failed to download the image from the URL. Server returned status: ${response.status} ${response.statusText}` });
 				}

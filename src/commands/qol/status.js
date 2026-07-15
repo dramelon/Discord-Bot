@@ -93,6 +93,7 @@ function formatDuration(seconds) {
 
 module.exports = {
 	startTracking,
+	getHeartbeats,
 	data: new SlashCommandBuilder()
 		.setName('status')
 		.setDescription('Show bot uptime and reliability stats.')

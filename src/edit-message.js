@@ -1,14 +1,14 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, EmbedBuilder } = require('discord.js');
+const { Client, GatewayIntentBits } = require('discord.js');
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 client.once('ready', async () => {
 	console.log(`Logged in as ${client.user.tag} to edit message.`);
 	try {
-		// IDs extracted from the link provided
-		const channelId = '1475416103407587460';
-		const messageId = '1475417916769046661';
+		// IDs extracted from the link provided: https://discord.com/channels/1447192381479976993/1483501813855686747/1483508317874683945
+		const channelId = '1483501813855686747';
+		const messageId = '1483508317874683945';
 
 		const channel = await client.channels.fetch(channelId);
 		if (!channel) {
@@ -22,20 +22,50 @@ client.once('ready', async () => {
 			process.exit(1);
 		}
 
-		// Create 5 fields with name "test" and value "12345"
-		const fields = Array.from({ length: 5 }, () => ({ name: 'test', value: '12345' }));
+		// Define the new Components V2 layout
+		const components = [
+			{
+				type: 17, // Container
+				components: [
+					{
+						type: 9, // Section
+						components: [
+							{
+								type: 10, // Text Display
+								content: "## Verification Required\nTo access the rest of the server, please click the button below to verify yourself with a simple math question."
+							}
+						],
+						accessory: {
+							type: 11, // Thumbnail
+							media: {
+								url: "https://cdn-icons-png.flaticon.com/512/1041/1041892.png" // Clean security lock icon
+							},
+							description: "Security Lock"
+						}
+					},
+					{
+						type: 1, // Action Row
+						components: [
+							{
+								type: 2, // Button
+								style: 1, // Primary (Blurple)
+								label: "Verify",
+								custom_id: "verify_button"
+							}
+						]
+					}
+				]
+			}
+		];
 
-		const embed1 = new EmbedBuilder()
-			.setTitle('Embed 1')
-			.addFields(fields);
-
-		const embed2 = new EmbedBuilder()
-			.setTitle('Embed 2')
-			.addFields(fields);
-
-		// Edit the message to contain the two embeds
-		await message.edit({ content: null, embeds: [embed1, embed2] });
-		console.log(`Successfully edited message ${messageId}`);
+		// Edit the message using the Components V2 flag (32768)
+		await message.edit({
+			content: null,
+			embeds: [],
+			components: components,
+			flags: 32768
+		});
+		console.log(`Successfully edited message ${messageId} to V2 Components.`);
 	} catch (error) {
 		console.error('Failed to edit message:', error);
 	} finally {
@@ -44,3 +74,4 @@ client.once('ready', async () => {
 });
 
 client.login(process.env.DISCORD_TOKEN);
+

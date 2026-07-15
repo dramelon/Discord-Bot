@@ -32,6 +32,7 @@ const [action, commandName] = args;
 
     if (result.success) {
         console.log(`✅ Success! Action "${action}" completed in ${result.duration}ms.`);
+        process.exit(0);
     } else {
         console.error(`❌ Error during ${action}: ${result.error}`);
         console.error(`⏱️ Time elapsed: ${result.duration}ms`);
