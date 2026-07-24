@@ -36,8 +36,11 @@ function getConfig(guildId) {
     return {
         tempVCCreateChannelId: config.tempVCCreateChannelId || null,
         tempVCCategoryId: config.tempVCCategoryId || null,
-        tempVCNameTemplate: config.tempVCNameTemplate || DEFAULT_TEMP_VC_NAME_TEMPLATE
+        tempVCNameTemplate: config.tempVCNameTemplate || DEFAULT_TEMP_VC_NAME_TEMPLATE,
+        levelUpType: config.levelUpType || 'popup',
+        levelUpChannelId: config.levelUpChannelId || null
     };
+
 }
 
 function updateConfig(guildId, key, value) {

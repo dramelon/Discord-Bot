@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Fluffingiously Dragooon - Server Settings</title>
+	<!-- Fonts -->
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="/dashboard.css">
+	<style>
+		/* Main container overrides */
+		main {
+			max-width: 1200px;
+		}
+
+		/* Back Link */
+		.back-link {
+			color: var(--text-secondary);
+			text-decoration: none;
+			font-size: 0.9rem;
+			font-weight: 500;
+			display: inline-flex;
+			align-items: center;
+			gap: 0.5rem;
+			transition: all 0.2s ease;
+			margin-bottom: 0.5rem;
+		}
+
+		.back-link:hover {
+			color: var(--text-primary);
+			transform: translateX(-2px);
+		}
+
+		/* Grid and Config Panels */
+		.config-grid {
+			display: flex;
+			flex-direction: column;
+			gap: 1.5rem;
+			width: 100%;
+			margin-top: 1.5rem;
+		}
+
+		.config-panel {
+			background: var(--glass-bg);
+			border: 1px solid var(--glass-border);
+			border-radius: 20px;
+			padding: 1.5rem 2rem;
+			backdrop-filter: blur(20px);
+			-webkit-backdrop-filter: blur(20px);
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+			text-align: left;
+			display: flex;
+			flex-direction: column;
+			gap: 0;
+			transition: border-color 0.3s, background 0.3s;
+			overflow: hidden;
+		}
+
+		.config-panel:hover {
+			border-color: rgba(99, 102, 241, 0.25);
+		}
+
+		.config-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			cursor: pointer;
+			padding: 0.5rem 0;
+			user-select: none;
+		}
+
+		.config-header h2 {
+			font-size: 1.25rem;
+			font-weight: 700;
+			display: flex;
+			align-items: center;
+			gap: 0.6rem;
+			margin: 0;
+		}
+
+		.chevron {
+			font-size: 0.85rem;
+			color: var(--text-muted);
+			transition: transform 0.3s ease;
+		}
+
+		.config-panel.expanded .chevron {
+			transform: rotate(90deg);
+		}
+
+		.status-badge {
+			display: inline-flex;
+			align-items: center;
+			padding: 0.35rem 0.75rem;
+			border-radius: 20px;
+			font-size: 0.8rem;
+			font-weight: 600;
+			transition: all 0.3s;
+		}
+
+		.status-badge.enabled {
+			color: var(--success);
+			background: rgba(16, 185, 129, 0.08);
+			border: 1px solid rgba(16, 185, 129, 0.2);
+		}
+
+		.status-badge.disabled {
+			color: var(--text-muted);
+			background: rgba(255, 255, 255, 0.02);
+			border: 1px solid var(--glass-border);
+		}
+
+		/* Collapsible Content Area */
+		.config-content {
+			max-height: 0;
+			opacity: 0;
+			pointer-events: none;
+			transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, padding 0.3s ease;
+			display: flex;
+			flex-direction: column;
+			gap: 1.25rem;
+		}
+
+		.config-panel.expanded .config-content {
+			max-height: 1000px;
+			opacity: 1;
+			pointer-events: auto;
+			padding-top: 1.5rem;
+			padding-bottom: 0.5rem;
+		}
+
+		.config-panel p.desc {
+			color: var(--text-secondary);
+			font-size: 0.9rem;
+			line-height: 1.5;
+			margin: 0;
+		}
+
+		.edited-indicator {
+			color: var(--warning);
+			font-size: 0.75rem;
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+			background: rgba(245, 158, 11, 0.08);
+			border: 1px solid rgba(245, 158, 11, 0.2);
+			padding: 0.25rem 0.5rem;
+			border-radius: 6px;
+			display: inline-flex;
+			align-items: center;
+			gap: 0.25rem;
+			animation: pulseEdit 2s infinite ease-in-out;
+		}
+
+		@keyframes pulseEdit {
+			0% { opacity: 0.8; }
+			50% { opacity: 1; border-color: rgba(245, 158, 11, 0.4); box-shadow: 0 0 8px rgba(245, 158, 11, 0.1); }
+			100% { opacity: 0.8; }
+		}
+
+		/* Bottom Unsaved Changes Bar */
+		.unsaved-changes-bar {
+			position: fixed;
+			bottom: 1.5rem;
+			left: 50%;
+			transform: translate(-50%, 120px);
+			opacity: 0;
+			pointer-events: none;
+			background: rgba(15, 23, 42, 0.85);
+			border: 1px solid var(--glass-border);
+			border-radius: 16px;
+			padding: 1rem 1.75rem;
+			z-index: 900;
+			width: calc(100% - 3rem);
+			max-width: 800px;
+			box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+			backdrop-filter: blur(20px);
+			-webkit-backdrop-filter: blur(20px);
+			transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+		}
+
+		.unsaved-changes-bar.active {
+			transform: translate(-50%, 0);
+			opacity: 1;
+			pointer-events: auto;
+		}
+
+		.unsaved-bar-content {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			gap: 1.5rem;
+		}
+
+		.unsaved-message {
+			display: flex;
+			align-items: center;
+			gap: 0.75rem;
+			font-size: 0.95rem;
+			font-weight: 500;
+			color: var(--text-primary);
+		}
+
+		.alert-icon {
+			font-size: 1.1rem;
+		}
+
+		.unsaved-actions {
+			display: flex;
+			align-items: center;
+			gap: 0.75rem;
+		}
+
+		.btn-sm {
+			padding: 0.5rem 1.25rem;
+			font-size: 0.85rem;
+			border-radius: 8px;
+		}
+
+		/* Comparison UI */
+		.comparison-container {
+			display: flex;
+			flex-direction: column;
+			gap: 0.75rem;
+			max-height: 300px;
+			overflow-y: auto;
+			padding-right: 0.25rem;
+		}
+
+		.comparison-row {
+			background: rgba(255, 255, 255, 0.02);
+			border: 1px solid var(--glass-border);
+			border-radius: 12px;
+			padding: 0.85rem 1.15rem;
+			display: flex;
+			flex-direction: column;
+			gap: 0.35rem;
+		}
+
+		.comparison-field {
+			font-size: 0.75rem;
+			font-weight: 700;
+			text-transform: uppercase;
+			color: var(--accent-primary);
+			letter-spacing: 0.05em;
+		}
+
+		.comparison-diff {
+			display: flex;
+			align-items: center;
+			gap: 0.75rem;
+			font-size: 0.9rem;
+			flex-wrap: wrap;
+		}
+
+		.diff-old {
+			color: var(--text-muted);
+			text-decoration: line-through;
+			background: rgba(239, 68, 68, 0.08);
+			padding: 0.15rem 0.4rem;
+			border-radius: 4px;
+			border: 1px solid rgba(239, 68, 68, 0.15);
+		}
+
+		.diff-arrow {
+			color: var(--text-muted);
+			font-weight: bold;
+		}
+
+		.diff-new {
+			color: var(--success);
+			background: rgba(16, 185, 129, 0.08);
+			padding: 0.15rem 0.4rem;
+			border-radius: 4px;
+			border: 1px solid rgba(16, 185, 129, 0.15);
+			font-weight: 500;
+		}
+
+
+		/* Form Styling */
+		.form-group {
+			display: flex;
+			flex-direction: column;
+			gap: 0.5rem;
+			width: 100%;
+		}
+
+		.form-group label {
+			font-size: 0.8rem;
+			color: var(--text-secondary);
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 0.05em;
+		}
+
+		.form-group select,
+		.form-group input {
+			background: rgba(0, 0, 0, 0.4);
+			border: 1px solid var(--glass-border);
+			color: var(--text-primary);
+			padding: 0.85rem 1rem;
+			border-radius: 12px;
+			font-family: inherit;
+			font-size: 0.9rem;
+			outline: none;
+			cursor: pointer;
+			transition: all 0.3s;
+			box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+			width: 100%;
+			box-sizing: border-box;
+		}
+
+		.form-group input {
+			cursor: text;
+		}
+
+		.form-group select:focus,
+		.form-group input:focus {
+			border-color: var(--accent-primary);
+			box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+		}
+
+		.form-group select:disabled,
+		.form-group input:disabled {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
+
+		/* Button Bar */
+		.save-bar {
+			display: flex;
+			justify-content: flex-end;
+			margin-top: 2.5rem;
+			width: 100%;
+		}
+
+		.btn {
+			padding: 0.85rem 2rem;
+			border-radius: 12px;
+			font-family: inherit;
+			font-size: 0.9rem;
+			font-weight: 600;
+			cursor: pointer;
+			transition: all 0.2s;
+			border: 1px solid transparent;
+		}
+
+		.btn-primary {
+			background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+			color: #ffffff;
+			box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+		}
+
+		.btn-primary:hover {
+			transform: translateY(-1px);
+			box-shadow: 0 6px 16px rgba(99, 102, 241, 0.3);
+		}
+
+		/* Loading Overlay */
+		.loading-overlay {
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background: var(--bg-primary);
+			z-index: 10000;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			gap: 1.5rem;
+			transition: opacity 0.5s ease, visibility 0.5s;
+		}
+
+		.loading-overlay.hidden {
+			opacity: 0;
+			visibility: hidden;
+			pointer-events: none;
+		}
+
+		.spinner {
+			width: 40px;
+			height: 40px;
+			border: 3px solid rgba(99, 102, 241, 0.1);
+			border-top-color: var(--accent-primary);
+			border-radius: 50%;
+			animation: spin 1s linear infinite;
+		}
+
+		@keyframes spin {
+			to { transform: rotate(360deg); }
+		}
+
+		/* Modal Overlay (Profile Rank Dialog) */
+		.modal-overlay {
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background: rgba(4, 6, 15, 0.8);
+			backdrop-filter: blur(12px);
+			-webkit-backdrop-filter: blur(12px);
+			z-index: 1000;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			opacity: 0;
+			pointer-events: none;
+			transition: opacity 0.3s ease;
+		}
+
+		.modal-overlay.active {
+			opacity: 1;
+			pointer-events: auto;
+		}
+
+		.modal-content {
+			background: var(--glass-bg);
+			border: 1px solid var(--glass-border);
+			border-radius: 24px;
+			width: 90%;
+			max-width: 400px;
+			padding: 2rem;
+			box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+			backdrop-filter: blur(20px);
+			-webkit-backdrop-filter: blur(20px);
+			transform: scale(0.9);
+			transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+		}
+
+		.modal-overlay.active .modal-content {
+			transform: scale(1);
+		}
+
+		.modal-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 1.5rem;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+			padding-bottom: 0.75rem;
+		}
+
+		.modal-header h3 {
+			font-size: 1.2rem;
+			font-weight: 700;
+			background: linear-gradient(135deg, var(--text-primary) 30%, var(--text-secondary) 100%);
+			-webkit-background-clip: text;
+			background-clip: text;
+			-webkit-text-fill-color: transparent;
+		}
+
+		.close-btn {
+			font-size: 1.5rem;
+			color: var(--text-muted);
+			cursor: pointer;
+			transition: color 0.2s;
+			line-height: 1;
+		}
+
+		.close-btn:hover {
+			color: var(--text-primary);
+		}
+
+		.profile-preview {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 0.75rem;
+			margin-bottom: 2rem;
+			text-align: center;
+		}
+
+		.profile-preview img {
+			width: 90px;
+			height: 90px;
+			border-radius: 50%;
+			border: 2px solid var(--accent-primary);
+			box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+			object-fit: cover;
+		}
+
+		.profile-preview h4 {
+			font-size: 1.15rem;
+			font-weight: 700;
+			color: var(--text-primary);
+		}
+
+		.modal-rank-soft-text {
+			font-size: 0.85rem;
+			color: var(--text-muted);
+			font-weight: 600;
+			opacity: 0.8;
+			letter-spacing: 0.02em;
+		}
+	</style>
+</head>
+<body>
+
+	<!-- Loading Screen Overlay -->
+	<div id="loadingOverlay" class="loading-overlay">
+		<div class="spinner"></div>
+		<p id="loadingMessage">Loading server configurations...</p>
+	</div>
+
+	<!-- INCLUDE_SIDEBAR -->
+
+	<!-- Main Workspace Panel -->
+	<main>
+		<header class="page-header" style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-start;">
+			<a href="/my_server" class="back-link">
+				<span>←</span> Back to Servers
+			</a>
+			<div class="page-title" style="margin-top: 0.25rem;">
+				<h1 id="serverConfigTitle">Configure Server</h1>
+				<p>Configure trigger voice channels, temporary categories, and room name settings.</p>
+			</div>
+		</header>
+
+		<!-- Configurations Panel Grid -->
+		<div class="config-grid">
+			<!-- Box 1: Voice Channel & Room Customization settings -->
+			<div class="config-panel" id="tempVCPanel">
+				<div class="config-header" onclick="toggleConfigPanel(this)">
+					<h2>🔊 TempVC Channels & Customizations</h2>
+					<div style="display: flex; align-items: center; gap: 1rem;">
+						<span id="tempVCEditIndicator" class="edited-indicator" style="display: none;">✏️ Edited</span>
+						<span id="tempVCStatusBadge" class="status-badge disabled">Disabled</span>
+						<span class="chevron">▶</span>
+					</div>
+				</div>
+				
+				<div class="config-content">
+					<p class="desc">Define which voice channel triggers dynamic creation, select the category, and set the default room name format.</p>
+					
+					<div class="form-group">
+						<label for="tempVCCreateChannelSelect">Voice Channel to Create Temp VC</label>
+						<select id="tempVCCreateChannelSelect" onchange="updateStatusIndicators()">
+							<!-- Loaded dynamically -->
+						</select>
+					</div>
+
+					<div class="form-group">
+						<label for="tempVCCategorySelect">Category for Temporary VCs</label>
+						<select id="tempVCCategorySelect" onchange="updateStatusIndicators()">
+							<!-- Loaded dynamically -->
+						</select>
+					</div>
+
+					<div class="form-group">
+						<label for="tempVCNameTemplateInput">Default Room Name Template</label>
+						<input type="text" id="tempVCNameTemplateInput" placeholder="e.g. {d}'s Room" oninput="checkChanges()">
+						<p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem; line-height: 1.4;">
+							Tip: use <code>{u}</code> for username and <code>{d}</code> for display name.
+						</p>
+					</div>
+				</div>
+			</div>
+
+			<!-- Box 2: Leveling & Economy settings -->
+			<div class="config-panel" id="levelingPanel">
+				<div class="config-header" onclick="toggleConfigPanel(this)">
+					<h2>💰 Economies & Leveling</h2>
+					<div style="display: flex; align-items: center; gap: 1rem;">
+						<span id="levelingEditIndicator" class="edited-indicator" style="display: none;">✏️ Edited</span>
+						<span id="levelUpStatusBadge" class="status-badge disabled">Disabled</span>
+						<span class="chevron">▶</span>
+					</div>
+				</div>
+
+				<div class="config-content">
+					<p class="desc">Configure leveling up notification alerts and define where those announcements should be posted.</p>
+
+					<div class="form-group">
+						<label for="levelUpTypeSelect">Level Up Alert Type</label>
+						<select id="levelUpTypeSelect" onchange="toggleLevelUpChannelSelect()">
+							<option value="popup">Popup in Same Channel</option>
+							<option value="channel">Specific Text Channel</option>
+							<option value="disabled">Disabled (No Notification)</option>
+						</select>
+					</div>
+
+					<div class="form-group" id="levelUpChannelGroup" style="display: none;">
+						<label for="levelUpChannelSelect">Specify Level Up Channel</label>
+						<select id="levelUpChannelSelect" onchange="checkChanges()">
+							<!-- Loaded dynamically -->
+						</select>
+					</div>
+				</div>
+			</div>
+
+		</div>
+
+
+		<!-- Action bar -->
+		<div class="save-bar">
+			<button class="btn btn-primary" id="saveBtn" onclick="saveServerConfig()">Save Configurations</button>
+		</div>
+	</main>
+
+
+	<!-- Settings Dialog Overlay -->
+	<div id="profileModal" class="modal-overlay" onclick="closeProfileModal(event)">
+		<div class="modal-content" onclick="event.stopPropagation()">
+			<div class="modal-header">
+				<h3>Profile Settings</h3>
+				<span class="close-btn" onclick="toggleModal(false)">&times;</span>
+			</div>
+			<div class="modal-body">
+				<div class="profile-preview">
+					<img id="modalAvatar" src="" alt="Avatar">
+					<h4 id="modalUsername">Username</h4>
+					<p id="modalRankText" class="modal-rank-soft-text"></p>
+				</div>
+				<div class="form-group">
+					<label for="rankSelect">Choose Display Rank</label>
+					<select id="rankSelect" onchange="previewRankChange()">
+						<!-- Options loaded dynamically -->
+					</select>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button class="btn btn-secondary" onclick="toggleModal(false)">Cancel</button>
+				<button class="btn btn-primary" onclick="saveProfileConfig()">Save Changes</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Sticky Bottom Unsaved Changes Bar -->
+	<div id="unsavedChangesBar" class="unsaved-changes-bar">
+		<div class="unsaved-bar-content">
+			<div class="unsaved-message">
+				<span class="alert-icon">⚠️</span>
+				<span>Careful — you have unsaved changes!</span>
+			</div>
+			<div class="unsaved-actions">
+				<button class="btn btn-secondary btn-sm" onclick="discardAllChanges()">Reset</button>
+				<button class="btn btn-primary btn-sm" onclick="saveServerConfig()">Save Changes</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Save Confirmation Dialog Overlay -->
+	<div id="confirmSaveModal" class="modal-overlay" onclick="event.stopPropagation()">
+		<div class="modal-content" style="max-width: 550px;">
+			<div class="modal-header">
+				<h3>Confirm Configurations Update</h3>
+				<span class="close-btn" onclick="closeSaveConfirmation()">&times;</span>
+			</div>
+			<div class="modal-body" style="display: flex; flex-direction: column; gap: 1.25rem;">
+				<p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5; margin-bottom: 0.5rem; text-align: left;">
+					Please review and confirm your changes before saving:
+				</p>
+				
+				<div id="comparisonContainer" class="comparison-container">
+					<!-- Populated dynamically -->
+				</div>
+			</div>
+			<div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.75rem; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 1.25rem; margin-top: 0.5rem;">
+				<button class="btn btn-secondary" onclick="closeSaveConfirmation()">Cancel</button>
+				<button class="btn btn-primary" id="confirmSaveBtn" onclick="executeSaveConfig()">Confirm & Save</button>
+			</div>
+		</div>
+	</div>
+
+
+	<script>
+		window.currentUser = null;
+		window.guildId = null;
+
+		const RANK_LABELS = {
+			"bot dev": "bot dev",
+			"den boundless resident": "den boundless resident",
+			"den disciple echoing": "den disciple echoing",
+			"den journeyer": "den journeyer",
+			"den member": "den member",
+			"member": "member"
+		};
+
+		// Helper to extract guild ID from path `/my_server/{guildId}`
+		function parseGuildId() {
+			const pathParts = window.location.pathname.split('/');
+			window.guildId = pathParts[pathParts.length - 1] || pathParts[pathParts.length - 2];
+		}
+
+		// Close loader
+		function hideLoader() {
+			const overlay = document.getElementById('loadingOverlay');
+			if (overlay) overlay.classList.add('hidden');
+		}
+
+		// Update user info and sidebar profile
+		async function loadUserProfile() {
+			try {
+				const res = await fetch('/api/status');
+				if (!res.ok) throw new Error();
+				const data = await res.json();
+
+				if (!data.user) {
+					window.location.href = '/dashboard';
+					return;
+				}
+
+				window.currentUser = data.user;
+
+				// Update bot info header in sidebar
+				if (data.bot) {
+					document.getElementById('botAvatar').src = data.bot.avatarUrl || 'https://cdn.discordapp.com/embed/avatars/0.png';
+					document.getElementById('botTagName').textContent = data.bot.username || 'Fluffingiously';
+					document.getElementById('sidebarStatusDot').className = `status-dot ${data.bot.status === 'online' ? 'online' : 'offline'}`;
+				}
+
+				// Sidebar Profile Card
+				const profileSection = document.getElementById('userProfileSection');
+				const rankText = data.user.rankText ? ` <span class="rank-soft-text">${data.user.rankText}</span>` : '';
+				
+				profileSection.innerHTML = `
+					<div class="user-card">
+						<div class="user-details" onclick="openProfileModal()" style="cursor: pointer;">
+							<img src="${data.user.avatarUrl}" alt="User Avatar" class="user-avatar" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+							<span class="user-name" title="${data.user.username}">${data.user.username}${rankText}</span>
+						</div>
+						<a href="/api/auth/logout" class="logout-btn" title="Logout" onclick="event.stopPropagation()">
+							<svg style="width:16px;height:18px;fill:currentColor;" viewBox="0 0 24 24">
+								<path d="M16 17v-3H9v-4h7V7l5 5-5 5M14 2a2 2 0 0 1 2 2v2h-2V4H5v16h9v-2h2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9z"/>
+							</svg>
+						</a>
+					</div>
+				`;
+
+				// Show admin links if qualified
+				const adminOnlyItems = document.querySelectorAll('.admin-only');
+				if (data.user.isAdmin) {
+					adminOnlyItems.forEach(el => el.style.display = 'block');
+				} else {
+					adminOnlyItems.forEach(el => el.style.display = 'none');
+				}
+
+			} catch (e) {
+				console.error('[ServerConfig] Failed to load session status:', e);
+				window.location.href = '/dashboard';
+			}
+		}
+
+		function toggleConfigPanel(header) {
+			const panel = header.closest('.config-panel');
+			panel.classList.toggle('expanded');
+		}
+
+		function updateStatusIndicators() {
+			const tempVCCreate = document.getElementById('tempVCCreateChannelSelect').value;
+			const tempVCCategory = document.getElementById('tempVCCategorySelect').value;
+			const tempVCBadge = document.getElementById('tempVCStatusBadge');
+
+			if (tempVCCreate && tempVCCategory) {
+				tempVCBadge.textContent = 'Enabled';
+				tempVCBadge.className = 'status-badge enabled';
+			} else {
+				tempVCBadge.textContent = 'Disabled';
+				tempVCBadge.className = 'status-badge disabled';
+			}
+
+			const levelUpType = document.getElementById('levelUpTypeSelect').value;
+			const levelUpBadge = document.getElementById('levelUpStatusBadge');
+
+			if (levelUpType !== 'disabled') {
+				levelUpBadge.textContent = 'Enabled';
+				levelUpBadge.className = 'status-badge enabled';
+			} else {
+				levelUpBadge.textContent = 'Disabled';
+				levelUpBadge.className = 'status-badge disabled';
+			}
+
+			checkChanges();
+		}
+
+		function toggleLevelUpChannelSelect() {
+			const typeSelect = document.getElementById('levelUpTypeSelect');
+			const group = document.getElementById('levelUpChannelGroup');
+			if (typeSelect.value === 'channel') {
+				group.style.display = 'flex';
+			} else {
+				group.style.display = 'none';
+			}
+			updateStatusIndicators();
+		}
+
+
+		// Fetch configurations and options for this guild
+		async function fetchServerConfig() {
+			try {
+				const createSelect = document.getElementById('tempVCCreateChannelSelect');
+				const categorySelect = document.getElementById('tempVCCategorySelect');
+				const nameInput = document.getElementById('tempVCNameTemplateInput');
+				const levelUpTypeSelect = document.getElementById('levelUpTypeSelect');
+				const levelUpChannelSelect = document.getElementById('levelUpChannelSelect');
+
+				const res = await fetch(`/api/guild/config?guildId=${window.guildId}`);
+				if (!res.ok) throw new Error('API server returned error: ' + res.status);
+				const data = await res.json();
+
+				// Page Title
+				document.getElementById('serverConfigTitle').textContent = `Manage - ${data.guildName}`;
+
+				// Voice Channels
+				createSelect.innerHTML = '<option value="">None (Disabled)</option>';
+				if (data.voiceChannels && data.voiceChannels.length > 0) {
+					data.voiceChannels.forEach(ch => {
+						const opt = document.createElement('option');
+						opt.value = ch.id;
+						opt.textContent = ch.name;
+						if (ch.id === data.config.tempVCCreateChannelId) {
+							opt.selected = true;
+						}
+						createSelect.appendChild(opt);
+					});
+				} else {
+					const opt = document.createElement('option');
+					opt.value = '';
+					opt.textContent = 'No voice channels found';
+					opt.disabled = true;
+					createSelect.appendChild(opt);
+				}
+
+				// Categories
+				categorySelect.innerHTML = '<option value="">None (Disabled)</option>';
+				if (data.categories && data.categories.length > 0) {
+					data.categories.forEach(cat => {
+						const opt = document.createElement('option');
+						opt.value = cat.id;
+						opt.textContent = cat.name;
+						if (cat.id === data.config.tempVCCategoryId) {
+							opt.selected = true;
+						}
+						categorySelect.appendChild(opt);
+					});
+				} else {
+					const opt = document.createElement('option');
+					opt.value = '';
+					opt.textContent = 'No categories found';
+					opt.disabled = true;
+					categorySelect.appendChild(opt);
+				}
+
+				// Text Channels
+				levelUpChannelSelect.innerHTML = '<option value="">None (Disabled)</option>';
+				if (data.textChannels && data.textChannels.length > 0) {
+					data.textChannels.forEach(ch => {
+						const opt = document.createElement('option');
+						opt.value = ch.id;
+						opt.textContent = ch.name;
+						if (ch.id === data.config.levelUpChannelId) {
+							opt.selected = true;
+						}
+						levelUpChannelSelect.appendChild(opt);
+					});
+				} else {
+					const opt = document.createElement('option');
+					opt.value = '';
+					opt.textContent = 'No text channels found';
+					opt.disabled = true;
+					levelUpChannelSelect.appendChild(opt);
+				}
+
+				// Name Template
+				nameInput.value = data.config.tempVCNameTemplate || '';
+
+				// Leveling config
+				levelUpTypeSelect.value = data.config.levelUpType || 'popup';
+				toggleLevelUpChannelSelect();
+
+				// Save lists for formatters
+				window.serverChannels = {
+					voiceChannels: data.voiceChannels || [],
+					categories: data.categories || [],
+					textChannels: data.textChannels || []
+				};
+
+				// Caching original configurations
+				window.originalConfig = {
+					tempVCCreateChannelId: data.config.tempVCCreateChannelId || '',
+					tempVCCategoryId: data.config.tempVCCategoryId || '',
+					tempVCNameTemplate: data.config.tempVCNameTemplate || '',
+					levelUpType: data.config.levelUpType || 'popup',
+					levelUpChannelId: data.config.levelUpChannelId || ''
+				};
+
+				// Initial check to make sure alerts start hidden
+				checkChanges();
+
+
+			} catch (e) {
+				console.error('[ServerConfig] Error fetching settings:', e);
+				alert('Failed to load server configurations: ' + e.message);
+				window.location.href = '/my_server';
+			} finally {
+				hideLoader();
+			}
+		}
+
+		// Channel name display formatters
+		function getVoiceChannelName(id) {
+			if (!id) return 'None (Disabled)';
+			const ch = window.serverChannels && window.serverChannels.voiceChannels.find(c => c.id === id);
+			return ch ? ch.name : id;
+		}
+
+		function getCategoryName(id) {
+			if (!id) return 'None (Disabled)';
+			const cat = window.serverChannels && window.serverChannels.categories.find(c => c.id === id);
+			return cat ? cat.name : id;
+		}
+
+		function getTextChannelName(id) {
+			if (!id) return 'None (Disabled)';
+			const ch = window.serverChannels && window.serverChannels.textChannels.find(c => c.id === id);
+			return ch ? ch.name : id;
+		}
+
+		// Detect state changes on fields
+		function checkChanges() {
+			if (!window.originalConfig) return;
+
+			const current = {
+				tempVCCreateChannelId: document.getElementById('tempVCCreateChannelSelect').value || '',
+				tempVCCategoryId: document.getElementById('tempVCCategorySelect').value || '',
+				tempVCNameTemplate: document.getElementById('tempVCNameTemplateInput').value.trim(),
+				levelUpType: document.getElementById('levelUpTypeSelect').value || 'popup',
+				levelUpChannelId: document.getElementById('levelUpChannelSelect').value || ''
+			};
+
+			const tempVCChanged = 
+				current.tempVCCreateChannelId !== window.originalConfig.tempVCCreateChannelId ||
+				current.tempVCCategoryId !== window.originalConfig.tempVCCategoryId ||
+				current.tempVCNameTemplate !== window.originalConfig.tempVCNameTemplate;
+
+			const levelingChanged = 
+				current.levelUpType !== window.originalConfig.levelUpType ||
+				current.levelUpChannelId !== window.originalConfig.levelUpChannelId;
+
+			const hasAnyChanges = tempVCChanged || levelingChanged;
+
+			// Update header edited pills
+			const tempVCEditIndicator = document.getElementById('tempVCEditIndicator');
+			if (tempVCChanged) {
+				tempVCEditIndicator.style.display = 'inline-flex';
+			} else {
+				tempVCEditIndicator.style.display = 'none';
+			}
+
+			const levelingEditIndicator = document.getElementById('levelingEditIndicator');
+			if (levelingChanged) {
+				levelingEditIndicator.style.display = 'inline-flex';
+			} else {
+				levelingEditIndicator.style.display = 'none';
+			}
+
+			// Update bottom alert bar
+			const unsavedBar = document.getElementById('unsavedChangesBar');
+			if (hasAnyChanges) {
+				unsavedBar.classList.add('active');
+			} else {
+				unsavedBar.classList.remove('active');
+			}
+		}
+
+		// Revert all edits
+		function discardAllChanges() {
+			if (!window.originalConfig) return;
+
+			document.getElementById('tempVCCreateChannelSelect').value = window.originalConfig.tempVCCreateChannelId;
+			document.getElementById('tempVCCategorySelect').value = window.originalConfig.tempVCCategoryId;
+			document.getElementById('tempVCNameTemplateInput').value = window.originalConfig.tempVCNameTemplate;
+			document.getElementById('levelUpTypeSelect').value = window.originalConfig.levelUpType;
+			
+			toggleLevelUpChannelSelect();
+			
+			document.getElementById('levelUpChannelSelect').value = window.originalConfig.levelUpChannelId;
+
+			checkChanges();
+		}
+
+		// Double-confirm save
+		function saveServerConfig() {
+			const nameTemplate = document.getElementById('tempVCNameTemplateInput').value.trim();
+			if (nameTemplate.length > 80) {
+				alert('Name template is too long. Keep it under 80 characters.');
+				return;
+			}
+			showSaveConfirmation();
+		}
+
+		function showSaveConfirmation() {
+			if (!window.originalConfig) return;
+
+			const current = {
+				tempVCCreateChannelId: document.getElementById('tempVCCreateChannelSelect').value || '',
+				tempVCCategoryId: document.getElementById('tempVCCategorySelect').value || '',
+				tempVCNameTemplate: document.getElementById('tempVCNameTemplateInput').value.trim(),
+				levelUpType: document.getElementById('levelUpTypeSelect').value || 'popup',
+				levelUpChannelId: document.getElementById('levelUpChannelSelect').value || ''
+			};
+
+			const container = document.getElementById('comparisonContainer');
+			container.innerHTML = '';
+
+			const changes = [];
+
+			if (current.tempVCCreateChannelId !== window.originalConfig.tempVCCreateChannelId) {
+				changes.push({
+					field: 'Voice Channel to Create Temp VC',
+					oldVal: getVoiceChannelName(window.originalConfig.tempVCCreateChannelId),
+					newVal: getVoiceChannelName(current.tempVCCreateChannelId)
+				});
+			}
+
+			if (current.tempVCCategoryId !== window.originalConfig.tempVCCategoryId) {
+				changes.push({
+					field: 'Category for Temporary VCs',
+					oldVal: getCategoryName(window.originalConfig.tempVCCategoryId),
+					newVal: getCategoryName(current.tempVCCategoryId)
+				});
+			}
+
+			if (current.tempVCNameTemplate !== window.originalConfig.tempVCNameTemplate) {
+				changes.push({
+					field: 'Default Room Name Template',
+					oldVal: window.originalConfig.tempVCNameTemplate || 'None (Default)',
+					newVal: current.tempVCNameTemplate || 'None (Default)'
+				});
+			}
+
+			if (current.levelUpType !== window.originalConfig.levelUpType) {
+				const map = { popup: 'Popup in Same Channel', channel: 'Specific Text Channel', disabled: 'Disabled' };
+				changes.push({
+					field: 'Level Up Alert Type',
+					oldVal: map[window.originalConfig.levelUpType] || window.originalConfig.levelUpType,
+					newVal: map[current.levelUpType] || current.levelUpType
+				});
+			}
+
+			if (current.levelUpChannelId !== window.originalConfig.levelUpChannelId) {
+				changes.push({
+					field: 'Specify Level Up Channel',
+					oldVal: getTextChannelName(window.originalConfig.levelUpChannelId),
+					newVal: getTextChannelName(current.levelUpChannelId)
+				});
+			}
+
+			if (changes.length === 0) {
+				alert('No changes detected.');
+				return;
+			}
+
+			changes.forEach(c => {
+				const row = document.createElement('div');
+				row.className = 'comparison-row';
+				row.innerHTML = `
+					<span class="comparison-field">${c.field}</span>
+					<div class="comparison-diff">
+						<span class="diff-old">${c.oldVal}</span>
+						<span class="diff-arrow">→</span>
+						<span class="diff-new">${c.newVal}</span>
+					</div>
+				`;
+				container.appendChild(row);
+			});
+
+			document.getElementById('confirmSaveModal').classList.add('active');
+		}
+
+		function closeSaveConfirmation() {
+			document.getElementById('confirmSaveModal').classList.remove('active');
+		}
+
+		// Perform config posting request
+		async function executeSaveConfig() {
+			const saveBtn = document.getElementById('confirmSaveBtn');
+			const createChannelId = document.getElementById('tempVCCreateChannelSelect').value;
+			const categoryId = document.getElementById('tempVCCategorySelect').value;
+			const nameTemplate = document.getElementById('tempVCNameTemplateInput').value.trim();
+			const levelUpType = document.getElementById('levelUpTypeSelect').value;
+			const levelUpChannelId = document.getElementById('levelUpChannelSelect').value;
+
+			saveBtn.disabled = true;
+			saveBtn.textContent = 'Saving...';
+
+			try {
+				const res = await fetch('/api/guild/config', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({
+						guildId: window.guildId,
+						tempVCCreateChannelId: createChannelId || null,
+						tempVCCategoryId: categoryId || null,
+						tempVCNameTemplate: nameTemplate || null,
+						levelUpType: levelUpType || 'popup',
+						levelUpChannelId: levelUpChannelId || null
+					})
+				});
+
+				if (!res.ok) {
+					const errData = await res.json().catch(() => ({}));
+					throw new Error(errData.error || 'Failed to save settings');
+				}
+
+				// Cache saved values
+				window.originalConfig = {
+					tempVCCreateChannelId: createChannelId || '',
+					tempVCCategoryId: categoryId || '',
+					tempVCNameTemplate: nameTemplate,
+					levelUpType: levelUpType || 'popup',
+					levelUpChannelId: levelUpChannelId || ''
+				};
+
+				closeSaveConfirmation();
+				checkChanges();
+				alert('Success: Server configurations updated!');
+			} catch (e) {
+				alert('Error saving configuration: ' + e.message);
+			} finally {
+				saveBtn.disabled = false;
+				saveBtn.textContent = 'Confirm & Save';
+			}
+		}
+
+
+
+		// Modal Controls for Profile Settings
+		function toggleModal(show) {
+			const modal = document.getElementById('profileModal');
+			if (show) {
+				modal.classList.add('active');
+			} else {
+				modal.classList.remove('active');
+			}
+		}
+
+		function openProfileModal() {
+			const user = window.currentUser;
+			if (!user) return;
+
+			document.getElementById('modalAvatar').src = user.avatarUrl;
+			document.getElementById('modalUsername').textContent = user.username;
+			document.getElementById('modalRankText').textContent = user.rankText || 'No custom rank active';
+
+			// Populate select
+			const select = document.getElementById('rankSelect');
+			select.innerHTML = '<option value="">None (Empty)</option>';
+
+			if (user.eligibleRanks && user.eligibleRanks.length > 0) {
+				user.eligibleRanks.forEach(rank => {
+					const opt = document.createElement('option');
+					opt.value = rank;
+					opt.textContent = RANK_LABELS[rank] || rank;
+					if (rank === user.displayRank) {
+						opt.selected = true;
+					}
+					select.appendChild(opt);
+				});
+			} else {
+				const opt = document.createElement('option');
+				opt.value = "";
+				opt.textContent = "No eligible ranks";
+				opt.disabled = true;
+				select.appendChild(opt);
+			}
+
+			toggleModal(true);
+		}
+
+		function closeProfileModal(event) {
+			if (event && event.target === document.getElementById('profileModal')) {
+				toggleModal(false);
+			}
+		}
+
+		function previewRankChange() {
+			const select = document.getElementById('rankSelect');
+			const chosen = select.value;
+			const rankTextPreview = chosen ? (RANK_LABELS[chosen] || '') : 'None (Empty)';
+			document.getElementById('modalRankText').textContent = rankTextPreview;
+		}
+
+		async function saveProfileConfig() {
+			const select = document.getElementById('rankSelect');
+			const chosenRank = select.value;
+
+			try {
+				const res = await fetch('/api/user/config', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify({ displayRank: chosenRank })
+				});
+
+				if (!res.ok) {
+					throw new Error('Failed to save settings');
+				}
+
+				toggleModal(false);
+				
+				// Reload profile changes immediately
+				await loadUserProfile();
+			} catch (e) {
+				alert('Error saving rank choice: ' + e.message);
+			}
+		}
+
+		// Boot setup
+		(async function init() {
+			parseGuildId();
+			await loadUserProfile();
+			await fetchServerConfig();
+		})();
+	</script>
+</body>
+</html>

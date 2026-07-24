@@ -78,24 +78,33 @@ module.exports = {
 				.setMinLength(3)
 				.setMaxLength(9);
 
-			const iconInput = new TextInputBuilder()
-				.setCustomId('color_icon')
-				.setLabel('Role Icon Image URL')
-				.setStyle(TextInputStyle.Short)
-				.setPlaceholder('https://example.com/image.png')
-				.setRequired(false);
-
 			if (existingRole) {
 				colorInput.setValue(existingRole.name.replace(/^0x/i, '#'));
-				const currentIconUrl = existingRole.iconURL({ extension: 'png', size: 1024 });
-				if (currentIconUrl) {
-					iconInput.setValue(currentIconUrl);
-				}
 			}
 
 			const row1 = new ActionRowBuilder().addComponents(colorInput);
-			const row2 = new ActionRowBuilder().addComponents(iconInput);
-			modal.addComponents(row1, row2);
+			const rows = [row1];
+
+			const hasRoleIconsFeature = interaction.guild.features.includes('ROLE_ICONS');
+			if (hasRoleIconsFeature) {
+				const iconInput = new TextInputBuilder()
+					.setCustomId('color_icon')
+					.setLabel('Role Icon Image URL')
+					.setStyle(TextInputStyle.Short)
+					.setPlaceholder('https://example.com/image.png')
+					.setRequired(false);
+
+				if (existingRole) {
+					const currentIconUrl = existingRole.iconURL({ extension: 'png', size: 1024 });
+					if (currentIconUrl) {
+						iconInput.setValue(currentIconUrl);
+					}
+				}
+				const row2 = new ActionRowBuilder().addComponents(iconInput);
+				rows.push(row2);
+			}
+
+			modal.addComponents(...rows);
 
 			await interaction.showModal(modal);
 		}
@@ -106,7 +115,8 @@ module.exports = {
 
 		const isCleanChannel = interaction.channelId === '1472877917015900172';
 		const hexOpt = interaction.fields.getTextInputValue('color_hex').trim();
-		const iconUrl = interaction.fields.getTextInputValue('color_icon').trim();
+		const hasRoleIconsFeature = interaction.guild.features.includes('ROLE_ICONS');
+		const iconUrl = hasRoleIconsFeature ? (interaction.fields.getTextInputValue('color_icon')?.trim() || '') : '';
 
 		// Defer interaction since downloading images and setting roles can take a couple of seconds
 		await interaction.deferReply({ ephemeral: isCleanChannel });
@@ -183,20 +193,26 @@ module.exports = {
 			const colorToApply = (r === 0 && g === 0 && b === 0) ? [0, 0, 1] : [r, g, b];
 
 			if (!role) {
-				role = await interaction.guild.roles.create({
+				const roleData = {
 					name: roleName,
 					color: colorToApply,
-					icon: iconBuffer,
 					reason: `Color command by ${interaction.user.tag}`,
 					permissions: []
-				});
+				};
+				if (hasRoleIconsFeature) {
+					roleData.icon = iconBuffer;
+				}
+				role = await interaction.guild.roles.create(roleData);
 			} else {
 				// Update existing role's icon and color
-				await role.edit({
+				const roleEditData = {
 					color: colorToApply,
-					icon: iconBuffer,
 					reason: `Color command update by ${interaction.user.tag}`
-				});
+				};
+				if (hasRoleIconsFeature) {
+					roleEditData.icon = iconBuffer;
+				}
+				await role.edit(roleEditData);
 			}
 
 			await interaction.member.roles.add(role);

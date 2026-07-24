@@ -6,6 +6,7 @@ const https = require('https');
 const querystring = require('querystring');
 const crypto = require('crypto');
 const apiTracker = require('../utils/apiTracker');
+const { getConfig, updateConfigs } = require('../utils/configManager');
 
 // Safe environment detection to avoid ENOENT crash inside Docker containers (Pterodactyl, etc.)
 let isLocal = false;
@@ -34,19 +35,30 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const HTML_FILE_PATH = path.join(__dirname, 'index.html');
 const HOME_FILE_PATH = path.join(__dirname, 'home.html');
 const MY_SERVER_FILE_PATH = path.join(__dirname, 'my_server.html');
+const SERVER_CONFIG_FILE_PATH = path.join(__dirname, 'server_config.html');
 const MY_CONFIG_FILE_PATH = path.join(__dirname, 'my_config.html');
 const LOG_VIEWER_FILE_PATH = path.join(__dirname, 'log_viewer.html');
 const ADMIN_PANEL_FILE_PATH = path.join(__dirname, 'admin_panel.html');
 const ADMIN_API_LOGS_FILE_PATH = path.join(__dirname, 'admin_api_logs.html');
 const SIDEBAR_FILE_PATH = path.join(__dirname, 'sidebar.html');
+const CSS_FILE_PATH = path.join(__dirname, 'dashboard.css');
 let cachedHtml = '';
 let cachedHomeHtml = '';
 let cachedMyServerHtml = '';
+let cachedServerConfigHtml = '';
 let cachedMyConfigHtml = '';
 let cachedLogViewerHtml = '';
 let cachedAdminPanelHtml = '';
 let cachedAdminApiLogsHtml = '';
 let cachedSidebarHtml = '';
+
+let cachedCss = '';
+
+try {
+	cachedCss = fs.readFileSync(CSS_FILE_PATH, 'utf8');
+} catch (err) {
+	console.error('[Dashboard] Error reading dashboard.css:', err);
+}
 
 try {
 	cachedSidebarHtml = fs.readFileSync(SIDEBAR_FILE_PATH, 'utf8');
@@ -74,6 +86,14 @@ try {
 	console.error('[Dashboard] Error reading my_server.html:', err);
 	cachedMyServerHtml = '<h1>My Servers Template Error</h1>';
 }
+
+try {
+	cachedServerConfigHtml = fs.readFileSync(SERVER_CONFIG_FILE_PATH, 'utf8').replace('<!-- INCLUDE_SIDEBAR -->', cachedSidebarHtml);
+} catch (err) {
+	console.error('[Dashboard] Error reading server_config.html:', err);
+	cachedServerConfigHtml = '<h1>Server Configuration Template Error</h1>';
+}
+
 
 try {
 	cachedMyConfigHtml = fs.readFileSync(MY_CONFIG_FILE_PATH, 'utf8').replace('<!-- INCLUDE_SIDEBAR -->', cachedSidebarHtml);
@@ -445,6 +465,64 @@ function getAchievementsCount(userId) {
 	}
 	return 0;
 }
+
+/**
+ * Checks if a user session has permissions to manage a specific guild (MANAGE_GUILD or ADMINISTRATOR)
+ */
+async function userHasGuildPermission(session, guildId) {
+	if (process.env.STANDALONE === 'true') {
+		return true;
+	}
+
+	// 1. Check BOT_DEV permission (user ID list)
+	const botDevs = (process.env.BOT_DEV || '').split(',').map(id => id.trim());
+	if (session.userId && botDevs.includes(session.userId)) {
+		return true;
+	}
+
+	// 2. Check BOT_ADMIN_ROLES if user is a member in this guild and guild is loaded
+	const adminRoles = (process.env.BOT_ADMIN_ROLES || '').split(',').map(id => id.trim());
+	if (session.userId && adminRoles.length > 0 && adminRoles[0]) {
+		const discordGuild = client.guilds.cache.get(guildId);
+		if (discordGuild) {
+			try {
+				const member = await discordGuild.members.fetch(session.userId).catch(() => null);
+				if (member && adminRoles.some(roleId => member.roles.cache.has(roleId))) {
+					return true;
+				}
+			} catch (err) {
+				console.error(`[Dashboard] Error checking BOT_ADMIN_ROLES for user ${session.userId} in guild ${guildId}:`, err);
+			}
+		}
+	}
+
+	try {
+		// Fetch user's guilds from Discord
+		const userGuilds = await makeDiscordRequest(
+			'GET',
+			'/api/v10/users/@me/guilds',
+			{ 'Authorization': `Bearer ${session.accessToken}` }
+		);
+		if (!Array.isArray(userGuilds)) return false;
+		const guild = userGuilds.find(g => g.id === guildId);
+		if (!guild) return false;
+
+		// 3. Check if user is the guild owner
+		if (guild.owner === true) {
+			return true;
+		}
+
+		// 4. Check permissions (MANAGE_GUILD: 0x20 or ADMINISTRATOR: 0x8)
+		const permissions = BigInt(guild.permissions);
+		const hasManageGuild = (permissions & 0x20n) === 0x20n;
+		const hasAdmin = (permissions & 0x8n) === 0x8n;
+		return hasManageGuild || hasAdmin;
+	} catch (e) {
+		console.error(`[Dashboard] Error checking permissions for guild ${guildId}:`, e);
+		return false;
+	}
+}
+
 
 /**
  * Registers Application Connection Metadata fields with Discord API
@@ -931,6 +1009,33 @@ async function getAuthenticatedUser(req, res, client) {
 		return null;
 	}
 
+	if (process.env.STANDALONE === 'true' && sessionId === 'standalone_mock_session_id') {
+		const userConfig = userConfigs['mock_user_id'] || {};
+		const eligibleRanks = ["bot dev", "den boundless resident", "den disciple echoing", "den member"];
+		let displayRank = userConfig.displayRank;
+		if (!displayRank || !eligibleRanks.includes(displayRank)) {
+			displayRank = eligibleRanks[0];
+		}
+		const rankText = displayRank.toUpperCase();
+
+		return {
+			userId: 'mock_user_id',
+			username: 'Mock Developer',
+			avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png',
+			isAdmin: true,
+			eligibleRanks,
+			displayRank,
+			rankText,
+			connectionsConfig: userConfig.connectionsConfig || {
+				syncLevel: true,
+				syncAchievements: true,
+				syncXP: true,
+				syncLoyalty: true,
+				syncDeveloper: true
+			}
+		};
+	}
+
 	const session = sessions[sessionId];
 	const now = Date.now();
 
@@ -1084,12 +1189,21 @@ function startDashboard(client) {
 		const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
 		const reqUrl = parsedUrl.pathname;
 
-		// Enforce route whitelist
-		if (routesWhitelist.size > 0 && !routesWhitelist.has(reqUrl)) {
+		// Enforce route whitelist with dynamic pattern support
+		let isWhitelisted = routesWhitelist.has(reqUrl);
+		if (!isWhitelisted && routesWhitelist.size > 0) {
+			const myServerMatch = reqUrl.match(/^\/my_server\/([a-zA-Z0-9_-]+)$/);
+			if (myServerMatch && routesWhitelist.has('/my_server/:id')) {
+				isWhitelisted = true;
+			}
+		}
+
+		if (routesWhitelist.size > 0 && !isWhitelisted) {
 			console.warn(`[Dashboard Security] Blocked unwhitelisted request: ${req.method} ${reqUrl} from IP ${clientIp}`);
 			res.writeHead(404, { 'Content-Type': 'text/plain' });
 			return res.end('Not Found');
 		}
+
 
 		res.end = function (...args) {
 			const duration = Date.now() - requestStart;
@@ -1129,6 +1243,11 @@ function startDashboard(client) {
 		// Route Handling
 		const hostHeader = req.headers.host || '';
 
+		if (reqUrl === '/dashboard.css') {
+			res.writeHead(200, { 'Content-Type': 'text/css; charset=utf-8' });
+			return res.end(cachedCss);
+		}
+
 		if (reqUrl === '/my_server' || reqUrl === '/my_server.html') {
 			const user = await getAuthenticatedUser(req, res, client).catch(() => null);
 			if (!user) {
@@ -1141,6 +1260,33 @@ function startDashboard(client) {
 			res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
 			return res.end(cachedMyServerHtml);
 		}
+
+		// Route: Serve dedicated server configuration subpage (/my_server/:id)
+		const serverIdMatch = reqUrl.match(/^\/my_server\/([a-zA-Z0-9_-]+)$/);
+		if (serverIdMatch) {
+			const serverId = serverIdMatch[1];
+			const user = await getAuthenticatedUser(req, res, client).catch(() => null);
+			if (!user) {
+				const redirectTarget = hostHeader.startsWith('bot.')
+					? `${getDashboardUrl(req)}/`
+					: getHomepageUrl(req);
+				res.writeHead(302, { 'Location': redirectTarget });
+				return res.end();
+			}
+
+			const cookies = parseCookies(req);
+			const sessionId = cookies.session_id;
+			const session = sessions[sessionId];
+			const hasPermission = await userHasGuildPermission(session, serverId);
+			if (!hasPermission) {
+				res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+				return res.end('Forbidden: You do not have Manage Server permissions for this guild.');
+			}
+
+			res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+			return res.end(cachedServerConfigHtml);
+		}
+
 
 		if (reqUrl === '/my_config' || reqUrl === '/my_config.html') {
 			const user = await getAuthenticatedUser(req, res, client).catch(() => null);
@@ -1215,6 +1361,32 @@ function startDashboard(client) {
 
 		// Endpoint: GET /api/auth/login - Redirect user to Discord OAuth page
 		if (reqUrl === '/api/auth/login') {
+			if (process.env.STANDALONE === 'true') {
+				const sessionId = 'standalone_mock_session_id';
+				sessions[sessionId] = {
+					userId: 'mock_user_id',
+					username: 'Mock Developer',
+					avatar: '0',
+					accessToken: 'mock_access_token',
+					refreshToken: 'mock_refresh_token',
+					expiresAt: Date.now() + 3600000
+				};
+				saveSessions();
+
+				const cookieOptions = [
+					`session_id=${sessionId}`,
+					'Path=/',
+					'HttpOnly',
+					'Max-Age=2592000',
+					'SameSite=Lax'
+				];
+				res.writeHead(302, {
+					'Set-Cookie': cookieOptions.join('; '),
+					'Location': '/dashboard'
+				});
+				return res.end();
+			}
+
 			const CLIENT_ID = process.env.CLIENT_ID;
 			if (!CLIENT_ID) {
 				res.writeHead(500, { 'Content-Type': 'text/plain' });
@@ -1394,6 +1566,41 @@ function startDashboard(client) {
 				return res.end(JSON.stringify({ error: 'Unauthorized' }));
 			}
 
+			if (process.env.STANDALONE === 'true') {
+				const managedGuilds = [];
+				const inviteGuilds = [];
+				const CLIENT_ID = process.env.CLIENT_ID || 'mock_client_id';
+
+				for (let i = 1; i <= 6; i++) {
+					const mockId = i === 1 ? '1447192381479976993' : (i === 2 ? '1492101995094610062' : `mock_managed_${i}`);
+					const config = getConfig(mockId);
+					const isConfigured = !!(config && config.tempVCCreateChannelId && config.tempVCCategoryId);
+					managedGuilds.push({
+						id: mockId,
+						name: i === 1 ? 'Fluffing Guild' : (i === 2 ? 'Dragon Den' : `Mock Managed Server ${i}`),
+						iconUrl: null,
+						botInGuild: true,
+						isConfigured: isConfigured
+					});
+				}
+
+				for (let i = 1; i <= 6; i++) {
+					inviteGuilds.push({
+						id: `mock_invite_${i}`,
+						name: `Mock Invite Server ${i}`,
+						iconUrl: null,
+						botInGuild: false,
+						inviteUrl: `https://discord.com/oauth2/authorize?client_id=${CLIENT_ID}&permissions=8&scope=bot%20applications.commands&guild_id=mock_invite_${i}&disable_guild_select=true`
+					});
+				}
+
+				res.writeHead(200, { 'Content-Type': 'application/json' });
+				return res.end(JSON.stringify({
+					managed: managedGuilds,
+					inviteable: inviteGuilds
+				}));
+			}
+
 			const session = sessions[sessionId];
 
 			try {
@@ -1421,13 +1628,17 @@ function startDashboard(client) {
 					if (hasManageGuild || hasAdmin) {
 						const botInGuild = client && client.isReady() && client.guilds.cache.has(guild.id);
 
+						const config = getConfig(guild.id);
+						const isConfigured = !!(config && config.tempVCCreateChannelId && config.tempVCCategoryId);
+
 						const guildInfo = {
 							id: guild.id,
 							name: guild.name,
 							iconUrl: guild.icon
 								? `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png`
 								: null,
-							botInGuild: botInGuild
+							botInGuild: botInGuild,
+							isConfigured: isConfigured
 						};
 
 						if (botInGuild) {
@@ -1444,7 +1655,6 @@ function startDashboard(client) {
 					managed: managedGuilds,
 					inviteable: inviteGuilds
 				}));
-
 			} catch (err) {
 				console.error('[Dashboard] Error fetching user guilds:', err);
 				res.writeHead(500, { 'Content-Type': 'application/json' });
@@ -1496,6 +1706,147 @@ function startDashboard(client) {
 			return;
 		}
 
+		// Endpoint: GET /api/guild/config - Fetch configurations and channels for a guild
+		if (reqUrl === '/api/guild/config' && req.method === 'GET') {
+			try {
+				const cookies = parseCookies(req);
+				const sessionId = cookies.session_id;
+				if (!sessionId || !sessions[sessionId]) {
+					res.writeHead(401, { 'Content-Type': 'application/json' });
+					return res.end(JSON.stringify({ error: 'Unauthorized' }));
+				}
+
+				const guildId = parsedUrl.searchParams.get('guildId');
+				if (!guildId) {
+					res.writeHead(400, { 'Content-Type': 'application/json' });
+					return res.end(JSON.stringify({ error: 'Missing guildId parameter' }));
+				}
+
+				const session = sessions[sessionId];
+				const hasPermission = await userHasGuildPermission(session, guildId);
+				if (!hasPermission) {
+					res.writeHead(403, { 'Content-Type': 'application/json' });
+					return res.end(JSON.stringify({ error: 'Forbidden: You do not have Manage Server permission for this guild' }));
+				}
+
+				const config = getConfig(guildId) || {
+					tempVCCreateChannelId: null,
+					tempVCCategoryId: null,
+					tempVCNameTemplate: "{d}'s Room",
+					levelUpType: 'popup',
+					levelUpChannelId: null
+				};
+
+				let voiceChannels = [];
+				let categories = [];
+				let textChannels = [];
+				let guildName = 'Mock Server';
+
+				if (process.env.STANDALONE === 'true') {
+					guildName = guildId === '1447192381479976993' ? 'Fluffing Guild' : (guildId === '1492101995094610062' ? 'Dragon Den' : 'Mock Server');
+					voiceChannels = [
+						{ id: '1507240107864756244', name: '🔊 Join to Create VC' },
+						{ id: 'mock_vc_1', name: '🔊 General Voice' },
+						{ id: 'mock_vc_2', name: '🔊 Gaming Lounge' }
+					];
+					categories = [
+						{ id: '1447192383178539070', name: '📁 TEMP VQS' },
+						{ id: 'mock_cat_1', name: '📁 TEXT CHANNELS' },
+						{ id: 'mock_cat_2', name: '📁 VOICE CHANNELS' }
+					];
+					textChannels = [
+						{ id: 'mock_txt_1', name: '💬 general' },
+						{ id: 'mock_txt_2', name: '💬 bot-commands' },
+						{ id: 'mock_txt_3', name: '💬 announcements' }
+					];
+				} else {
+					const guild = client.guilds.cache.get(guildId);
+					if (guild) {
+						guildName = guild.name;
+						guild.channels.cache.forEach(channel => {
+							if (channel.type === 2) { // GuildVoice
+								voiceChannels.push({ id: channel.id, name: channel.name });
+							} else if (channel.type === 4) { // GuildCategory
+								categories.push({ id: channel.id, name: channel.name });
+							} else if (channel.type === 0) { // GuildText
+								textChannels.push({ id: channel.id, name: channel.name });
+							}
+						});
+					}
+				}
+
+				res.writeHead(200, { 'Content-Type': 'application/json' });
+				return res.end(JSON.stringify({ guildName, config, voiceChannels, categories, textChannels }));
+
+
+			} catch (err) {
+				console.error('[Dashboard] Error fetching guild config:', err);
+				res.writeHead(500, { 'Content-Type': 'application/json' });
+				return res.end(JSON.stringify({ error: 'Internal Server Error' }));
+			}
+		}
+
+		// Endpoint: POST /api/guild/config - Update configurations for a guild
+		if (reqUrl === '/api/guild/config' && req.method === 'POST') {
+			let body = '';
+			req.on('data', chunk => {
+				body += chunk;
+			});
+			req.on('end', async () => {
+				try {
+					const cookies = parseCookies(req);
+					const sessionId = cookies.session_id;
+					if (!sessionId || !sessions[sessionId]) {
+						res.writeHead(401, { 'Content-Type': 'application/json' });
+						return res.end(JSON.stringify({ error: 'Unauthorized' }));
+					}
+
+					const parsed = JSON.parse(body);
+					const { guildId, tempVCCreateChannelId, tempVCCategoryId, tempVCNameTemplate, levelUpType, levelUpChannelId } = parsed;
+
+					if (!guildId) {
+						res.writeHead(400, { 'Content-Type': 'application/json' });
+						return res.end(JSON.stringify({ error: 'Missing guildId' }));
+					}
+
+					const session = sessions[sessionId];
+					const hasPermission = await userHasGuildPermission(session, guildId);
+					if (!hasPermission) {
+						res.writeHead(403, { 'Content-Type': 'application/json' });
+						return res.end(JSON.stringify({ error: 'Forbidden: You do not have Manage Server permission' }));
+					}
+
+					if (tempVCNameTemplate && tempVCNameTemplate.length > 80) {
+						res.writeHead(400, { 'Content-Type': 'application/json' });
+						return res.end(JSON.stringify({ error: 'Name template is too long (max 80 characters)' }));
+					}
+
+					if (levelUpType && !['popup', 'channel', 'disabled'].includes(levelUpType)) {
+						res.writeHead(400, { 'Content-Type': 'application/json' });
+						return res.end(JSON.stringify({ error: 'Invalid levelUpType value' }));
+					}
+
+					const updates = {};
+					if (tempVCCreateChannelId !== undefined) updates.tempVCCreateChannelId = tempVCCreateChannelId;
+					if (tempVCCategoryId !== undefined) updates.tempVCCategoryId = tempVCCategoryId;
+					if (tempVCNameTemplate !== undefined) updates.tempVCNameTemplate = tempVCNameTemplate;
+					if (levelUpType !== undefined) updates.levelUpType = levelUpType;
+					if (levelUpChannelId !== undefined) updates.levelUpChannelId = levelUpChannelId;
+
+					updateConfigs(guildId, updates);
+
+
+					res.writeHead(200, { 'Content-Type': 'application/json' });
+					return res.end(JSON.stringify({ success: true }));
+				} catch (err) {
+					console.error('[Dashboard] Error updating guild config:', err);
+					res.writeHead(500, { 'Content-Type': 'application/json' });
+					return res.end(JSON.stringify({ error: 'Internal Server Error' }));
+				}
+			});
+			return;
+		}
+
 		// Endpoint: POST /api/user/connections-config - Save connection sync config and trigger sync
 		if (reqUrl === '/api/user/connections-config' && req.method === 'POST') {
 			let body = '';
@@ -1531,7 +1882,9 @@ function startDashboard(client) {
 					saveUserConfigs();
 
 					// Sync with Discord immediately
-					await syncDiscordConnection(session.userId, client, session.accessToken);
+					if (process.env.STANDALONE !== 'true') {
+						await syncDiscordConnection(session.userId, client, session.accessToken);
+					}
 
 					res.writeHead(200, { 'Content-Type': 'application/json' });
 					return res.end(JSON.stringify({ success: true }));
@@ -1832,6 +2185,7 @@ function startDashboard(client) {
 				return res.end(JSON.stringify({
 					online: false,
 					status: 'starting',
+					standalone: process.env.STANDALONE === 'true',
 					uptime: process.uptime(),
 					uptimeStr: formatDuration(process.uptime()),
 					environment: envStr,
@@ -1866,6 +2220,7 @@ function startDashboard(client) {
 				const statusPayload = {
 					online: true,
 					status: 'online',
+					standalone: process.env.STANDALONE === 'true',
 					botTag: client.user.tag,
 					botAvatar: client.user.displayAvatarURL({ extension: 'png', size: 128 }),
 					bot: {

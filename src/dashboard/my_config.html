@@ -8,72 +8,11 @@
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="/dashboard.css">
 	<style>
-		:root {
-			--bg-primary: #090d16;
-			--bg-secondary: #0f172a;
-			--glass-bg: rgba(15, 23, 42, 0.45);
-			--glass-border: rgba(255, 255, 255, 0.06);
-			--glass-glow: rgba(99, 102, 241, 0.05);
-			--text-primary: #f8fafc;
-			--text-secondary: #94a3b8;
-			--text-muted: #64748b;
-			
-			/* Accents */
-			--accent-primary: #6366f1; /* Indigo */
-			--accent-secondary: #8b5cf6; /* Violet */
-			--success: #10b981; /* Emerald */
-			--warning: #f59e0b; /* Amber */
-			--danger: #ef4444; /* Rose */
-		}
-
-		* {
-			box-sizing: border-box;
-			margin: 0;
-			padding: 0;
-		}
-
-		body {
-			font-family: 'Outfit', sans-serif;
-			background-color: var(--bg-primary);
-			color: var(--text-primary);
-			min-height: 100vh;
-			display: flex;
-			background-image: 
-				radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
-				radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 40%);
-			background-attachment: fixed;
-			overflow-x: hidden;
-		}
-
-
-
-		/* Main container */
+		/* Main container overrides */
 		main {
-			margin-left: 280px;
-			flex-grow: 1;
-			padding: 2.5rem;
 			max-width: 1200px;
-		}
-
-		/* Page Header */
-		.page-header {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			margin-bottom: 2.5rem;
-		}
-
-		.page-title h1 {
-			font-size: 1.75rem;
-			font-weight: 700;
-			letter-spacing: -0.02em;
-		}
-
-		.page-title p {
-			color: var(--text-secondary);
-			font-size: 0.9rem;
-			margin-top: 0.25rem;
 		}
 
 		/* Config Section Card */

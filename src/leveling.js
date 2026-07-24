@@ -92,6 +92,31 @@ function addXP(userId, amount, userObj = null, notifyContext = null) {
 async function sendLevelUpNotification(context, user, newLevel) {
 	if (newLevel > 5 && newLevel % 5 !== 0) return;
 
+	let targetChannel = context.channel;
+
+	// Check if server is configured for specific leveling notification types
+	const guildId = context.guild?.id;
+	if (guildId) {
+		try {
+			const { getConfig } = require('./utils/configManager');
+			const config = getConfig(guildId);
+			if (config) {
+				const type = config.levelUpType || 'popup';
+				if (type === 'disabled') {
+					return; // Level up notifications disabled
+				}
+				if (type === 'channel' && config.levelUpChannelId) {
+					const destChannel = context.guild.channels.cache.get(config.levelUpChannelId);
+					if (destChannel) {
+						targetChannel = destChannel;
+					}
+				}
+			}
+		} catch (err) {
+			console.error('Error fetching server config for leveling notification:', err);
+		}
+	}
+
 	const embed = new EmbedBuilder()
 		.setTitle('🎊 Level Up!')
 		.setDescription(`Congratulations <@${user.id}>! You have reached **Level ${newLevel}**!`)
@@ -105,12 +130,8 @@ async function sendLevelUpNotification(context, user, newLevel) {
 	}
 
 	try {
-        // If it's an interaction and hasn't been replied to, we might want to followUp
-        // But the user specifically said "sending a separates one" and "no need to replies back to the command"
-        // So we use channel.send regardless of context type if possible.
-        const channel = context.channel;
-        if (channel) {
-            const msg = await channel.send({ embeds: [embed] });
+        if (targetChannel) {
+            const msg = await targetChannel.send({ embeds: [embed] });
             
             // Add reaction
             await msg.react('❌').catch(() => {});
@@ -119,6 +140,7 @@ async function sendLevelUpNotification(context, user, newLevel) {
 		console.error('Error sending level up notification:', e);
 	}
 }
+
 
 function addMessage(userId) {
 	const data = getFullLevelData();
