@@ -1,18 +1,17 @@
 const { EmbedBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
+const dbManager = require('../backend/dbManager');
 
 const MINECRAFT_DIR = path.join(process.cwd(), 'data', 'minecraft');
 const PLAYER_DATA_DIR = path.join(MINECRAFT_DIR, 'playerData');
 const CORE_DATA_DIR = path.join(MINECRAFT_DIR, 'core');
 
-const PLAYERS_FILE = path.join(PLAYER_DATA_DIR, 'players.json');
 const CORE_FILE = path.join(CORE_DATA_DIR, 'minecraft.json');
 const RECIPE_FILE = path.join(CORE_DATA_DIR, 'recipe.json');
 const LOOT_FILE = path.join(CORE_DATA_DIR, 'loot.json');
 const TOOLS_FILE = path.join(CORE_DATA_DIR, 'tools.json');
 const SMELTERY_FILE = path.join(CORE_DATA_DIR, 'smeltery.json');
-// Levels handled by ../leveling.js
 const ADVANCEMENT_FILE = path.join(CORE_DATA_DIR, 'advancements.json');
 
 // Ensure directories and files exist
@@ -23,10 +22,6 @@ function ensureExists() {
         }
     });
 
-    if (!fs.existsSync(PLAYERS_FILE)) {
-        fs.writeFileSync(PLAYERS_FILE, JSON.stringify({}), 'utf8');
-    }
-
     if (!fs.existsSync(CORE_FILE)) {
         fs.writeFileSync(CORE_FILE, JSON.stringify({ last_updated: new Date().toISOString() }), 'utf8');
     }
@@ -34,37 +29,9 @@ function ensureExists() {
 
 function getPlayerData(userId) {
     ensureExists();
-    let data = {};
-    try {
-        const content = fs.readFileSync(PLAYERS_FILE, 'utf8');
-        data = JSON.parse(content);
-    } catch (e) {
-        console.error('Error reading players.json:', e);
-    }
+    const player = dbManager.getPlayerData(userId);
     
-    if (!data[userId]) {
-        data[userId] = {
-            inventory: {
-                oak_log: 0,
-                stick: 0,
-                apple: 0
-            },
-            tools: [], // New unique tools storage
-            equipped: {
-                pickaxe: null // This will store the tool ID
-            },
-            furnaces: [], // Array of { input, fuel, result, currentHeat, progressMs, lastTick }
-            stats: {
-                trees_chopped: 0,
-                blocks_mined: 0
-            },
-            unlocked_recipes: [],
-            advancements: []
-        };
-    }
-
     // Migration and fixes
-    const player = data[userId];
     if (!player.tools) player.tools = [];
     if (!player.equipped) player.equipped = { pickaxe: null };
     if (!player.furnaces) player.furnaces = [];
@@ -115,15 +82,18 @@ function getPlayerData(userId) {
         }
     });
 
-    return data;
+    return { [userId]: player };
 }
 
 function savePlayerData(data) {
     ensureExists();
     try {
-        fs.writeFileSync(PLAYERS_FILE, JSON.stringify(data, null, 2), 'utf8');
+        const userId = Object.keys(data)[0];
+        if (userId) {
+            dbManager.savePlayerData(userId, data[userId]);
+        }
     } catch (e) {
-        console.error('Error saving players.json:', e);
+        console.error('Error saving player data to SQLite:', e);
     }
 }
 
@@ -249,17 +219,6 @@ function getToolDisplayName(tool) {
     if (tool.enchantments && Object.keys(tool.enchantments).length > 0) {
         baseName = `Enchanted ${baseName}`;
     }
-
-    if (tool.enchantments && Object.keys(tool.enchantments).length > 0) {
-        const firstEnchant = Object.keys(tool.enchantments)[0];
-        const level = tool.enchantments[firstEnchant];
-        const roman = ['I', 'II', 'III', 'IV', 'V'][level - 1] || level;
-        // Prefix with the first enchantment name for the baseName part
-        // Wait, the user said "Enchanted {tool original name}"
-        // So baseName is already "Enchanted Wooden Pickaxe"
-        // Should I still include the first enchantment in the name?
-        // Let's stick to "Enchanted {Original Name}" as the primary part.
-    }
     
     if (tool.displayName) {
         return `*${tool.displayName}* (${baseName})`;
@@ -279,7 +238,6 @@ function getAdvancementData() {
 
 function checkAdvancements(player, itemGained) {
     const advancements = getAdvancementData();
-    const newUnlocks = [];
     const newAchievements = [];
 
     for (const [id, adv] of Object.entries(advancements)) {

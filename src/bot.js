@@ -1,4 +1,7 @@
 require('dotenv').config();
+const dbManager = require('./backend/dbManager');
+dbManager.init();
+
 const logger = require('./utils/customLogger');
 console.log = logger.info;
 console.info = logger.info;
@@ -37,7 +40,8 @@ const client = new Client({
 		GatewayIntentBits.MessageContent,
 		GatewayIntentBits.GuildMembers,
 		GatewayIntentBits.GuildMessageReactions,
-		GatewayIntentBits.GuildVoiceStates
+		GatewayIntentBits.GuildVoiceStates,
+		GatewayIntentBits.GuildPresences
 	],
 	partials: [
 		Partials.Message,
@@ -318,6 +322,15 @@ try {
 } catch (error) {
 	logErrorToDiscord(error, 'Initialization (startDashboard)');
 }
+
+// Excel Server //
+try {
+	const { startExcelServer } = require('./excel/server');
+	startExcelServer();
+} catch (error) {
+	logErrorToDiscord(error, 'Initialization (startExcelServer)');
+}
+// End of Excel Server //
 
 client.on(Events.GuildCreate, (guild) => {
 	console.log(`[Guild] Bot was invited/added to guild: ${guild.name} (ID: ${guild.id}) with ${guild.memberCount} members.`);

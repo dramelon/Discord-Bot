@@ -1,0 +1,39 @@
+- [x] Update Database Schema (`src/excel/models/database.js`)
+  - [x] Wipes legacy schema and implements tables: `columns`, `rows`, `cells`
+- [x] Create Model Layer (`src/excel/models/gridModel.js`)
+  - [x] Implement CRUD for columns (rename, add, remove, swap positions) and cells (UPSERT value)
+  - [x] Implement transaction-based bulk columns saving (`saveColumns`)
+- [x] Update Statistics Model (`src/excel/models/expenseModel.js`)
+  - [x] Implement SQL conditional aggregation pivot query to compile virtual columns of amount, date, and category
+- [x] Create MVC Controllers (`src/excel/controllers/gridController.js`)
+  - [x] Expose endpoints: GET `/api/grid`, POST `/api/grid/rows`, DELETE `/api/grid/rows`, PUT `/api/grid/cells`, POST `/api/grid/columns`, PUT `/api/grid/columns`, PUT `/api/grid/columns/swap`, DELETE `/api/grid/columns`
+  - [x] Expose endpoint: POST `/api/grid/columns/save` to commit dynamic column layout changes in bulk
+- [x] Update Router Router (`src/excel/server.js`)
+  - [x] Route new `/api/grid/*` endpoints (including `/api/grid/columns/save`)
+  - [x] Route new `dialog.js` client static asset
+- [x] Rebuild Spreadsheet Views & CSS Layouts (`src/excel/views/` & `src/excel/styles/`)
+  - [x] `style.css`: Add styles for drag-and-drop headers, hover action buttons (pencil, left, right, delete), and custom grids
+  - [x] `style.css`: Restrict main viewport height to lock page scrolls and force independent grid table scroll with sticky column headers
+  - [x] `style.css`: Apply `flex-shrink: 0` constraints and thin scrollbar configurations to horizontal sheet tabs to prevent wrap glitching
+  - [x] `style.css`: Implement focus overlays (dimming non-header page sections) when in Header Edit Mode
+  - [x] `style.css`: Styling for white action icons inside active workbook nav items, soft orange background rename pencil hover accent, and red delete hover accent
+  - [x] `style.css`: Create styles and keyframes for the custom dialog popups (modal overlays, text fields, confirm/cancel buttons)
+  - [x] `excel.html` & `dashboard.html`: Import `dialog.js` script tag
+  - [x] `excel.html`: Add "Edit Columns" button and Done/Cancel controls container in actions toolbar
+- [x] Rewrite Client Interactivity (`src/excel/views/js/excel.js`)
+  - [x] Render dynamic columns and rows
+  - [x] Implement in-memory columns editing mode (Done/Cancel flow)
+  - [x] Add double-click and hover pencil click column renaming (only in Edit mode)
+  - [x] Add drag-and-drop column swapping (HTML5 API) alongside hover `←` and `→` button click swaps (only in Edit mode)
+  - [x] Dim other page elements and block tab switches, cell edits, and row additions when editing column headers
+  - [x] Handle Cell edits and Row/Column deletions
+  - [x] Replace all native `prompt` and `confirm` dialogs with custom modal popups
+- [x] Create Custom Dialog Script (`src/excel/views/js/dialog.js`)
+  - [x] Implement Promise-based dynamic modal dialogs overlay helper (`window.customAlert`, `window.customConfirm`, `window.customPrompt`)
+- [x] Rewrite Sidebar Controller (`src/excel/views/js/sidebar.js`)
+  - [x] Replace all native `prompt` and `confirm` workbook creation, renaming, and deletion triggers with the custom modal popups
+- [x] Verification & Manual Testing
+  - [x] Run bot development server and inspect database tables
+  - [x] Audit bulk save transaction endpoints
+  - [x] Audit column additions, renaming, removal, and drag-and-drop reordering
+  - [x] Audit visual sidebar links state hovers and custom dialog alerts

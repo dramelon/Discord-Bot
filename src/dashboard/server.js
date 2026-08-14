@@ -31,28 +31,39 @@ try {
 const START_2026_MS = new Date('2026-01-01T00:00:00+07:00').getTime();
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+const aboutMeController = require('./controllers/aboutMeController');
+const sillyDatabaseController = require('./controllers/sillyDatabaseController');
+
 // Read and cache HTML files in memory on startup
-const HTML_FILE_PATH = path.join(__dirname, 'index.html');
-const HOME_FILE_PATH = path.join(__dirname, 'home.html');
-const MY_SERVER_FILE_PATH = path.join(__dirname, 'my_server.html');
-const SERVER_CONFIG_FILE_PATH = path.join(__dirname, 'server_config.html');
-const MY_CONFIG_FILE_PATH = path.join(__dirname, 'my_config.html');
-const LOG_VIEWER_FILE_PATH = path.join(__dirname, 'log_viewer.html');
-const ADMIN_PANEL_FILE_PATH = path.join(__dirname, 'admin_panel.html');
-const ADMIN_API_LOGS_FILE_PATH = path.join(__dirname, 'admin_api_logs.html');
-const SIDEBAR_FILE_PATH = path.join(__dirname, 'sidebar.html');
+const HTML_FILE_PATH = path.join(__dirname, 'views', 'index.html');
+const HOME_FILE_PATH = path.join(__dirname, 'views', 'home.html');
+const ABOUT_ME_FILE_PATH = path.join(__dirname, 'views', 'about_me.html');
+const MY_SERVER_FILE_PATH = path.join(__dirname, 'views', 'my_server.html');
+const SERVER_CONFIG_FILE_PATH = path.join(__dirname, 'views', 'server_config.html');
+const MY_CONFIG_FILE_PATH = path.join(__dirname, 'views', 'my_config.html');
+const LOG_VIEWER_FILE_PATH = path.join(__dirname, 'views', 'log_viewer.html');
+const SILLY_DATABASE_FILE_PATH = path.join(__dirname, 'views', 'sillydatabase.html');
+const ADMIN_PANEL_FILE_PATH = path.join(__dirname, 'views', 'admin_panel.html');
+const ADMIN_API_LOGS_FILE_PATH = path.join(__dirname, 'views', 'admin_api_logs.html');
+const SIDEBAR_FILE_PATH = path.join(__dirname, 'views', 'sidebar.html');
+const EDIT_FILE_PATH = path.join(__dirname, 'views', 'edit.html');
 const CSS_FILE_PATH = path.join(__dirname, 'dashboard.css');
+const STYLE_FILE_PATH = path.join(__dirname, 'Style', 'style.css');
+
 let cachedHtml = '';
 let cachedHomeHtml = '';
+let cachedAboutMeHtml = '';
+let cachedEditHtml = '';
 let cachedMyServerHtml = '';
 let cachedServerConfigHtml = '';
 let cachedMyConfigHtml = '';
 let cachedLogViewerHtml = '';
+let cachedSillyDatabaseHtml = '';
 let cachedAdminPanelHtml = '';
 let cachedAdminApiLogsHtml = '';
 let cachedSidebarHtml = '';
-
 let cachedCss = '';
+let cachedStyleCss = '';
 
 try {
 	cachedCss = fs.readFileSync(CSS_FILE_PATH, 'utf8');
@@ -78,6 +89,26 @@ try {
 } catch (err) {
 	console.error('[Dashboard] Error reading home.html:', err);
 	cachedHomeHtml = '<h1>Home Template Error</h1>';
+}
+
+try {
+	cachedAboutMeHtml = fs.readFileSync(ABOUT_ME_FILE_PATH, 'utf8');
+} catch (err) {
+	console.error('[Dashboard] Error reading about_me.html:', err);
+	cachedAboutMeHtml = '<h1>About Me Template Error</h1>';
+}
+
+try {
+	cachedEditHtml = fs.readFileSync(EDIT_FILE_PATH, 'utf8');
+} catch (err) {
+	console.error('[Dashboard] Error reading edit.html:', err);
+	cachedEditHtml = '<h1>Edit Template Error</h1>';
+}
+
+try {
+	cachedStyleCss = fs.readFileSync(STYLE_FILE_PATH, 'utf8');
+} catch (err) {
+	console.error('[Dashboard] Error reading style.css:', err);
 }
 
 try {
@@ -107,6 +138,13 @@ try {
 } catch (err) {
 	console.error('[Dashboard] Error reading log_viewer.html:', err);
 	cachedLogViewerHtml = '<h1>Log Viewer Template Error</h1>';
+}
+
+try {
+	cachedSillyDatabaseHtml = fs.readFileSync(SILLY_DATABASE_FILE_PATH, 'utf8').replace('<!-- INCLUDE_SIDEBAR -->', cachedSidebarHtml);
+} catch (err) {
+	console.error('[Dashboard] Error reading sillydatabase.html:', err);
+	cachedSillyDatabaseHtml = '<h1>SillyDatabase Template Error</h1>';
 }
 
 try {
@@ -682,15 +720,13 @@ async function syncDiscordConnection(userId, client, accessToken) {
 					}
 				}
 
-				// A. Read levels.json for rankings
-				const levelsFilePath = path.join(process.cwd(), 'data', 'levels.json');
+				// A. Read levels data from database for rankings
+				const dbManager = require('../backend/dbManager');
 				let levelsData = {};
-				if (fs.existsSync(levelsFilePath)) {
-					try {
-						levelsData = JSON.parse(fs.readFileSync(levelsFilePath, 'utf8') || '{}');
-					} catch (e) {
-						console.error('[Dashboard] Error reading levels.json for rank calculations:', e);
-					}
+				try {
+					levelsData = dbManager.getAllLevelData();
+				} catch (e) {
+					console.error('[Dashboard] Error reading levels from database for rank calculations:', e);
 				}
 
 				const levelEntries = Object.entries(levelsData).map(([id, u]) => ({
@@ -724,13 +760,13 @@ async function syncDiscordConnection(userId, client, accessToken) {
 				let discoveredData = {};
 
 				if (fs.existsSync(mapFilePath)) {
-					try { mapData = JSON.parse(fs.readFileSync(mapFilePath, 'utf8') || '{}'); } catch(e){}
+					try { mapData = JSON.parse(fs.readFileSync(mapFilePath, 'utf8') || '{}'); } catch (e) { }
 				}
 				if (fs.existsSync(trackerFilePath)) {
-					try { trackerData = JSON.parse(fs.readFileSync(trackerFilePath, 'utf8') || '{"players":{}}'); } catch(e){}
+					try { trackerData = JSON.parse(fs.readFileSync(trackerFilePath, 'utf8') || '{"players":{}}'); } catch (e) { }
 				}
 				if (fs.existsSync(discoveredFilePath)) {
-					try { discoveredData = JSON.parse(fs.readFileSync(discoveredFilePath, 'utf8') || '{}'); } catch(e){}
+					try { discoveredData = JSON.parse(fs.readFileSync(discoveredFilePath, 'utf8') || '{}'); } catch (e) { }
 				}
 
 				const totalAchievements = Object.keys(discoveredData).length;
@@ -755,7 +791,7 @@ async function syncDiscordConnection(userId, client, accessToken) {
 				if (fs.existsSync(socialActivityPath)) {
 					try {
 						socialData = JSON.parse(fs.readFileSync(socialActivityPath, 'utf8') || '{"emojiUsers":{},"stickerUsers":{}}');
-					} catch (e) {}
+					} catch (e) { }
 				}
 				if (!socialData.emojiUsers) socialData.emojiUsers = {};
 				if (!socialData.stickerUsers) socialData.stickerUsers = {};
@@ -1151,6 +1187,9 @@ async function getAuthenticatedUser(req, res, client) {
  * @param {import('discord.js').Client} client 
  */
 function startDashboard(client) {
+	const dbManager = require('../backend/dbManager');
+	dbManager.init();
+
 	const PORT = process.env.PORT || process.env.SERVER_PORT || 3000;
 
 	if (!process.env.DISCORD_CLIENT_SECRET) {
@@ -1219,8 +1258,8 @@ function startDashboard(client) {
 			return originalEnd.apply(this, args);
 		};
 
-		// Allow only GET and POST requests
-		if (req.method !== 'GET' && req.method !== 'POST') {
+		// Allow GET, POST, PUT, DELETE requests
+		if (req.method !== 'GET' && req.method !== 'POST' && req.method !== 'PUT' && req.method !== 'DELETE') {
 			res.writeHead(405, {
 				'Content-Type': 'text/plain',
 				'X-Content-Type-Options': 'nosniff',
@@ -1232,7 +1271,7 @@ function startDashboard(client) {
 		// Security headers
 		res.setHeader('X-Frame-Options', 'DENY');
 		res.setHeader('X-Content-Type-Options', 'nosniff');
-		res.setHeader('Content-Security-Policy', "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https://cdn.discordapp.com data:; connect-src 'self'; script-src 'self' 'unsafe-inline';");
+		res.setHeader('Content-Security-Policy', "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https://cdn.discordapp.com https://i.scdn.co https://*.scdn.co https://images-ext-1.discordapp.net https://images-ext-2.discordapp.net https://media.discordapp.net data:; connect-src 'self'; script-src 'self' 'unsafe-inline';");
 
 		// Rate Limiting Protection
 		if (isRateLimited(clientIp)) {
@@ -1242,19 +1281,38 @@ function startDashboard(client) {
 
 		// Route Handling
 		const hostHeader = req.headers.host || '';
+		const isBotDomain = hostHeader.startsWith('bot.');
+
+		// Redirect bot-specific pages on the main domain to the bot domain
+		if (!isBotDomain) {
+			const botPages = [
+				'/my_server', '/my_server.html',
+				'/my_config', '/my_config.html',
+				'/log_viewer', '/log_viewer.html',
+				'/admin_panel', '/admin_panel.html',
+				'/admin_panel/api', '/admin_panel/api.html'
+			];
+			if (botPages.includes(reqUrl) || reqUrl.startsWith('/my_server/')) {
+				const botUrl = getDashboardUrl(req);
+				res.writeHead(302, { 'Location': `${botUrl}${req.url}` });
+				return res.end();
+			}
+		}
 
 		if (reqUrl === '/dashboard.css') {
 			res.writeHead(200, { 'Content-Type': 'text/css; charset=utf-8' });
 			return res.end(cachedCss);
 		}
 
+		if (reqUrl === '/Style/style.css' || reqUrl === '/style.css') {
+			res.writeHead(200, { 'Content-Type': 'text/css; charset=utf-8' });
+			return res.end(cachedStyleCss);
+		}
+
 		if (reqUrl === '/my_server' || reqUrl === '/my_server.html') {
 			const user = await getAuthenticatedUser(req, res, client).catch(() => null);
 			if (!user) {
-				const redirectTarget = hostHeader.startsWith('bot.')
-					? `${getDashboardUrl(req)}/`
-					: getHomepageUrl(req);
-				res.writeHead(302, { 'Location': redirectTarget });
+				res.writeHead(302, { 'Location': getDashboardUrl(req) });
 				return res.end();
 			}
 			res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -1267,10 +1325,7 @@ function startDashboard(client) {
 			const serverId = serverIdMatch[1];
 			const user = await getAuthenticatedUser(req, res, client).catch(() => null);
 			if (!user) {
-				const redirectTarget = hostHeader.startsWith('bot.')
-					? `${getDashboardUrl(req)}/`
-					: getHomepageUrl(req);
-				res.writeHead(302, { 'Location': redirectTarget });
+				res.writeHead(302, { 'Location': getDashboardUrl(req) });
 				return res.end();
 			}
 
@@ -1291,10 +1346,7 @@ function startDashboard(client) {
 		if (reqUrl === '/my_config' || reqUrl === '/my_config.html') {
 			const user = await getAuthenticatedUser(req, res, client).catch(() => null);
 			if (!user) {
-				const redirectTarget = hostHeader.startsWith('bot.')
-					? `${getDashboardUrl(req)}/`
-					: getHomepageUrl(req);
-				res.writeHead(302, { 'Location': redirectTarget });
+				res.writeHead(302, { 'Location': getDashboardUrl(req) });
 				return res.end();
 			}
 			res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -1304,23 +1356,27 @@ function startDashboard(client) {
 		if (reqUrl === '/log_viewer' || reqUrl === '/log_viewer.html') {
 			const user = await getAuthenticatedUser(req, res, client).catch(() => null);
 			if (!user || !user.isAdmin) {
-				const redirectTarget = hostHeader.startsWith('bot.')
-					? `${getDashboardUrl(req)}/`
-					: getHomepageUrl(req);
-				res.writeHead(302, { 'Location': redirectTarget });
+				res.writeHead(302, { 'Location': getDashboardUrl(req) });
 				return res.end();
 			}
 			res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
 			return res.end(cachedLogViewerHtml);
 		}
 
+		if (reqUrl === '/sillydatabase' || reqUrl === '/sillydatabase.html') {
+			const user = await getAuthenticatedUser(req, res, client).catch(() => null);
+			if (!user || !user.isAdmin) {
+				res.writeHead(302, { 'Location': getDashboardUrl(req) });
+				return res.end();
+			}
+			res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+			return res.end(cachedSillyDatabaseHtml);
+		}
+
 		if (reqUrl === '/admin_panel' || reqUrl === '/admin_panel.html') {
 			const user = await getAuthenticatedUser(req, res, client).catch(() => null);
 			if (!user || !user.isAdmin) {
-				const redirectTarget = hostHeader.startsWith('bot.')
-					? `${getDashboardUrl(req)}/`
-					: getHomepageUrl(req);
-				res.writeHead(302, { 'Location': redirectTarget });
+				res.writeHead(302, { 'Location': getDashboardUrl(req) });
 				return res.end();
 			}
 			res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
@@ -1330,32 +1386,51 @@ function startDashboard(client) {
 		if (reqUrl === '/admin_panel/api' || reqUrl === '/admin_panel/api.html') {
 			const user = await getAuthenticatedUser(req, res, client).catch(() => null);
 			if (!user || !user.isAdmin) {
-				const redirectTarget = hostHeader.startsWith('bot.')
-					? `${getDashboardUrl(req)}/`
-					: getHomepageUrl(req);
-				res.writeHead(302, { 'Location': redirectTarget });
+				res.writeHead(302, { 'Location': getDashboardUrl(req) });
 				return res.end();
 			}
 			res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
 			return res.end(cachedAdminApiLogsHtml);
 		}
 
-		if (reqUrl === '/' || reqUrl === '/index.html' || reqUrl === '/home' || reqUrl === '/home.html' || reqUrl === '/dashboard') {
-			res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-
-			// Direct path overrides
-			if (reqUrl === '/dashboard') {
-				return res.end(cachedHtml);
-			}
-			if (reqUrl === '/home' || reqUrl === '/home.html') {
-				return res.end(cachedHomeHtml);
-			}
-
-			// Subdomain-based routing
-			if (hostHeader.startsWith('bot.')) {
-				return res.end(cachedHtml); // Dashboard
+		if (reqUrl === '/edit' || reqUrl === '/edit.html') {
+			if (isBotDomain) {
+				const mainDomain = hostHeader.replace('bot.', '');
+				const protocol = req.headers['x-forwarded-proto'] || (req.socket.encrypted || req.headers.host?.includes('furred') ? 'https' : 'http');
+				res.writeHead(302, { 'Location': `${protocol}://${mainDomain}/edit` });
+				return res.end();
 			} else {
-				return res.end(cachedHomeHtml); // Homepage
+				const user = await getAuthenticatedUser(req, res, client).catch(() => null);
+				if (!user || (user.userId !== '389264086753345548' && process.env.STANDALONE !== 'true')) {
+					const botUrl = getDashboardUrl(req);
+					res.writeHead(302, { 'Location': `${botUrl}/api/auth/login?from=edit` });
+					return res.end();
+				}
+				res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+				return res.end(cachedEditHtml);
+			}
+		}
+
+		if (reqUrl === '/' || reqUrl === '/index.html' || reqUrl === '/home' || reqUrl === '/home.html' || reqUrl === '/dashboard') {
+			if (isBotDomain) {
+				res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+				// bot.furred.site / bot.localhost
+				if (reqUrl === '/dashboard') {
+					return res.end(cachedHtml); // Dashboard (index.html)
+				}
+				// Default on bot subdomain is the bot homepage (home.html)
+				return res.end(cachedHomeHtml);
+			} else {
+				// furred.site / localhost
+				if (reqUrl === '/' || reqUrl === '/index.html') {
+					res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+					return res.end(cachedAboutMeHtml); // Main Portfolio (about_me.html)
+				}
+				// Redirect home or dashboard requested on main domain to bot subdomain
+				const botUrl = getDashboardUrl(req);
+				const targetPath = reqUrl === '/dashboard' ? '/dashboard' : '/';
+				res.writeHead(302, { 'Location': `${botUrl}${targetPath}` });
+				return res.end();
 			}
 		}
 
@@ -1406,7 +1481,7 @@ function startDashboard(client) {
 
 			if (hasSession) {
 				// Redirect immediately back to appropriate page
-				const redirectTarget = from === 'home' ? getHomepageUrl(req) : `${getDashboardUrl(req)}/`;
+				const redirectTarget = from === 'home' ? getDashboardUrl(req) : `${getDashboardUrl(req)}/dashboard`;
 				res.writeHead(302, { 'Location': redirectTarget });
 				return res.end();
 			}
@@ -1431,7 +1506,7 @@ function startDashboard(client) {
 			// Handle cancellation / error redirecting back to source
 			if (error) {
 				console.log(`[Dashboard] OAuth2 error callback: ${error}`);
-				const redirectTarget = state === 'home' ? getHomepageUrl(req) : `${getDashboardUrl(req)}/`;
+				const redirectTarget = state === 'home' ? getDashboardUrl(req) : `${getDashboardUrl(req)}/dashboard`;
 				res.writeHead(302, { 'Location': redirectTarget });
 				return res.end();
 			}
@@ -1517,7 +1592,7 @@ function startDashboard(client) {
 					cookieOptions.push('Domain=.furred.site');
 				}
 
-				const redirectTarget = state === 'home' ? getHomepageUrl(req) : `${getDashboardUrl(req)}/`;
+				const redirectTarget = state === 'home' ? getDashboardUrl(req) : (state === 'edit' ? `${protocol}://${hostHeader.replace('bot.', '')}/edit` : `${getDashboardUrl(req)}/dashboard`);
 
 				res.writeHead(302, {
 					'Set-Cookie': cookieOptions.join('; '),
@@ -2037,6 +2112,70 @@ function startDashboard(client) {
 			}
 		}
 
+		// SillyDatabase Endpoints
+		if (reqUrl === '/api/sillydb/tables' && req.method === 'GET') {
+			const user = await getAuthenticatedUser(req, res, client).catch(() => null);
+			return sillyDatabaseController.handleGetTables(req, res, user);
+		}
+		if (reqUrl === '/api/sillydb/data' && req.method === 'GET') {
+			const user = await getAuthenticatedUser(req, res, client).catch(() => null);
+			const table = req.url.split('table=')[1]?.split('&')[0];
+			return sillyDatabaseController.handleGetData(req, res, user, table);
+		}
+		if (reqUrl === '/api/sillydb/export' && req.method === 'GET') {
+			const user = await getAuthenticatedUser(req, res, client).catch(() => null);
+			const table = req.url.split('table=')[1]?.split('&')[0];
+			const format = req.url.split('format=')[1]?.split('&')[0];
+			return sillyDatabaseController.handleExport(req, res, user, table, format);
+		}
+		if (reqUrl === '/api/sillydb/export/row' && req.method === 'GET') {
+			const user = await getAuthenticatedUser(req, res, client).catch(() => null);
+			const table = req.url.split('table=')[1]?.split('&')[0];
+			const format = req.url.split('format=')[1]?.split('&')[0];
+			const pkColumn = req.url.split('pkColumn=')[1]?.split('&')[0];
+			const pkValue = decodeURIComponent(req.url.split('pkValue=')[1]?.split('&')[0] || '');
+			return sillyDatabaseController.handleExport(req, res, user, table, format, pkColumn, pkValue);
+		}
+		if (reqUrl === '/api/sillydb/data' && req.method === 'PUT') {
+			const user = await getAuthenticatedUser(req, res, client).catch(() => null);
+			let body = '';
+			req.on('data', chunk => { body += chunk; });
+			req.on('end', () => {
+				try {
+					sillyDatabaseController.handleUpdateData(req, res, user, JSON.parse(body));
+				} catch (e) {
+					res.writeHead(400); res.end('Invalid JSON');
+				}
+			});
+			return;
+		}
+		if (reqUrl === '/api/sillydb/data' && req.method === 'DELETE') {
+			const user = await getAuthenticatedUser(req, res, client).catch(() => null);
+			let body = '';
+			req.on('data', chunk => { body += chunk; });
+			req.on('end', () => {
+				try {
+					sillyDatabaseController.handleDeleteData(req, res, user, JSON.parse(body));
+				} catch (e) {
+					res.writeHead(400); res.end('Invalid JSON');
+				}
+			});
+			return;
+		}
+		if (reqUrl === '/api/sillydb/import' && req.method === 'POST') {
+			const user = await getAuthenticatedUser(req, res, client).catch(() => null);
+			let body = '';
+			req.on('data', chunk => { body += chunk; });
+			req.on('end', () => {
+				try {
+					sillyDatabaseController.handleImport(req, res, user, JSON.parse(body));
+				} catch (e) {
+					res.writeHead(400); res.end('Invalid JSON');
+				}
+			});
+			return;
+		}
+
 		// Endpoint: POST /api/admin/bot_status - Update bot custom status activity text
 		if (reqUrl === '/api/admin/bot_status' && req.method === 'POST') {
 			const user = await getAuthenticatedUser(req, res, client).catch(() => null);
@@ -2159,6 +2298,131 @@ function startDashboard(client) {
 					return res.end(JSON.stringify({ success: true }));
 				} catch (err) {
 					console.error('[Dashboard] Error saving config updates:', err);
+					res.writeHead(400, { 'Content-Type': 'text/plain' });
+					return res.end('Bad Request');
+				}
+			});
+			return;
+		}
+
+		// Endpoint: GET /api/presence/owner - Get sanitized live presence of the owner
+		if (reqUrl === '/api/presence/owner') {
+			res.writeHead(200, { 'Content-Type': 'application/json' });
+			try {
+				const presenceData = await aboutMeController.getOwnerPresence(client);
+				return res.end(JSON.stringify(presenceData));
+			} catch (err) {
+				console.error('[Dashboard] Error serving owner presence:', err);
+				res.writeHead(500, { 'Content-Type': 'application/json' });
+				return res.end(JSON.stringify({ error: 'Internal Server Error' }));
+			}
+		}
+
+		// Endpoint: GET /api/about_me/events - Retrieve calendar events
+		if (reqUrl === '/api/about_me/events' && req.method === 'GET') {
+			const configPath = path.join(process.cwd(), 'data', 'aboutMeData.json');
+			res.writeHead(200, { 'Content-Type': 'application/json' });
+			try {
+				if (fs.existsSync(configPath)) {
+					const raw = fs.readFileSync(configPath, 'utf8');
+					if (raw.trim()) {
+						const parsed = JSON.parse(raw);
+						return res.end(JSON.stringify(parsed.calendarEvents || {}));
+					}
+				}
+				return res.end(JSON.stringify({}));
+			} catch (err) {
+				console.error('[Dashboard] Error serving calendar events:', err);
+				return res.end(JSON.stringify({}));
+			}
+		}
+
+		// Endpoint: POST /api/about_me/events - Add/modify/remove calendar events (Owner only)
+		if (reqUrl === '/api/about_me/events' && req.method === 'POST') {
+			const user = await getAuthenticatedUser(req, res, client).catch(() => null);
+			if (!user || (user.userId !== '389264086753345548' && process.env.STANDALONE !== 'true')) {
+				res.writeHead(403, { 'Content-Type': 'text/plain' });
+				return res.end('Forbidden');
+			}
+
+			let body = '';
+			req.on('data', chunk => { body += chunk; });
+			req.on('end', () => {
+				try {
+					const parsed = JSON.parse(body);
+					const { date, events } = parsed; // date: YYYY-MM-DD, events: array of strings
+					if (!date) {
+						res.writeHead(400, { 'Content-Type': 'text/plain' });
+						return res.end('Bad Request: Missing date parameter');
+					}
+
+					const configPath = path.join(process.cwd(), 'data', 'aboutMeData.json');
+					let dataObj = { calendarEvents: {}, editorToken: "furred-site-edit-token-1234" };
+					if (fs.existsSync(configPath)) {
+						const raw = fs.readFileSync(configPath, 'utf8');
+						if (raw.trim()) {
+							dataObj = JSON.parse(raw);
+						}
+					}
+
+					if (!dataObj.calendarEvents) dataObj.calendarEvents = {};
+
+					if (!events || !Array.isArray(events) || events.length === 0) {
+						delete dataObj.calendarEvents[date];
+					} else {
+						dataObj.calendarEvents[date] = events.map(e => String(e).trim());
+					}
+
+					fs.writeFileSync(configPath, JSON.stringify(dataObj, null, 2), 'utf8');
+					console.log(`[Admin] Calendar events updated for ${date} by ${user.username}`);
+
+					res.writeHead(200, { 'Content-Type': 'application/json' });
+					return res.end(JSON.stringify({ success: true }));
+				} catch (err) {
+					console.error('[Dashboard] Error saving calendar event updates:', err);
+					res.writeHead(400, { 'Content-Type': 'text/plain' });
+					return res.end('Bad Request');
+				}
+			});
+			return;
+		}
+
+		// Endpoint: POST /api/about_me/config - Update bio & profile config (Owner only)
+		if (reqUrl === '/api/about_me/config' && req.method === 'POST') {
+			const user = await getAuthenticatedUser(req, res, client).catch(() => null);
+			if (!user || (user.userId !== '389264086753345548' && process.env.STANDALONE !== 'true')) {
+				res.writeHead(403, { 'Content-Type': 'text/plain' });
+				return res.end('Forbidden');
+			}
+
+			let body = '';
+			req.on('data', chunk => { body += chunk; });
+			req.on('end', () => {
+				try {
+					const parsed = JSON.parse(body);
+					const { bio } = parsed;
+
+					const configPath = path.join(process.cwd(), 'data', 'aboutMeData.json');
+					let dataObj = { calendarEvents: {}, editorToken: "furred-site-edit-token-1234", profileConfig: {} };
+					if (fs.existsSync(configPath)) {
+						const raw = fs.readFileSync(configPath, 'utf8');
+						if (raw.trim()) {
+							dataObj = JSON.parse(raw);
+						}
+					}
+
+					if (!dataObj.profileConfig) dataObj.profileConfig = {};
+					if (typeof bio === 'string') {
+						dataObj.profileConfig.bio = bio;
+					}
+
+					fs.writeFileSync(configPath, JSON.stringify(dataObj, null, 2), 'utf8');
+					console.log(`[Admin] About Me bio updated by ${user.username}`);
+
+					res.writeHead(200, { 'Content-Type': 'application/json' });
+					return res.end(JSON.stringify({ success: true }));
+				} catch (err) {
+					console.error('[Dashboard] Error saving about me bio update:', err);
 					res.writeHead(400, { 'Content-Type': 'text/plain' });
 					return res.end('Bad Request');
 				}

@@ -18,11 +18,16 @@ const vc = require('./commands/qol/vc');
 const reminder = require('./commands/qol/reminder');
 const config = require('./commands/admin/config');
 const setup = require('./commands/admin/setup');
+const customWidget = require('./commands/qol/customWidget.js');
+const steal = require('./commands/qol/steal');
+const upload = require('./commands/qol/upload');
+
 const contextMenuClipboard = require('./contextMenu/clipboard');
 const contextMenuPetpet = require('./contextMenu/petpet');
 const contextMenuStretch = require('./contextMenu/stretch');
 const contextMenuUserProfile = require('./contextMenu/userProfile');
-const customWidget = require('./commands/qol/customWidget.js');
+const contextMenuStealEmoji = require('./contextMenu/stealEmoji');
+const contextMenuStealSticker = require('./contextMenu/stealSticker');
 
 // Add any other commands here
 module.exports = [
@@ -46,9 +51,14 @@ module.exports = [
 	reminder,
 	config,
 	setup,
+	customWidget,
+	steal,
+	upload,
+	
 	contextMenuClipboard,
 	contextMenuPetpet,
 	contextMenuStretch,
 	contextMenuUserProfile,
-	customWidget,
+	contextMenuStealEmoji,
+	contextMenuStealSticker,
 ];

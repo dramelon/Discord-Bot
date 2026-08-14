@@ -20,6 +20,10 @@ const welcomeMessages = [
 module.exports = {
     name: Events.GuildMemberAdd,
     async execute(member) {
+        if (process.env.IS_DEV === 'true') {
+            console.log(`[Dev Mode] Welcome message and initial role assignment skipped for ${member.user.tag}.`);
+            return;
+        }
         // Add Role
         try {
             await member.roles.add(HOMETOWN_INITIAL_ROLE_ID);

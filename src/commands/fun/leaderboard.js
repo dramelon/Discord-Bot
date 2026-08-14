@@ -1,8 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
-const fs = require('fs');
-const path = require('path');
-
-const dataPath = path.join(process.cwd(), 'data', 'levels.json');
+const dbManager = require('../../backend/dbManager');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -12,12 +9,10 @@ module.exports = {
 		.setIntegrationTypes([0, 1]),
 	async execute(interaction) {
 		let data = {};
-		if (fs.existsSync(dataPath)) {
-			try {
-				data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
-			} catch (e) {
-				console.error('Error reading levels data:', e);
-			}
+		try {
+			data = dbManager.getAllLevelData();
+		} catch (e) {
+			console.error('Error reading levels data from SQLite:', e);
 		}
 
 		// Convert data object to array, sort by totalXp descending, and take top 10

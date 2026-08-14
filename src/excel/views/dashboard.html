@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Daily Expenses Manager</title>
+    <link rel="stylesheet" href="/styles/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon">$</div>
+                <span class="brand-name">Expenses</span>
+            </div>
+            
+            <nav style="flex: 1; overflow-y: auto;">
+                <ul class="nav-list" id="sidebar-nav-list">
+                    <!-- Populated dynamically via sidebar.js -->
+                </ul>
+            </nav>
+            
+            <div class="nav-footer">
+                <button id="logout-btn" class="btn-logout">
+                    <!-- Logout Icon SVG -->
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    <span class="nav-text">Sign Out</span>
+                </button>
+            </div>
+        </aside>
+        
+        <!-- Main Dashboard Workspace -->
+        <main class="main-content">
+            <header style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 2rem;">
+                <div>
+                    <h1 id="workbook-title-header">Dashboard</h1>
+                    <p class="page-subtitle">Your customizable budget summaries and analytics</p>
+                </div>
+                <div style="display: flex; gap: 0.75rem; align-items: center;">
+                    <button id="sort-cards-btn" class="btn-action-secondary" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.25rem; font-weight: 600; border-radius: var(--radius-md); font-size: 0.85rem; border: 1px solid var(--border-color); background: white; cursor: pointer; transition: var(--transition);">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 16px; height: 16px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                        </svg>
+                        Sort Cards
+                    </button>
+                    <button id="add-card-btn" class="btn-action-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.25rem; font-weight: 600; border-radius: var(--radius-md); font-size: 0.85rem; border: none; cursor: pointer; transition: var(--transition);">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 16px; height: 16px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add Card
+                    </button>
+                </div>
+            </header>
+
+            <!-- Custom Cards Grid Container -->
+            <div id="cards-container" class="dashboard-custom-grid">
+                <!-- Dynamically populated cards -->
+            </div>
+        </main>
+    </div>
+
+
+    <!-- Notification Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="/views/js/dialog.js"></script>
+    <script src="/views/js/sidebar.js"></script>
+    <script src="/views/js/dashboard.js"></script>
+</body>
+</html>

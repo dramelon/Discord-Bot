@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SillyDatabase - Bot Data</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/dashboard.css">
+    <style>
+        /* Main container overrides */
+        main {
+            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .page-header {
+            margin-bottom: 2rem;
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            width: 100%;
+        }
+
+        .table-selector {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+        }
+        .table-tab {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .table-tab:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .table-tab.active {
+            background: var(--accent-primary);
+            color: white;
+            border-color: var(--accent-primary);
+        }
+        .data-grid-container {
+            width: 100%;
+            overflow-x: auto;
+            background: var(--glass-bg);
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .data-grid {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .data-grid th, .data-grid td {
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--glass-border);
+            color: var(--text-primary);
+        }
+        .data-grid th {
+            font-weight: 600;
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.02);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .data-grid tr:hover td {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .action-cell {
+            white-space: nowrap;
+            width: 1%;
+        }
+        
+        .btn-action-sm {
+            padding: 0.35rem 0.6rem;
+            font-size: 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            margin-right: 0.25rem;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .btn-action-sm:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .btn-action-sm.danger:hover {
+            background: var(--danger);
+            color: white;
+        }
+        .btn-action-sm.primary:hover {
+            background: var(--accent-primary);
+            color: white;
+        }
+        
+        /* Modal specific */
+        .modal-body textarea, .modal-body input {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.2);
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            font-family: inherit;
+        }
+        .conflict-box {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--danger);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        .conflict-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .conflict-val {
+            flex: 1;
+            padding: 0.5rem;
+            background: rgba(0,0,0,0.2);
+            border-radius: 6px;
+            min-width: 150px;
+        }
+        
+        /* Modals and Overlay mapping to dashboard.css standard */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(4, 6, 15, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            width: 90%;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 0.75rem;
+        }
+        .modal-header h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .close-btn {
+            font-size: 1.5rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            line-height: 1;
+        }
+        .close-btn:hover { color: var(--text-primary); }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- INCLUDE_SIDEBAR -->
+
+    <main>
+        <header class="page-header">
+            <div class="page-title">
+                <h1>Bot Database</h1>
+                <p>Manage raw bot data via dashboard</p>
+            </div>
+            <div style="display: flex; gap: 0.75rem; align-items: center;" id="global-actions">
+                <button id="import-btn" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.25rem;">
+                    Import
+                </button>
+                <div style="position: relative; display: inline-block;">
+                    <button id="export-menu-btn" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.25rem;">
+                        Export All
+                    </button>
+                    <div id="export-dropdown" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 0.5rem; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); z-index: 100; min-width: 150px; overflow: hidden; backdrop-filter: blur(10px);">
+                        <a href="#" id="export-csv-btn" style="display: block; padding: 0.75rem 1rem; color: var(--text-primary); text-decoration: none;">Export as CSV</a>
+                        <a href="#" id="export-json-btn" style="display: block; padding: 0.75rem 1rem; color: var(--text-primary); text-decoration: none; border-top: 1px solid var(--glass-border);">Export as JSON</a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div id="table-selector" class="table-selector">
+            <!-- Tabs populated via JS -->
+        </div>
+
+        <div class="data-grid-container" style="max-height: calc(100vh - 220px); overflow-y: auto;">
+            <table class="data-grid" id="data-table">
+                <thead id="data-table-head">
+                    <!-- Headers -->
+                </thead>
+                <tbody id="data-table-body">
+                    <!-- Rows -->
+                </tbody>
+            </table>
+            <div id="loading-spinner" style="display: none; text-align: center; padding: 2rem; color: var(--text-muted);">
+                Loading...
+            </div>
+            <div id="empty-state" style="display: none; text-align: center; padding: 2rem; color: var(--text-muted);">
+                No data in this table.
+            </div>
+        </div>
+    </main>
+
+    <!-- Edit Row Modal -->
+    <div id="edit-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 600px; max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header">
+                <h3>Edit Record</h3>
+                <span class="close-btn" id="edit-modal-close">&times;</span>
+            </div>
+            <div class="modal-body" id="edit-modal-body">
+                <!-- Dynamic form fields -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="edit-modal-cancel">Cancel</button>
+                <button class="btn btn-primary" id="edit-modal-save">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conflict Resolution Modal -->
+    <div id="conflict-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3 style="color: var(--danger);">Data Conflict Detected!</h3>
+                <span class="close-btn" id="conflict-modal-close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 1rem; color: var(--text-primary);">The bot (or another user) has updated this record while you were editing it. Please review the changes before saving.</p>
+                <div id="conflict-modal-body"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="conflict-modal-cancel">Cancel Edit</button>
+                <button class="btn btn-primary" id="conflict-modal-force" style="background: var(--danger); border-color: var(--danger);">Overwrite Anyway</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div id="import-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>Import Data</h3>
+                <span class="close-btn" id="import-modal-close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 1rem; color: var(--text-muted);">Import CSV or JSON to update the current table. Existing primary keys will be updated (partial update), new ones inserted.</p>
+                
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--text-primary);">Format</label>
+                <select id="import-format" style="width: 100%; padding: 0.75rem; margin-bottom: 1rem; border-radius: 8px; background: rgba(0,0,0,0.2); color: var(--text-primary); border: 1px solid var(--glass-border); font-family: inherit;">
+                    <option value="json">JSON</option>
+                    <option value="csv">CSV</option>
+                </select>
+
+                <label style="display: block; margin-bottom: 0.5rem; color: var(--text-primary);">File</label>
+                <input type="file" id="import-file" accept=".json,.csv" style="width: 100%; margin-bottom: 1rem; color: var(--text-primary);">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="import-modal-cancel">Cancel</button>
+                <button class="btn btn-primary" id="import-modal-confirm">Import</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast UI Native to Dashboard Server if exists, else inject ours -->
+    <div id="custom-toast-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;"></div>
+
+    <script>
+        const state = {
+            tables: [],
+            activeTable: null,
+            schema: null,
+            data: [],
+            editRowData: null,
+            editOldData: null
+        };
+
+        const elements = {
+            tableSelector: document.getElementById('table-selector'),
+            tableHead: document.getElementById('data-table-head'),
+            tableBody: document.getElementById('data-table-body'),
+            spinner: document.getElementById('loading-spinner'),
+            emptyState: document.getElementById('empty-state'),
+            
+            exportMenuBtn: document.getElementById('export-menu-btn'),
+            exportDropdown: document.getElementById('export-dropdown'),
+            exportCsvBtn: document.getElementById('export-csv-btn'),
+            exportJsonBtn: document.getElementById('export-json-btn'),
+            
+            editModal: document.getElementById('edit-modal'),
+            editModalBody: document.getElementById('edit-modal-body'),
+            editModalClose: document.getElementById('edit-modal-close'),
+            editModalCancel: document.getElementById('edit-modal-cancel'),
+            editModalSave: document.getElementById('edit-modal-save'),
+
+            conflictModal: document.getElementById('conflict-modal'),
+            conflictModalBody: document.getElementById('conflict-modal-body'),
+            conflictModalClose: document.getElementById('conflict-modal-close'),
+            conflictModalCancel: document.getElementById('conflict-modal-cancel'),
+            conflictModalForce: document.getElementById('conflict-modal-force'),
+
+            importBtn: document.getElementById('import-btn'),
+            importModal: document.getElementById('import-modal'),
+            importFormat: document.getElementById('import-format'),
+            importFile: document.getElementById('import-file'),
+            importModalClose: document.getElementById('import-modal-close'),
+            importModalCancel: document.getElementById('import-modal-cancel'),
+            importModalConfirm: document.getElementById('import-modal-confirm')
+        };
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('custom-toast-container');
+            const toast = document.createElement('div');
+            toast.style.padding = '1rem 1.5rem';
+            toast.style.marginBottom = '10px';
+            toast.style.borderRadius = '8px';
+            toast.style.color = 'white';
+            toast.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+            toast.style.transition = 'opacity 0.3s ease';
+            toast.style.background = type === 'danger' ? 'var(--danger, #ef4444)' : 'var(--success, #10b981)';
+            toast.textContent = message;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Export Dropdown Logic
+        elements.exportMenuBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const display = elements.exportDropdown.style.display;
+            elements.exportDropdown.style.display = display === 'none' ? 'block' : 'none';
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!elements.exportMenuBtn.contains(e.target) && !elements.exportDropdown.contains(e.target)) {
+                elements.exportDropdown.style.display = 'none';
+            }
+        });
+
+        elements.exportCsvBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            elements.exportDropdown.style.display = 'none';
+            if (state.activeTable) {
+                window.location.href = `/api/sillydb/export?table=${state.activeTable}&format=csv`;
+            }
+        });
+
+        elements.exportJsonBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            elements.exportDropdown.style.display = 'none';
+            if (state.activeTable) {
+                window.location.href = `/api/sillydb/export?table=${state.activeTable}&format=json`;
+            }
+        });
+
+        // Import Logic
+        elements.importBtn.addEventListener('click', () => {
+            elements.importModal.style.display = 'flex';
+            elements.importFile.value = '';
+        });
+
+        const closeImport = () => elements.importModal.style.display = 'none';
+        elements.importModalClose.addEventListener('click', closeImport);
+        elements.importModalCancel.addEventListener('click', closeImport);
+
+        elements.importModalConfirm.addEventListener('click', () => {
+            const file = elements.importFile.files[0];
+            const format = elements.importFormat.value;
+            if (!file) {
+                showToast('Please select a file to import.', 'danger');
+                return;
+            }
+            if (!state.activeTable) return;
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const content = e.target.result;
+                try {
+                    const response = await fetch('/api/sillydb/import', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            table: state.activeTable,
+                            pkColumn: state.schema.pk,
+                            format: format,
+                            data: content
+                        })
+                    });
+                    const resData = await response.json();
+                    if (response.ok && resData.success) {
+                        showToast(`Import successful! ${resData.successCount} rows imported, ${resData.errorCount} failed.`);
+                        closeImport();
+                        loadTableData(state.activeTable);
+                    } else {
+                        showToast(resData.error || 'Import failed', 'danger');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showToast('Connection error during import', 'danger');
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        // Modal close handlers
+        const closeEditModal = () => elements.editModal.style.display = 'none';
+        elements.editModalClose.addEventListener('click', closeEditModal);
+        elements.editModalCancel.addEventListener('click', closeEditModal);
+
+        const closeConflictModal = () => elements.conflictModal.style.display = 'none';
+        elements.conflictModalClose.addEventListener('click', closeConflictModal);
+        elements.conflictModalCancel.addEventListener('click', closeConflictModal);
+
+        // Load tables
+        async function init() {
+            try {
+                const response = await fetch('/api/sillydb/tables');
+                // Redirect logic might be handled globally but just in case
+                if (response.status === 401) return window.location.href = '/login';
+                
+                const data = await response.json();
+                state.tables = data.tables || [];
+                
+                elements.tableSelector.innerHTML = '';
+                state.tables.forEach(table => {
+                    const tab = document.createElement('div');
+                    tab.className = 'table-tab';
+                    tab.textContent = table;
+                    tab.addEventListener('click', () => loadTableData(table));
+                    elements.tableSelector.appendChild(tab);
+                });
+
+                if (state.tables.length > 0) {
+                    loadTableData(state.tables[0]);
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Failed to load tables', 'danger');
+            }
+        }
+
+        async function loadTableData(tableName) {
+            state.activeTable = tableName;
+            
+            document.querySelectorAll('.table-tab').forEach(el => {
+                if (el.textContent === tableName) el.classList.add('active');
+                else el.classList.remove('active');
+            });
+
+            elements.tableBody.innerHTML = '';
+            elements.tableHead.innerHTML = '';
+            elements.emptyState.style.display = 'none';
+            elements.spinner.style.display = 'block';
+
+            try {
+                const response = await fetch(`/api/sillydb/data?table=${tableName}`);
+                if (response.status === 401) return window.location.href = '/login';
+                const data = await response.json();
+                
+                state.schema = data.schema;
+                state.data = data.data || [];
+                
+                elements.spinner.style.display = 'none';
+                renderTable();
+            } catch (err) {
+                console.error(err);
+                elements.spinner.style.display = 'none';
+                showToast('Failed to load table data', 'danger');
+            }
+        }
+
+        function renderTable() {
+            if (!state.schema || !state.schema.columns) return;
+            
+            // Head
+            let theadHtml = '<tr>';
+            state.schema.columns.forEach(col => {
+                const isPk = col === state.schema.pk;
+                theadHtml += `<th>${col} ${isPk ? '🔑' : ''}</th>`;
+            });
+            theadHtml += '<th>Actions</th></tr>';
+            elements.tableHead.innerHTML = theadHtml;
+
+            // Body
+            elements.tableBody.innerHTML = '';
+            if (state.data.length === 0) {
+                elements.emptyState.style.display = 'block';
+                return;
+            }
+
+            state.data.forEach((row, rowIndex) => {
+                const tr = document.createElement('tr');
+                
+                state.schema.columns.forEach(col => {
+                    const td = document.createElement('td');
+                    const val = row[col];
+                    
+                    if (typeof val === 'string' && val.length > 50) {
+                        td.textContent = val.substring(0, 50) + '...';
+                        td.title = val;
+                    } else if (val === null || val === undefined) {
+                        td.innerHTML = '<span style="color: var(--text-muted); font-style: italic;">null</span>';
+                    } else {
+                        td.textContent = val;
+                    }
+                    tr.appendChild(td);
+                });
+
+                const actionsTd = document.createElement('td');
+                actionsTd.className = 'action-cell';
+                
+                const editBtn = document.createElement('button');
+                editBtn.className = 'btn-action-sm primary';
+                editBtn.textContent = 'Edit';
+                editBtn.onclick = () => openEditModal(rowIndex);
+                
+                const exportBtn = document.createElement('button');
+                exportBtn.className = 'btn-action-sm';
+                exportBtn.textContent = 'JSON';
+                exportBtn.title = 'Export JSON';
+                exportBtn.onclick = () => {
+                    const pkVal = row[state.schema.pk];
+                    window.location.href = `/api/sillydb/export/row?table=${state.activeTable}&pkColumn=${state.schema.pk}&pkValue=${encodeURIComponent(pkVal)}&format=json`;
+                };
+
+                const delBtn = document.createElement('button');
+                delBtn.className = 'btn-action-sm danger';
+                delBtn.textContent = 'Delete';
+                delBtn.onclick = () => confirmDelete(rowIndex);
+
+                actionsTd.appendChild(editBtn);
+                actionsTd.appendChild(exportBtn);
+                actionsTd.appendChild(delBtn);
+                tr.appendChild(actionsTd);
+                
+                elements.tableBody.appendChild(tr);
+            });
+        }
+
+        function openEditModal(rowIndex) {
+            state.editOldData = JSON.parse(JSON.stringify(state.data[rowIndex]));
+            state.editRowData = { ...state.data[rowIndex] };
+            
+            elements.editModalBody.innerHTML = '';
+            
+            state.schema.columns.forEach(col => {
+                const isPk = col === state.schema.pk;
+                const wrap = document.createElement('div');
+                const label = document.createElement('label');
+                label.style.display = 'block';
+                label.style.marginBottom = '0.5rem';
+                label.style.fontSize = '0.85rem';
+                label.style.color = 'var(--text-primary)';
+                label.innerHTML = `<strong>${col}</strong> ${isPk ? '(Primary Key - Readonly)' : ''}`;
+                wrap.appendChild(label);
+
+                let input;
+                const val = state.editRowData[col];
+                
+                if (typeof val === 'string' && val.length > 50) {
+                    input = document.createElement('textarea');
+                    input.rows = 4;
+                } else {
+                    input = document.createElement('input');
+                    input.type = typeof val === 'number' ? 'number' : 'text';
+                }
+                
+                input.value = val === null || val === undefined ? '' : val;
+                
+                if (isPk) {
+                    input.disabled = true;
+                    input.style.opacity = '0.5';
+                } else {
+                    input.addEventListener('input', (e) => {
+                        const newVal = e.target.value;
+                        if (typeof val === 'number' && newVal !== '') {
+                            state.editRowData[col] = Number(newVal);
+                        } else {
+                            state.editRowData[col] = newVal;
+                        }
+                    });
+                }
+                
+                wrap.appendChild(input);
+                elements.editModalBody.appendChild(wrap);
+            });
+
+            elements.editModal.style.display = 'flex';
+        }
+
+        async function saveEdit(force = false) {
+            try {
+                const pkVal = state.editOldData[state.schema.pk];
+                const response = await fetch('/api/sillydb/data', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        table: state.activeTable,
+                        pkColumn: state.schema.pk,
+                        pkValue: pkVal,
+                        newValues: state.editRowData,
+                        expectedOldValues: state.editOldData,
+                        force: force
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.status === 409) {
+                    showConflictModal(data.conflicts, data.currentRow);
+                    return;
+                }
+                
+                if (response.ok && data.success) {
+                    showToast('Record updated successfully');
+                    closeEditModal();
+                    closeConflictModal();
+                    loadTableData(state.activeTable);
+                } else {
+                    showToast(data.error || 'Failed to update record', 'danger');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Connection error during update', 'danger');
+            }
+        }
+
+        elements.editModalSave.addEventListener('click', () => saveEdit(false));
+        elements.conflictModalForce.addEventListener('click', () => saveEdit(true));
+
+        function showConflictModal(conflicts, currentRow) {
+            elements.conflictModalBody.innerHTML = '';
+            
+            for (const [col, conflict] of Object.entries(conflicts)) {
+                const box = document.createElement('div');
+                box.className = 'conflict-box';
+                
+                const title = document.createElement('h4');
+                title.style.marginBottom = '0.5rem';
+                title.style.color = 'var(--text-primary)';
+                title.textContent = `Field: ${col}`;
+                box.appendChild(title);
+
+                const row = document.createElement('div');
+                row.className = 'conflict-row';
+                
+                const oldVal = document.createElement('div');
+                oldVal.className = 'conflict-val';
+                oldVal.innerHTML = `<strong style="display:block;margin-bottom:0.25rem;color:var(--text-muted);">You Saw</strong> <span style="color:var(--text-primary);">${escapeHtml(String(conflict.expected))}</span>`;
+                
+                const newVal = document.createElement('div');
+                newVal.className = 'conflict-val';
+                newVal.style.border = '1px solid var(--accent-primary)';
+                newVal.innerHTML = `<strong style="display:block;margin-bottom:0.25rem;color:var(--accent-primary);">Bot Changed To</strong> <span style="color:var(--text-primary);">${escapeHtml(String(conflict.actual))}</span>`;
+
+                const yourVal = document.createElement('div');
+                yourVal.className = 'conflict-val';
+                yourVal.style.border = '1px solid var(--success)';
+                yourVal.innerHTML = `<strong style="display:block;margin-bottom:0.25rem;color:var(--success);">You are saving</strong> <span style="color:var(--text-primary);">${escapeHtml(String(state.editRowData[col]))}</span>`;
+
+                row.appendChild(oldVal);
+                row.appendChild(newVal);
+                row.appendChild(yourVal);
+                box.appendChild(row);
+                
+                elements.conflictModalBody.appendChild(box);
+            }
+
+            elements.conflictModal.style.display = 'flex';
+        }
+
+        async function confirmDelete(rowIndex) {
+            const row = state.data[rowIndex];
+            const pkVal = row[state.schema.pk];
+            
+            if (!confirm(`Are you sure you want to delete this record?\n\n${state.schema.pk}: ${pkVal}`)) return;
+            
+            try {
+                const response = await fetch('/api/sillydb/data', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        table: state.activeTable,
+                        pkColumn: state.schema.pk,
+                        pkValue: pkVal
+                    })
+                });
+
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    showToast('Record deleted successfully');
+                    loadTableData(state.activeTable);
+                } else {
+                    showToast(data.error || 'Failed to delete record', 'danger');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Connection error during delete', 'danger');
+            }
+        }
+
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return 'null';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            init();
+        });
+    </script>
+</body>
+</html>

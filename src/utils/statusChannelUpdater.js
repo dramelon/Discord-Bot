@@ -150,6 +150,11 @@ async function checkAndUpdateChannels(client) {
  * @param {import('discord.js').Client} client 
  */
 function startStatusChannelUpdater(client) {
+	if (process.env.IS_DEV === 'true') {
+		console.log('[StatusUpdater] Disabled in development mode.');
+		return;
+	}
+
 	// Initial update on startup
 	checkAndUpdateChannels(client).catch(err => {
 		console.error('[StatusUpdater] Initial status check failed:', err);

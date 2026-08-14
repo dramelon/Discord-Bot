@@ -1,9 +1,5 @@
 const { EmbedBuilder } = require('discord.js');
-const fs = require('fs');
-const path = require('path');
-
-const dataDir = path.join(process.cwd(), 'data');
-const dataPath = path.join(dataDir, 'levels.json');
+const dbManager = require('./backend/dbManager');
 
 function getXPRequired(level) {
 	if (level <= 1) return 5;
@@ -11,46 +7,15 @@ function getXPRequired(level) {
 	return (level - 5 * q) * (q + 1) + 8;
 }
 
-function ensureDataExists() {
-	if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-	if (!fs.existsSync(dataPath)) fs.writeFileSync(dataPath, JSON.stringify({}), 'utf8');
-}
-
-function getFullLevelData() {
-	ensureDataExists();
-	try {
-		const content = fs.readFileSync(dataPath, 'utf8');
-		return JSON.parse(content) || {};
-	} catch (e) {
-		console.error('Error reading levels.json:', e);
-		return {};
-	}
-}
-
-function saveFullLevelData(data) {
-	ensureDataExists();
-	try {
-		fs.writeFileSync(dataPath, JSON.stringify(data, null, 2), 'utf8');
-	} catch (e) {
-		console.error('Error saving levels.json:', e);
-	}
-}
-
 function getUserLevelData(userId) {
-	const data = getFullLevelData();
-	if (!data[userId]) {
-		data[userId] = { xp: 0, totalXp: 0, level: 0, totalMessages: 0 };
-	}
-	const user = data[userId];
+	const user = dbManager.getUserLevelData(userId);
 	if (user.totalXp === undefined) user.totalXp = user.xp;
-	if (user.totalMessages === undefined) user.totalMessages = user.totalXp; // Migration: initially messages = totalXp
+	if (user.totalMessages === undefined) user.totalMessages = user.totalXp; // Default messages to totalXp
 	return user;
 }
 
 function addXP(userId, amount, userObj = null, notifyContext = null) {
-	const data = getFullLevelData();
-	if (!data[userId]) data[userId] = { xp: 0, totalXp: 0, level: 0, totalMessages: 0 };
-	const user = data[userId];
+	const user = getUserLevelData(userId);
 
 	if (userObj) {
 		user.username = userObj.username;
@@ -77,7 +42,7 @@ function addXP(userId, amount, userObj = null, notifyContext = null) {
 		}
 	}
 
-	saveFullLevelData(data);
+	dbManager.saveUserLevelData(userId, user);
 
 	if (leveledUp && notifyContext) {
 		sendLevelUpNotification(notifyContext, userObj || { id: userId, username: user.username }, user.level);
@@ -141,24 +106,19 @@ async function sendLevelUpNotification(context, user, newLevel) {
 	}
 }
 
-
 function addMessage(userId) {
-	const data = getFullLevelData();
-	if (!data[userId]) data[userId] = { xp: 0, totalXp: 0, level: 0, totalMessages: 0 };
-	const user = data[userId];
+	const user = getUserLevelData(userId);
 	
 	if (user.totalMessages === undefined) {
 		user.totalMessages = (user.totalXp || 0);
 	}
 	user.totalMessages++;
 	
-	saveFullLevelData(data);
+	dbManager.saveUserLevelData(userId, user);
 }
 
 function removeXP(userId, amount) {
-	const data = getFullLevelData();
-	if (!data[userId]) return;
-	const user = data[userId];
+	const user = getUserLevelData(userId);
 
 	user.xp -= amount;
 	if (user.xp < 0) {
@@ -170,26 +130,22 @@ function removeXP(userId, amount) {
 		if (user.xp < 0) user.xp = 0;
 	}
 
-	saveFullLevelData(data);
+	dbManager.saveUserLevelData(userId, user);
 }
 
 function removeLevel(userId, amount) {
-	const data = getFullLevelData();
-	if (!data[userId]) return;
-	const user = data[userId];
+	const user = getUserLevelData(userId);
 
 	user.level = Math.max(0, user.level - amount);
-	saveFullLevelData(data);
+	dbManager.saveUserLevelData(userId, user);
 }
 
 function setLevel(userId, level) {
-	const data = getFullLevelData();
-	if (!data[userId]) data[userId] = { xp: 0, totalXp: 0, level: 0, totalMessages: 0 };
-	const user = data[userId];
+	const user = getUserLevelData(userId);
 
 	user.level = Math.max(0, level);
 	user.xp = 0;
-	saveFullLevelData(data);
+	dbManager.saveUserLevelData(userId, user);
 }
 
 /**

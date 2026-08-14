@@ -63,12 +63,9 @@ module.exports = {
         }
         
         if (focusedOption.name === 'user_tool') {
-            const playersFile = path.join(process.cwd(), 'data', 'minecraft', 'playerData', 'players.json');
-            const levelsFile = path.join(process.cwd(), 'data', 'levels.json');
-            if (!fs.existsSync(playersFile) || !fs.existsSync(levelsFile)) return await interaction.respond([]);
-
-            const playersData = JSON.parse(fs.readFileSync(playersFile, 'utf8'));
-            const levelsData = JSON.parse(fs.readFileSync(levelsFile, 'utf8'));
+            const dbManager = require('../../backend/dbManager');
+            const playersData = dbManager.getAllPlayerData();
+            const levelsData = dbManager.getAllLevelData();
             const query = focusedOption.value.toLowerCase();
 
             const choices = [];

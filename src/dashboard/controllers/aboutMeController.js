@@ -1,0 +1,265 @@
+const aboutMeModel = require('../models/aboutMeModel');
+const dbManager = require('../../backend/dbManager');
+
+/**
+ * Escapes HTML tag brackets and ampersands to prevent XSS while leaving safe characters intact.
+ * @param {any} val 
+ * @returns {string}
+ */
+function sanitizeInput(val) {
+	if (val === null || val === undefined) return '';
+	const text = typeof val !== 'string' ? String(val) : val;
+	return text
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;');
+}
+
+const path = require('path');
+const fs = require('fs');
+
+const defaultOwnerProfileConfig = {
+	pronouns: '🍉 -> she/her',
+	bio: `<img src="https://cdn.discordapp.com/emojis/918640347561742368.webp?size=80" alt="alert" class="bio-emoji"> <strong>NO ANY KIND OF "DM" ADVERTISING</strong>\n~~~~\n<img src="https://cdn.discordapp.com/emojis/1484350743518384198.webp?size=80" alt="MelonWawa" class="bio-emoji"> lvl21, is programmer uwu\n✏️ Rbx: 0xRaw | ENFP\n🍉 hybrid furred feral dergon-cat 🐟`,
+	bannerUrl: 'https://cdn.discordapp.com/banners/389264086753345548/835df87e115a5b29b0a6618a56ddb3c1.png?size=600',
+	theme: {
+		primaryColor: 'hsla(11, 100%, 60.8%, 1)',
+		secondaryColor: 'hsla(95, 100%, 50%, 1)',
+		overlayColor: '#ffffff99',
+		buttonColor: 'hsla(0, 100%, 27.5%, 1)',
+		modalBgColor: 'hsla(51, 66.7%, 80%, 1)',
+		baseColorDark: 'rgb(26, 5, 0)'
+	},
+	badges: [
+		{ title: 'Nitro Subscriber', icon: 'https://cdn.discordapp.com/badge-icons/0d61871f72bb9a33a7ae568c1fb4f20a.png' },
+		{ title: 'HypeSquad Balance', icon: 'https://cdn.discordapp.com/badge-icons/3aa41de486fa12454c3761e8e223442e.png' },
+		{ title: 'Server Boosting', icon: 'https://cdn.discordapp.com/badge-icons/ec92202290b48d0879b7413d2dde3bab.png' },
+		{ title: 'Legacy Tag', icon: 'https://cdn.discordapp.com/badge-icons/6de6d34650760ba5551a79732e98ed60.png' },
+		{ title: 'Quest Achiever', icon: 'https://cdn.discordapp.com/badge-icons/7d9ae358c8c5e118768335dbe68b4fb8.png' },
+		{ title: 'Gifting Champion', icon: 'https://cdn.discordapp.com/badge-icons/8b7792c4f65953d3ff564f23429cb79e.png' }
+	],
+	clan: {
+		tag: 'ﬂuﬀy',
+		badge: 'https://cdn.discordapp.com/clan-badges/267735321695748096/9050fb1a279eb693dd6fea1d9eff53de.png?size=16'
+	}
+};
+
+function getOwnerProfileConfig() {
+	const configPath = path.join(process.cwd(), 'data', 'aboutMeData.json');
+	try {
+		if (fs.existsSync(configPath)) {
+			const raw = fs.readFileSync(configPath, 'utf8');
+			if (raw.trim()) {
+				const parsed = JSON.parse(raw);
+				return {
+					...defaultOwnerProfileConfig,
+					...parsed.profileConfig,
+					theme: { ...defaultOwnerProfileConfig.theme, ...(parsed.profileConfig?.theme || {}) },
+					clan: { ...defaultOwnerProfileConfig.clan, ...(parsed.profileConfig?.clan || {}) },
+					badges: parsed.profileConfig?.badges || defaultOwnerProfileConfig.badges
+				};
+			}
+		}
+	} catch (err) {
+		console.error('[AboutMeController] Error loading dynamic ownerProfileConfig:', err);
+	}
+	return defaultOwnerProfileConfig;
+}
+
+/**
+ * Controller containing logic for processing and formatting
+ * owner profile and presence information securely.
+ */
+class AboutMeController {
+	/**
+	 * Handles status query, processes, sanitizes, and returns the secure payload.
+	 * @param {import('discord.js').Client} client 
+	 * @returns {Promise<object>}
+	 */
+	async getOwnerPresence(client) {
+		const rawData = await aboutMeModel.getRawData(client);
+		const { discordProfile, lanyardData, clientCachePresence } = rawData;
+		const profileConfig = getOwnerProfileConfig();
+
+		// Initialize default response payload structure
+		const payload = {
+			user: {
+				id: '389264086753345548',
+				username: 'newdramelon',
+				globalName: 'newdramelon',
+				avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png',
+				bannerUrl: null,
+				accentColor: null,
+				pronouns: sanitizeInput(profileConfig.pronouns),
+				bio: profileConfig.bio,
+				theme: profileConfig.theme,
+				badges: profileConfig.badges.map(b => ({
+					title: sanitizeInput(b.title),
+					icon: b.icon
+				})),
+				clan: {
+					tag: sanitizeInput(profileConfig.clan.tag),
+					badge: profileConfig.clan.badge
+				}
+			},
+			status: 'offline',
+			customStatus: null,
+			activities: [],
+			spotify: null,
+			level: { level: 0, xp: 0, totalXp: 0, totalMessages: 0 }
+		};
+
+		// 1. Fetch User Level Data from Database
+		try {
+			const dbData = dbManager.getUserLevelData(payload.user.id);
+			if (dbData) {
+				payload.level = {
+					level: Number(dbData.level || 0),
+					xp: Number(dbData.xp || 0),
+					totalXp: Number(dbData.totalXp || 0),
+					totalMessages: Number(dbData.totalMessages || 0)
+				};
+			}
+		} catch (dbErr) {
+			console.error('[AboutMeController] Database read error for level:', dbErr);
+		}
+
+		// 2. Process User Profile details
+		if (discordProfile) {
+			payload.user.username = sanitizeInput(discordProfile.username);
+			payload.user.globalName = sanitizeInput(discordProfile.globalName);
+			payload.user.avatarUrl = discordProfile.avatarUrl; // generated by Discord.js securely
+			payload.user.bannerUrl = discordProfile.bannerUrl || profileConfig.bannerUrl || null;
+			payload.user.accentColor = discordProfile.accentColor ? sanitizeInput(discordProfile.accentColor) : null;
+		} else if (lanyardData?.discord_user) {
+			payload.user.username = sanitizeInput(lanyardData.discord_user.username);
+			payload.user.globalName = sanitizeInput(lanyardData.discord_user.global_name);
+			if (lanyardData.discord_user.avatar) {
+				payload.user.avatarUrl = `https://cdn.discordapp.com/avatars/${payload.user.id}/${lanyardData.discord_user.avatar}.png`;
+			}
+			payload.user.accentColor = lanyardData.discord_user.accent_color ? sanitizeInput(lanyardData.discord_user.accent_color) : null;
+		}
+
+		// 3. Process Presence Status and Activities
+		if (lanyardData) {
+			payload.status = sanitizeInput(lanyardData.discord_status);
+
+			// Extract custom status (activity type 4)
+			const customAct = lanyardData.activities.find(act => act.type === 4);
+			if (customAct) {
+				let emoji = null;
+				if (customAct.emoji) {
+					if (customAct.emoji.id) {
+						const ext = customAct.emoji.animated ? 'gif' : 'webp';
+						emoji = {
+							name: customAct.emoji.name,
+							url: `https://cdn.discordapp.com/emojis/${customAct.emoji.id}.${ext}?size=80`
+						};
+					} else if (customAct.emoji.name) {
+						emoji = { name: customAct.emoji.name, url: null };
+					}
+				}
+				payload.customStatus = {
+					text: sanitizeInput(customAct.state || customAct.details || ''),
+					emoji: emoji
+				};
+			}
+
+			// Extract other activities
+			payload.activities = lanyardData.activities
+				.filter(act => act.type !== 4 && act.name !== 'Spotify')
+				.map(act => ({
+					name: sanitizeInput(act.name),
+					type: Number(act.type),
+					details: act.details ? sanitizeInput(act.details) : null,
+					state: act.state ? sanitizeInput(act.state) : null,
+					timestamps: act.timestamps ? {
+						start: act.timestamps.start ? Number(act.timestamps.start) : null,
+						end: act.timestamps.end ? Number(act.timestamps.end) : null
+					} : null,
+					assets: act.assets ? {
+						largeImage: act.assets.large_image ? sanitizeInput(act.assets.large_image) : null,
+						largeText: act.assets.large_text ? sanitizeInput(act.assets.large_text) : null,
+						smallImage: act.assets.small_image ? sanitizeInput(act.assets.small_image) : null,
+						smallText: act.assets.small_text ? sanitizeInput(act.assets.small_text) : null
+					} : null
+				}));
+
+			// Extract Spotify status
+			if (lanyardData.listening_to_spotify && lanyardData.spotify) {
+				payload.spotify = {
+					track: sanitizeInput(lanyardData.spotify.song),
+					artist: sanitizeInput(lanyardData.spotify.artist),
+					album: sanitizeInput(lanyardData.spotify.album),
+					albumArtUrl: lanyardData.spotify.album_art_url,
+					start: lanyardData.spotify.timestamps.start ? Number(lanyardData.spotify.timestamps.start) : null,
+					end: lanyardData.spotify.timestamps.end ? Number(lanyardData.spotify.timestamps.end) : null
+				};
+			}
+		} else if (clientCachePresence) {
+			payload.status = sanitizeInput(clientCachePresence.status);
+
+			const customAct = clientCachePresence.activities.find(act => act.type === 4);
+			if (customAct) {
+				let emoji = null;
+				if (customAct.emoji) {
+					if (customAct.emoji.id) {
+						const ext = customAct.emoji.animated ? 'gif' : 'webp';
+						emoji = {
+							name: customAct.emoji.name,
+							url: `https://cdn.discordapp.com/emojis/${customAct.emoji.id}.${ext}?size=80`
+						};
+					} else if (customAct.emoji.name) {
+						emoji = { name: customAct.emoji.name, url: null };
+					}
+				}
+				payload.customStatus = {
+					text: sanitizeInput(customAct.state || customAct.details || ''),
+					emoji: emoji
+				};
+			}
+
+			payload.activities = clientCachePresence.activities
+				.filter(act => act.type !== 4 && act.name !== 'Spotify')
+				.map(act => ({
+					name: sanitizeInput(act.name),
+					type: Number(act.type),
+					applicationId: act.applicationId ? sanitizeInput(act.applicationId) : null,
+					details: act.details ? sanitizeInput(act.details) : null,
+					state: act.state ? sanitizeInput(act.state) : null,
+					timestamps: act.timestamps ? {
+						start: act.timestamps.start ? new Date(act.timestamps.start).getTime() : null,
+						end: act.timestamps.end ? new Date(act.timestamps.end).getTime() : null
+					} : null,
+					assets: act.assets ? {
+						largeImage: act.assets.largeImage ? sanitizeInput(act.assets.largeImage) : null,
+						largeText: act.assets.largeText ? sanitizeInput(act.assets.largeText) : null,
+						smallImage: act.assets.smallImage ? sanitizeInput(act.assets.smallImage) : null,
+						smallText: act.assets.smallText ? sanitizeInput(act.assets.smallText) : null
+					} : null
+				}));
+
+			// Extract Spotify status from client cache presence
+			const spotifyAct = clientCachePresence.activities.find(act => act.name === 'Spotify');
+			if (spotifyAct) {
+				let albumArtUrl = null;
+				if (spotifyAct.assets && spotifyAct.assets.largeImage && spotifyAct.assets.largeImage.startsWith('spotify:')) {
+					albumArtUrl = `https://i.scdn.co/image/${spotifyAct.assets.largeImage.replace('spotify:', '')}`;
+				}
+
+				payload.spotify = {
+					track: sanitizeInput(spotifyAct.details),
+					artist: sanitizeInput(spotifyAct.state),
+					album: sanitizeInput(spotifyAct.assets ? spotifyAct.assets.largeText : ''),
+					albumArtUrl: albumArtUrl,
+					start: spotifyAct.timestamps && spotifyAct.timestamps.start ? new Date(spotifyAct.timestamps.start).getTime() : null,
+					end: spotifyAct.timestamps && spotifyAct.timestamps.end ? new Date(spotifyAct.timestamps.end).getTime() : null
+				};
+			}
+		}
+
+		return payload;
+	}
+}
+
+module.exports = new AboutMeController();

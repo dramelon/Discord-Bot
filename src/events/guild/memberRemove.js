@@ -13,6 +13,10 @@ const leaveMessages = [
 module.exports = {
     name: Events.GuildMemberRemove,
     async execute(member) {
+        if (process.env.IS_DEV === 'true') {
+            console.log(`[Dev Mode] Leave message skipped for ${member.user.tag}.`);
+            return;
+        }
         // Send Leave Message
         const channel = member.guild.channels.cache.get(welcomeChannelId);
         if (channel) {

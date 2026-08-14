@@ -51,6 +51,14 @@
 				</span>
 			</a>
 		</li>
+		<li class="admin-only" style="display: none;">
+			<a href="/sillydatabase" class="nav-item" id="navSillyDatabase">
+				<span class="nav-item-content">
+					<span>🗄️</span>
+					<span>Bot Database</span>
+				</span>
+			</a>
+		</li>
 	</ul>
 
 	<!-- User Profile Section -->
@@ -59,7 +67,7 @@
 	</div>
 
 	<div class="sidebar-footer">
-		<p>Website: <a href="https://furred.site" target="_blank">furred.site</a></p>
+		<p>Website: <a href="https://furred.site" target="_blank" rel="noopener noreferrer">furred.site</a></p>
 		<p style="margin-top: 0.25rem;">Powered by Node.js &amp; CSS</p>
 	</div>
 </aside>
@@ -73,13 +81,15 @@
 		const navMyConfig = document.getElementById('navMyConfig');
 		const navLogViewer = document.getElementById('navLogViewer');
 		const navAdminPanel = document.getElementById('navAdminPanel');
+		const navSillyDatabase = document.getElementById('navSillyDatabase');
 		
 		const navItems = [
-			{ el: navStatus, active: !path.includes('my_server') && !path.includes('my_config') && !path.includes('log_viewer') && !path.includes('admin_panel') },
+			{ el: navStatus, active: !path.includes('my_server') && !path.includes('my_config') && !path.includes('log_viewer') && !path.includes('admin_panel') && !path.includes('sillydatabase') },
 			{ el: navMyServer, active: path.includes('my_server') },
 			{ el: navMyConfig, active: path.includes('my_config') },
 			{ el: navLogViewer, active: path.includes('log_viewer') },
-			{ el: navAdminPanel, active: path.includes('admin_panel') }
+			{ el: navAdminPanel, active: path.includes('admin_panel') },
+			{ el: navSillyDatabase, active: path.includes('sillydatabase') }
 		];
 
 		navItems.forEach(item => {

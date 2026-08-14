@@ -339,6 +339,10 @@ async function updateStatusMessage(client) {
 let intervalId = null;
 
 function startActivityTracking(client) {
+    if (process.env.IS_DEV === 'true') {
+        console.log('[SocialActivity] Social activity message updates disabled in development mode.');
+        return;
+    }
     if (intervalId) return; // already tracking
 
     // Run every 30 seconds

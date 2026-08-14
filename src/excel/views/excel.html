@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel Sheet - Daily Expenses Manager</title>
+    <link rel="stylesheet" href="/styles/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon">$</div>
+                <span class="brand-name">Expenses</span>
+            </div>
+            
+            <nav style="flex: 1; overflow-y: auto;">
+                <ul class="nav-list" id="sidebar-nav-list">
+                    <!-- Populated dynamically via sidebar.js -->
+                </ul>
+            </nav>
+            
+            <div class="nav-footer">
+                <button id="logout-btn" class="btn-logout">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    <span class="nav-text">Sign Out</span>
+                </button>
+            </div>
+        </aside>
+        
+        <!-- Main Spreadsheet Workspace -->
+        <main class="main-content">
+            <header>
+                <h1 id="workbook-title-header">Excel Sheet</h1>
+                <p class="page-subtitle">Double-click cells to edit. Use spreadsheet tabs at the bottom to organize pages</p>
+            </header>
+            
+            <!-- Excel Grid Actions Toolbar -->
+            <div class="excel-actions">
+                <h2 style="margin: 0; font-size: 1.25rem;">Ledger Records</h2>
+                <div style="display: flex; gap: 0.75rem;">
+                    <button id="edit-headers-btn" class="btn-add" style="background: var(--warning); box-shadow: 0 4px 10px rgba(245, 158, 11, 0.25);">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 18px; height: 18px; stroke-width: 2.5px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Edit Columns
+                    </button>
+                    
+                    <div id="header-edit-controls" style="display: none; gap: 0.75rem;">
+                        <button id="add-column-btn" class="btn-add" style="background: var(--primary); box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 18px; height: 18px; stroke-width: 2.5px;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                            </svg>
+                            Add Column
+                        </button>
+                        <button id="done-headers-btn" class="btn-add" style="background: var(--success); box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25);">
+                            Done
+                        </button>
+                        <button id="cancel-headers-btn" class="btn-add" style="background: var(--danger); box-shadow: 0 4px 10px rgba(239, 68, 68, 0.25);">
+                            Cancel
+                        </button>
+                    </div>
+
+                    <button id="add-row-btn" class="btn-add">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add Row
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Spreadsheet Table Layout -->
+            <div class="table-container has-tabs">
+                <table class="excel-table">
+                    <thead>
+                        <tr id="expense-thead-row">
+                            <!-- Dynamic columns loaded via JS -->
+                        </tr>
+                    </thead>
+                    <tbody id="expense-tbody">
+                        <!-- Dynamic cells loaded via JS -->
+                        <tr>
+                            <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 3rem;">
+                                Loading ledger records...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Bottom Google Sheets-like Tabs -->
+            <div class="tabs-container">
+                <div id="excel-tabs-list" class="tabs-list">
+                    <!-- Populated dynamically via excel.js -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Notification Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="/views/js/dialog.js"></script>
+    <script src="/views/js/sidebar.js"></script>
+    <script src="/views/js/excel.js"></script>
+</body>
+</html>

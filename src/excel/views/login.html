@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Daily Expenses Manager</title>
+    <link rel="stylesheet" href="/styles/style.css">
+</head>
+<body class="login-page">
+    <div class="login-card">
+        <div class="login-header">
+            <div class="brand-icon">$</div>
+            <h1 style="font-size: 1.75rem; margin-top: 0.5rem; letter-spacing: -0.5px;">Expenses Manager</h1>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">Sign in to manage your budget</p>
+        </div>
+        
+        <div id="error-box" class="error-message"></div>
+        
+        <form id="login-form">
+            <div class="form-group">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" id="username" class="form-input" placeholder="Enter username" autocomplete="username" required>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 2rem;">
+                <label for="password" class="form-label">Password</label>
+                <input type="password" id="password" class="form-input" placeholder="Enter password" autocomplete="current-password" required>
+            </div>
+            
+            <button type="submit" class="btn-primary">Sign In</button>
+        </form>
+    </div>
+
+    <script src="/views/js/login.js"></script>
+</body>
+</html>

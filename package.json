@@ -4,7 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "node src/botdev.js",
+    "dev:deploy": "node src/botdev.js --deploy",
+    "dev:cleanup": "node src/botdev.js --cleanup"
   },
   "keywords": [],
   "author": "",
@@ -12,6 +15,7 @@
   "type": "commonjs",
   "dependencies": {
     "@napi-rs/canvas": "^0.1.95",
+    "better-sqlite3": "^13.0.1",
     "discord.js": "^14.25.1",
     "dotenv": "^17.2.4",
     "gif-encoder-2": "^1.0.5"
