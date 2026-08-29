@@ -12,32 +12,51 @@ const {
     PermissionFlagsBits,
     ChannelType
 } = require('discord.js');
-const { getChannel, updateChannel, tempChannels } = require('../../utils/tempVCManager');
+const { getChannel, updateChannel, removeChannel, tempChannels } = require('../../utils/tempVCManager');
+const { getConfig, DEFAULT_TEMP_VC_NAME_TEMPLATE } = require('../../utils/configManager');
 
-// Helper to check if user has permission to manage the channel
+// Helper to check if user has permission to manage the channel (owner / config perm / server admin)
 function hasControlPermission(member, voiceChannel, vcData) {
+    if (!vcData) return false;
     if (vcData.ownerId === member.id) return true;
     const perms = vcData.userPermissions?.[member.id] || [];
-    if (perms.includes('config')) return true;
-    if (!vcData.locked && member.voice.channelId === voiceChannel.id) return true;
+    if (perms.includes('config') || perms.includes('owner')) return true;
+    if (member.permissions.has(PermissionFlagsBits.Administrator) || member.permissions.has(PermissionFlagsBits.ManageChannels)) return true;
     return false;
+}
+
+// Helper to check if user can manage members (owner / config / add_remove / server admin)
+function canManageMembers(member, voiceChannel, vcData) {
+    if (!vcData) return false;
+    if (hasControlPermission(member, voiceChannel, vcData)) return true;
+    const perms = vcData.userPermissions?.[member.id] || [];
+    return perms.includes('add_remove') || perms.includes('manage');
 }
 
 async function syncChannelPermissions(voiceChannel, vcData) {
     try {
-        // Reset everyone's connect override based on locked state
-        if (vcData.locked) {
-            await voiceChannel.permissionOverwrites.edit(voiceChannel.guild.roles.everyone, {
-                Connect: false
-            });
-        } else {
-            await voiceChannel.permissionOverwrites.edit(voiceChannel.guild.roles.everyone, {
-                Connect: null
-            });
+        const isLocked = vcData.locked !== undefined ? vcData.locked : true;
+        const isHidden = vcData.hidden !== undefined ? vcData.hidden : true;
+
+        // Reset everyone's connect & view overrides based on locked & hidden state
+        await voiceChannel.permissionOverwrites.edit(voiceChannel.guild.roles.everyone, {
+            Connect: isLocked ? false : null,
+            ViewChannel: isHidden ? false : null
+        }).catch(console.error);
+
+        // Ensure bot has full management permissions
+        if (voiceChannel.client.user) {
+            await voiceChannel.permissionOverwrites.edit(voiceChannel.client.user.id, {
+                ViewChannel: true,
+                Connect: true,
+                ManageChannels: true,
+                ManageRoles: true
+            }).catch(() => {});
         }
 
-        // Apply overrides for custom users
+        // Apply overrides for owner and custom users
         const allUserIds = new Set();
+        if (vcData.ownerId) allUserIds.add(vcData.ownerId);
         if (vcData.allowedUsers) {
             vcData.allowedUsers.forEach(id => allUserIds.add(id));
         }
@@ -47,8 +66,8 @@ async function syncChannelPermissions(voiceChannel, vcData) {
 
         for (const userId of allUserIds) {
             if (userId === vcData.ownerId) {
-                // Owner gets full permissions
-                await voiceChannel.permissionOverwrites.create(userId, {
+                // Owner gets full permissions explicitly
+                await voiceChannel.permissionOverwrites.edit(userId, {
                     ViewChannel: true,
                     Connect: true,
                     Speak: true,
@@ -60,21 +79,21 @@ async function syncChannelPermissions(voiceChannel, vcData) {
                     Stream: true,
                     UseVAD: true,
                     PrioritySpeaker: true,
-                });
+                }).catch(() => {});
             } else {
-                const perms = vcData.userPermissions?.[userId] || ['join'];
+                const perms = vcData.userPermissions?.[userId] || vcData.defaultPermissions || ['join'];
                 const canJoin = perms.includes('join');
                 
                 if (canJoin) {
                     await voiceChannel.permissionOverwrites.edit(userId, {
                         Connect: true,
                         ViewChannel: true
-                    });
+                    }).catch(() => {});
                 } else {
                     await voiceChannel.permissionOverwrites.edit(userId, {
                         Connect: false,
-                        ViewChannel: false
-                    });
+                        ViewChannel: isHidden ? false : null
+                    }).catch(() => {});
                 }
             }
         }
@@ -84,8 +103,11 @@ async function syncChannelPermissions(voiceChannel, vcData) {
 }
 
 async function renderControlPanel(voiceChannel, vcData, view = 'main', extra = null) {
+    const isLocked = vcData.locked !== undefined ? vcData.locked : true;
+    const isHidden = vcData.hidden !== undefined ? vcData.hidden : true;
+
     if (view === 'main') {
-        const textDisplayContent = `# 🔊 Voice Channel Control Panel\nManage your room settings, members, and custom permissions using the buttons below.\n\n**Room Name:** \`${voiceChannel.name}\`\n**Room Owner:** <@${vcData.ownerId}>\n**Lock Status:** ${vcData.locked ? '🔒 Locked (Only owner/config users can join)' : '🔓 Unlocked (Everyone can join)'}\n**Created:** <t:${Math.floor(vcData.createdAt / 1000)}:R>\n**Added Users:** ${vcData.allowedUsers && vcData.allowedUsers.length > 0 ? vcData.allowedUsers.map(id => `<@${id}>`).join(', ') : 'None'}`;
+        const textDisplayContent = `# 🔊 Voice Channel Control Panel\nManage your room settings, members, and custom permissions using the buttons below.\n\n**Room Name:** \`${voiceChannel.name}\`\n**Room Owner:** <@${vcData.ownerId}>\n**Status:** ${isLocked ? '🔒 Locked (Only owner/allowed users can join)' : '🔓 Unlocked (Everyone can join)'}\n**Visibility:** ${isHidden ? '👻 Hidden (Hidden from everyone)' : '👁️ Visible (Visible to everyone)'}\n**Created:** <t:${Math.floor(vcData.createdAt / 1000)}:R>\n**Added Users:** ${vcData.allowedUsers && vcData.allowedUsers.length > 0 ? vcData.allowedUsers.map(id => `<@${id}>`).join(', ') : 'None'}`;
 
         const componentsList = [
             {
@@ -109,8 +131,13 @@ async function renderControlPanel(voiceChannel, vcData, view = 'main', extra = n
                 components: [
                     new ButtonBuilder()
                         .setCustomId(`vc_btn_lock_${voiceChannel.id}`)
-                        .setLabel(vcData.locked ? '🔓 Unlock Room' : '🔒 Lock Room')
-                        .setStyle(vcData.locked ? ButtonStyle.Success : ButtonStyle.Danger)
+                        .setLabel(isLocked ? '🔓 Unlock Room' : '🔒 Lock Room')
+                        .setStyle(isLocked ? ButtonStyle.Success : ButtonStyle.Danger)
+                        .toJSON(),
+                    new ButtonBuilder()
+                        .setCustomId(`vc_btn_visibility_${voiceChannel.id}`)
+                        .setLabel(isHidden ? '👁️ Make Visible' : '👻 Make Hidden')
+                        .setStyle(isHidden ? ButtonStyle.Success : ButtonStyle.Secondary)
                         .toJSON(),
                     new ButtonBuilder()
                         .setCustomId(`vc_btn_rename_${voiceChannel.id}`)
@@ -123,17 +150,17 @@ async function renderControlPanel(voiceChannel, vcData, view = 'main', extra = n
                 type: 1, // Action Row
                 components: [
                     new ButtonBuilder()
-                        .setCustomId(`vc_btn_trigger_add_${voiceChannel.id}`)
+                        .setCustomId(`vc_btn_add_${voiceChannel.id}`)
                         .setLabel('➕ Add User')
                         .setStyle(ButtonStyle.Secondary)
                         .toJSON(),
                     new ButtonBuilder()
-                        .setCustomId(`vc_btn_trigger_remove_${voiceChannel.id}`)
+                        .setCustomId(`vc_btn_remove_${voiceChannel.id}`)
                         .setLabel('➖ Remove Access')
                         .setStyle(ButtonStyle.Secondary)
                         .toJSON(),
                     new ButtonBuilder()
-                        .setCustomId(`vc_btn_trigger_invite_${voiceChannel.id}`)
+                        .setCustomId(`vc_btn_invite_${voiceChannel.id}`)
                         .setLabel('✉️ Invite User')
                         .setStyle(ButtonStyle.Secondary)
                         .toJSON()
@@ -143,19 +170,34 @@ async function renderControlPanel(voiceChannel, vcData, view = 'main', extra = n
                 type: 1, // Action Row
                 components: [
                     new ButtonBuilder()
-                        .setCustomId(`vc_btn_trigger_kick_${voiceChannel.id}`)
+                        .setCustomId(`vc_btn_kick_${voiceChannel.id}`)
                         .setLabel('❌ Kick User')
                         .setStyle(ButtonStyle.Secondary)
                         .toJSON(),
                     new ButtonBuilder()
-                        .setCustomId(`vc_btn_page_perm_${voiceChannel.id}_0`)
+                        .setCustomId(`vc_btn_page_${voiceChannel.id}_perm_first_0`)
                         .setLabel('🛡️ Permissions')
                         .setStyle(ButtonStyle.Secondary)
                         .toJSON(),
                     new ButtonBuilder()
-                        .setCustomId(`vc_btn_page_config_${voiceChannel.id}`)
+                        .setCustomId(`vc_btn_page_${voiceChannel.id}_config`)
                         .setLabel('⚙️ Configuration')
                         .setStyle(ButtonStyle.Secondary)
+                        .toJSON()
+                ]
+            },
+            {
+                type: 1, // Action Row (Hard Reset & Delete)
+                components: [
+                    new ButtonBuilder()
+                        .setCustomId(`vc_btn_hardreset_${voiceChannel.id}`)
+                        .setLabel('🔄 Hard Reset')
+                        .setStyle(ButtonStyle.Danger)
+                        .toJSON(),
+                    new ButtonBuilder()
+                        .setCustomId(`vc_btn_promptdelete_${voiceChannel.id}`)
+                        .setLabel('🗑️ Delete Room')
+                        .setStyle(ButtonStyle.Danger)
                         .toJSON()
                 ]
             }
@@ -173,8 +215,7 @@ async function renderControlPanel(voiceChannel, vcData, view = 'main', extra = n
         };
     } 
     else if (view === 'config') {
-        const isPublic = voiceChannel.permissionsFor(voiceChannel.guild.roles.everyone).has(PermissionFlagsBits.ViewChannel);
-        const textDisplayContent = `# ⚙️ Channel Configuration\nModify technical voice channel settings below.\n\n**Room Name:** \`${voiceChannel.name}\`\n**User Limit:** ${voiceChannel.userLimit ? `${voiceChannel.userLimit} users` : 'No Limit'}\n**Bitrate:** ${voiceChannel.bitrate / 1000} kbps\n**NSFW:** ${voiceChannel.nsfw ? 'Yes 🔞' : 'No'}\n**Visibility:** ${isPublic ? 'Public 👁️' : 'Private 🔒'}\n**Room Owner:** <@${vcData.ownerId}>`;
+        const textDisplayContent = `# ⚙️ Channel Configuration\nModify technical voice channel settings below.\n\n**Room Name:** \`${voiceChannel.name}\`\n**User Limit:** ${voiceChannel.userLimit ? `${voiceChannel.userLimit} users` : 'No Limit'}\n**Bitrate:** ${voiceChannel.bitrate / 1000} kbps\n**NSFW:** ${voiceChannel.nsfw ? 'Yes 🔞' : 'No'}\n**Visibility:** ${isHidden ? 'Hidden 👻' : 'Visible 👁️'}\n**Lock Status:** ${isLocked ? 'Locked 🔒' : 'Unlocked 🔓'}\n**Room Owner:** <@${vcData.ownerId}>`;
 
         const componentsList = [
             {
@@ -197,18 +238,18 @@ async function renderControlPanel(voiceChannel, vcData, view = 'main', extra = n
                 type: 1, // Action Row
                 components: [
                     new ButtonBuilder()
-                        .setCustomId(`vc_btn_config_limit_${voiceChannel.id}`)
+                        .setCustomId(`vc_btn_config_${voiceChannel.id}_limit`)
                         .setLabel('Set Limit')
                         .setStyle(ButtonStyle.Primary)
                         .toJSON(),
                     new ButtonBuilder()
-                        .setCustomId(`vc_btn_config_nsfw_${voiceChannel.id}`)
+                        .setCustomId(`vc_btn_config_${voiceChannel.id}_nsfw`)
                         .setLabel('Toggle NSFW')
                         .setStyle(ButtonStyle.Primary)
                         .toJSON(),
                     new ButtonBuilder()
-                        .setCustomId(`vc_btn_config_visibility_${voiceChannel.id}`)
-                        .setLabel(isPublic ? 'Make Private' : 'Make Public')
+                        .setCustomId(`vc_btn_config_${voiceChannel.id}_visibility`)
+                        .setLabel(isHidden ? 'Make Visible' : 'Make Hidden')
                         .setStyle(ButtonStyle.Primary)
                         .toJSON()
                 ]
@@ -217,12 +258,12 @@ async function renderControlPanel(voiceChannel, vcData, view = 'main', extra = n
                 type: 1, // Action Row
                 components: [
                     new ButtonBuilder()
-                        .setCustomId(`vc_btn_config_bitrate_${voiceChannel.id}`)
+                        .setCustomId(`vc_btn_config_${voiceChannel.id}_bitrate`)
                         .setLabel(`Set Bitrate (${voiceChannel.bitrate / 1000}k)`)
                         .setStyle(ButtonStyle.Primary)
                         .toJSON(),
                     new ButtonBuilder()
-                        .setCustomId(`vc_btn_trigger_transfer_${voiceChannel.id}`)
+                        .setCustomId(`vc_btn_transfer_${voiceChannel.id}`)
                         .setLabel('👑 Transfer Owner')
                         .setStyle(ButtonStyle.Danger)
                         .toJSON()
@@ -232,7 +273,7 @@ async function renderControlPanel(voiceChannel, vcData, view = 'main', extra = n
                 type: 1, // Action Row
                 components: [
                     new ButtonBuilder()
-                        .setCustomId(`vc_btn_page_main_${voiceChannel.id}`)
+                        .setCustomId(`vc_btn_page_${voiceChannel.id}_main`)
                         .setLabel('🏠 Back to Main')
                         .setStyle(ButtonStyle.Secondary)
                         .toJSON()
@@ -290,7 +331,7 @@ async function renderControlPanel(voiceChannel, vcData, view = 'main', extra = n
             if (perms.includes('owner')) return 100;
             let score = 0;
             if (perms.includes('config')) score += 50;
-            if (perms.includes('add_remove')) score += 30;
+            if (perms.includes('add_remove') || perms.includes('manage')) score += 30;
             if (perms.includes('join')) score += 10;
             return score;
         };
@@ -312,9 +353,9 @@ async function renderControlPanel(voiceChannel, vcData, view = 'main', extra = n
         pageUsers.forEach((user, idx) => {
             const globalIdx = startIndex + idx + 1;
             const permString = user.perms.map(p => {
-                if (p === 'owner') return 'owner';
+                if (p === 'owner') return '👑 owner';
                 if (p === 'config') return 'config';
-                if (p === 'add_remove') return 'add/remove member';
+                if (p === 'add_remove' || p === 'manage') return 'manage members';
                 if (p === 'join') return 'join';
                 return 'none';
             }).join(', ') || 'none';
@@ -358,10 +399,11 @@ async function renderControlPanel(voiceChannel, vcData, view = 'main', extra = n
         
         pageUsers.forEach((user, idx) => {
             const globalIdx = startIndex + idx + 1;
+            const isOwner = user.id === vcData.ownerId;
             const btn = new ButtonBuilder()
                 .setCustomId(`vc_btn_userperm_${voiceChannel.id}_${user.id}`)
-                .setLabel(`${globalIdx}. ${user.displayName.substring(0, 20)}`)
-                .setStyle(ButtonStyle.Secondary)
+                .setLabel(`${globalIdx}. ${isOwner ? '👑 ' : ''}${user.displayName.substring(0, 18)}`)
+                .setStyle(isOwner ? ButtonStyle.Primary : ButtonStyle.Secondary)
                 .toJSON();
                 
             if (idx < 5) {
@@ -378,30 +420,30 @@ async function renderControlPanel(voiceChannel, vcData, view = 'main', extra = n
             type: 1,
             components: [
                 new ButtonBuilder()
-                    .setCustomId(`vc_btn_page_perm_${voiceChannel.id}_0`)
+                    .setCustomId(`vc_btn_page_${voiceChannel.id}_perm_first_0`)
                     .setLabel('<<')
                     .setStyle(ButtonStyle.Secondary)
                     .setDisabled(currentPage === 0)
                     .toJSON(),
                 new ButtonBuilder()
-                    .setCustomId(`vc_btn_page_perm_${voiceChannel.id}_${Math.max(0, currentPage - 1)}`)
+                    .setCustomId(`vc_btn_page_${voiceChannel.id}_perm_prev_${Math.max(0, currentPage - 1)}`)
                     .setLabel('<')
                     .setStyle(ButtonStyle.Secondary)
                     .setDisabled(currentPage === 0)
                     .toJSON(),
                 new ButtonBuilder()
-                    .setCustomId(`vc_btn_goto_perm_${voiceChannel.id}`)
+                    .setCustomId(`vc_btn_goto_${voiceChannel.id}`)
                     .setLabel('🧭 Go To')
                     .setStyle(ButtonStyle.Secondary)
                     .toJSON(),
                 new ButtonBuilder()
-                    .setCustomId(`vc_btn_page_perm_${voiceChannel.id}_${Math.min(totalPages - 1, currentPage + 1)}`)
+                    .setCustomId(`vc_btn_page_${voiceChannel.id}_perm_next_${Math.min(totalPages - 1, currentPage + 1)}`)
                     .setLabel('>')
                     .setStyle(ButtonStyle.Secondary)
                     .setDisabled(currentPage === totalPages - 1)
                     .toJSON(),
                 new ButtonBuilder()
-                    .setCustomId(`vc_btn_page_perm_${voiceChannel.id}_${totalPages - 1}`)
+                    .setCustomId(`vc_btn_page_${voiceChannel.id}_perm_last_${totalPages - 1}`)
                     .setLabel('>>')
                     .setStyle(ButtonStyle.Secondary)
                     .setDisabled(currentPage === totalPages - 1)
@@ -414,7 +456,7 @@ async function renderControlPanel(voiceChannel, vcData, view = 'main', extra = n
             type: 1,
             components: [
                 new ButtonBuilder()
-                    .setCustomId(`vc_btn_page_main_${voiceChannel.id}`)
+                    .setCustomId(`vc_btn_page_${voiceChannel.id}_main`)
                     .setLabel('🏠 Back to Main')
                     .setStyle(ButtonStyle.Secondary)
                     .toJSON()
@@ -436,21 +478,28 @@ async function renderControlPanel(voiceChannel, vcData, view = 'main', extra = n
     else if (view === 'edit_user_perm') {
         const userId = extra;
         const isDefault = userId === 'default';
+        const isOwner = userId === vcData.ownerId;
         
         let targetName = 'Everyone';
         let perms = vcData.defaultPermissions || ['join'];
         
-        if (!isDefault) {
+        if (isOwner) {
+            const member = voiceChannel.guild.members.cache.get(userId) || await voiceChannel.guild.members.fetch(userId).catch(() => null);
+            targetName = member ? (member.displayName || member.user.username) : `Owner (${userId})`;
+            perms = ['owner', 'config', 'add_remove', 'join'];
+        } else if (!isDefault) {
             const member = voiceChannel.guild.members.cache.get(userId) || await voiceChannel.guild.members.fetch(userId).catch(() => null);
             targetName = member ? (member.displayName || member.user.username) : `User (${userId})`;
             perms = vcData.userPermissions?.[userId] || ['join'];
         }
 
-        const textDisplayContent = `# 🛡️ Edit Permissions: ${targetName}\nAdjust room permission overrides. Use the buttons below to toggle each permission level.`;
+        const textDisplayContent = isOwner
+            ? `# 🛡️ Room Owner: ${targetName}\n👑 **The room owner has all permissions permanently enabled and cannot be modified or removed.**`
+            : `# 🛡️ Edit Permissions: ${targetName}\nAdjust room permission overrides. Use the buttons below to toggle each permission level.`;
 
-        const hasConfig = perms.includes('config');
-        const hasAddRemove = perms.includes('add_remove');
-        const hasJoin = perms.includes('join');
+        const hasConfig = isOwner || perms.includes('config');
+        const hasAddRemove = isOwner || perms.includes('add_remove') || perms.includes('manage');
+        const hasJoin = isOwner || perms.includes('join');
 
         const componentsList = [
             {
@@ -476,18 +525,19 @@ async function renderControlPanel(voiceChannel, vcData, view = 'main', extra = n
                         .setCustomId(`vc_btn_toggleperm_${voiceChannel.id}_${userId}_config`)
                         .setLabel('Config Settings')
                         .setStyle(hasConfig ? ButtonStyle.Success : ButtonStyle.Secondary)
-                        .setDisabled(isDefault)
+                        .setDisabled(isDefault || isOwner)
                         .toJSON(),
                     new ButtonBuilder()
                         .setCustomId(`vc_btn_toggleperm_${voiceChannel.id}_${userId}_add_remove`)
                         .setLabel('Manage Members')
                         .setStyle(hasAddRemove ? ButtonStyle.Success : ButtonStyle.Secondary)
-                        .setDisabled(isDefault)
+                        .setDisabled(isDefault || isOwner)
                         .toJSON(),
                     new ButtonBuilder()
                         .setCustomId(`vc_btn_toggleperm_${voiceChannel.id}_${userId}_join`)
                         .setLabel('Join Room')
                         .setStyle(hasJoin ? ButtonStyle.Success : ButtonStyle.Secondary)
+                        .setDisabled(isOwner)
                         .toJSON()
                 ]
             },
@@ -495,14 +545,15 @@ async function renderControlPanel(voiceChannel, vcData, view = 'main', extra = n
                 type: 1, // Action Row
                 components: [
                     new ButtonBuilder()
-                        .setCustomId(`vc_btn_save_perm_${voiceChannel.id}_${userId}`)
-                        .setLabel('💾 Save & Return')
+                        .setCustomId(`vc_btn_saveperm_${voiceChannel.id}_${userId}`)
+                        .setLabel(isOwner ? '⬅️ Back to Permissions' : '💾 Save & Return')
                         .setStyle(ButtonStyle.Primary)
                         .toJSON(),
                     new ButtonBuilder()
-                        .setCustomId(`vc_btn_reset_perm_${voiceChannel.id}_${userId}`)
+                        .setCustomId(`vc_btn_resetperm_${voiceChannel.id}_${userId}`)
                         .setLabel('🗑️ Reset')
                         .setStyle(ButtonStyle.Danger)
+                        .setDisabled(isOwner)
                         .toJSON()
                 ]
             }
@@ -550,7 +601,7 @@ module.exports = {
 
     async handleButton(interaction) {
         const parts = interaction.customId.split('_');
-        if (parts[0] !== 'vc') return;
+        if (parts[0] !== 'vc' || parts[1] !== 'btn') return;
         
         const action = parts[2];
         const channelId = parts[3];
@@ -565,9 +616,18 @@ module.exports = {
             return interaction.reply({ content: '❌ Room data not found.', ephemeral: true });
         }
 
-        // Check permission
-        if (!hasControlPermission(interaction.member, voiceChannel, vcData)) {
-            return interaction.reply({ content: '❌ You do not have permission to manage this room.', ephemeral: true });
+        // Check permission based on action
+        const memberActions = ['add', 'remove', 'kick', 'invite'];
+        if (memberActions.includes(action)) {
+            if (!canManageMembers(interaction.member, voiceChannel, vcData)) {
+                return interaction.reply({ content: '❌ You do not have permission to manage members in this room.', ephemeral: true });
+            }
+        } else if (action === 'manage' || action === 'cancelcountdown' || action === 'cancelprompt') {
+            // Safe actions that anyone in room / responding to their prompt can click
+        } else {
+            if (!hasControlPermission(interaction.member, voiceChannel, vcData)) {
+                return interaction.reply({ content: '❌ You do not have permission to manage this room.', ephemeral: true });
+            }
         }
 
         try {
@@ -576,12 +636,24 @@ module.exports = {
                 return interaction.reply({ ...render, ephemeral: true });
             }
             else if (action === 'lock') {
-                const nextLocked = !vcData.locked;
+                const nextLocked = !(vcData.locked !== undefined ? vcData.locked : true);
                 updateChannel(channelId, { locked: nextLocked });
-                await syncChannelPermissions(voiceChannel, vcData);
+                vcData.locked = nextLocked;
                 
                 const render = await renderControlPanel(voiceChannel, vcData, 'main');
                 await interaction.update(render);
+
+                syncChannelPermissions(voiceChannel, vcData).catch(console.error);
+            }
+            else if (action === 'visibility') {
+                const nextHidden = !(vcData.hidden !== undefined ? vcData.hidden : true);
+                updateChannel(channelId, { hidden: nextHidden });
+                vcData.hidden = nextHidden;
+
+                const render = await renderControlPanel(voiceChannel, vcData, 'main');
+                await interaction.update(render);
+
+                syncChannelPermissions(voiceChannel, vcData).catch(console.error);
             }
             else if (action === 'rename') {
                 const modal = new ModalBuilder()
@@ -599,22 +671,21 @@ module.exports = {
                 modal.addComponents(row);
                 return interaction.showModal(modal);
             }
-            else if (action === 'trigger') {
-                const modalType = parts[4]; // 'add', 'remove', 'kick', 'invite', 'transfer'
+            else if (action === 'add' || action === 'remove' || action === 'kick' || action === 'invite' || action === 'transfer') {
                 const modal = new ModalBuilder()
-                    .setCustomId(`vc_modal_${modalType}_${channelId}`)
+                    .setCustomId(`vc_modal_${action}_${channelId}`)
                     .setTitle(
-                        modalType === 'add' ? 'Add User' :
-                        modalType === 'remove' ? 'Remove Access' :
-                        modalType === 'kick' ? 'Kick User' :
-                        modalType === 'invite' ? 'Invite User' :
+                        action === 'add' ? 'Add User' :
+                        action === 'remove' ? 'Remove Access' :
+                        action === 'kick' ? 'Kick User' :
+                        action === 'invite' ? 'Invite User' :
                         'Transfer Ownership'
                     );
 
-                const label = modalType === 'add' ? 'Select user to grant access:' :
-                              modalType === 'remove' ? 'Select user to remove access:' :
-                              modalType === 'kick' ? 'Select user to kick:' :
-                              modalType === 'invite' ? 'Select user to invite:' :
+                const label = action === 'add' ? 'Select user to grant access:' :
+                              action === 'remove' ? 'Select user to remove access:' :
+                              action === 'kick' ? 'Select user to kick:' :
+                              action === 'invite' ? 'Select user to invite:' :
                               'Select the new owner:';
 
                 const userSelect = new LabelBuilder()
@@ -630,10 +701,13 @@ module.exports = {
                 return interaction.showModal(modal);
             }
             else if (action === 'page') {
-                const pageType = parts[4]; // 'main', 'config', 'perm'
-                const extraVal = parts[5]; // page index
+                const pageType = parts[4] || 'main'; // 'main', 'config', 'perm'
+                let extraVal = parts[5] || null; // page index or subaction
+                if (pageType === 'perm' && parts[6] !== undefined) {
+                    extraVal = parts[6];
+                }
                 
-                const render = await renderControlPanel(voiceChannel, vcData, pageType, extraVal);
+                const render = await renderControlPanel(voiceChannel, vcData, pageType === 'perm' ? 'permissions' : pageType, extraVal);
                 await interaction.update(render);
             }
             else if (action === 'goto') {
@@ -663,8 +737,12 @@ module.exports = {
             }
             else if (action === 'toggleperm') {
                 const targetUserId = parts[4];
-                const permFlag = parts[5];
+                const permFlag = parts.slice(5).join('_');
                 const isDefault = targetUserId === 'default';
+
+                if (targetUserId === vcData.ownerId) {
+                    return interaction.reply({ content: '❌ Room owner permissions are permanent and cannot be modified.', ephemeral: true });
+                }
 
                 if (isDefault) {
                     if (!vcData.defaultPermissions) {
@@ -677,6 +755,9 @@ module.exports = {
                     }
                     updateChannel(channelId, { defaultPermissions: vcData.defaultPermissions });
                 } else {
+                    if (!vcData.userPermissions) {
+                        vcData.userPermissions = {};
+                    }
                     if (!vcData.userPermissions[targetUserId]) {
                         vcData.userPermissions[targetUserId] = [];
                     }
@@ -688,34 +769,41 @@ module.exports = {
                     updateChannel(channelId, { userPermissions: vcData.userPermissions });
                 }
 
-                await syncChannelPermissions(voiceChannel, vcData);
-
+                // Update UI immediately to prevent interaction timeout
                 const render = await renderControlPanel(voiceChannel, vcData, 'edit_user_perm', targetUserId);
                 await interaction.update(render);
+
+                // Sync permissions asynchronously
+                syncChannelPermissions(voiceChannel, vcData).catch(console.error);
             }
-            else if (action === 'reset') {
+            else if (action === 'resetperm') {
                 const targetUserId = parts[4];
                 const isDefault = targetUserId === 'default';
 
-                if (isDefault) {
-                    updateChannel(channelId, { defaultPermissions: ['join'] });
-                } else {
-                    if (vcData.userPermissions[targetUserId]) {
-                        delete vcData.userPermissions[targetUserId];
-                    }
-                    updateChannel(channelId, { userPermissions: vcData.userPermissions });
+                if (targetUserId === vcData.ownerId) {
+                    return interaction.reply({ content: '❌ Room owner permissions cannot be reset.', ephemeral: true });
                 }
 
-                await syncChannelPermissions(voiceChannel, vcData);
+                if (isDefault) {
+                    vcData.defaultPermissions = ['join'];
+                    updateChannel(channelId, { defaultPermissions: ['join'] });
+                } else {
+                    if (vcData.userPermissions && vcData.userPermissions[targetUserId]) {
+                        delete vcData.userPermissions[targetUserId];
+                    }
+                    updateChannel(channelId, { userPermissions: vcData.userPermissions || {} });
+                }
 
                 const render = await renderControlPanel(voiceChannel, vcData, 'edit_user_perm', targetUserId);
                 await interaction.update(render);
+
+                syncChannelPermissions(voiceChannel, vcData).catch(console.error);
             }
-            else if (action === 'save') {
-                const targetUserId = parts[4];
+            else if (action === 'saveperm') {
                 // Return to Permissions page (page 0)
                 const render = await renderControlPanel(voiceChannel, vcData, 'permissions', '0');
                 await interaction.update(render);
+                syncChannelPermissions(voiceChannel, vcData).catch(console.error);
             }
             else if (action === 'config') {
                 const configAction = parts[4];
@@ -726,16 +814,11 @@ module.exports = {
                     await interaction.update(render);
                 }
                 else if (configAction === 'visibility') {
-                    const isPublic = voiceChannel.permissionsFor(voiceChannel.guild.roles.everyone).has(PermissionFlagsBits.ViewChannel);
-                    if (isPublic) {
-                        await voiceChannel.permissionOverwrites.edit(voiceChannel.guild.roles.everyone, {
-                            ViewChannel: false
-                        });
-                    } else {
-                        await voiceChannel.permissionOverwrites.edit(voiceChannel.guild.roles.everyone, {
-                            ViewChannel: null
-                        });
-                    }
+                    const nextHidden = !(vcData.hidden !== undefined ? vcData.hidden : true);
+                    updateChannel(channelId, { hidden: nextHidden });
+                    vcData.hidden = nextHidden;
+                    await syncChannelPermissions(voiceChannel, vcData);
+
                     const render = await renderControlPanel(voiceChannel, vcData, 'config');
                     await interaction.update(render);
                 }
@@ -775,6 +858,160 @@ module.exports = {
                     return interaction.showModal(modal);
                 }
             }
+            else if (action === 'hardreset') {
+                if (interaction.member.id !== vcData.ownerId && !interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+                    return interaction.reply({ content: '❌ Only the room owner or a server administrator can hard-reset this room.', ephemeral: true });
+                }
+
+                const config = getConfig(interaction.guild.id);
+                const nameTemplate = config?.tempVCNameTemplate || DEFAULT_TEMP_VC_NAME_TEMPLATE;
+                const ownerMember = voiceChannel.guild.members.cache.get(vcData.ownerId) || await voiceChannel.guild.members.fetch(vcData.ownerId).catch(() => null);
+                const displayName = ownerMember?.user?.globalName || ownerMember?.user?.username || 'User';
+                const username = ownerMember?.user?.username || 'User';
+                const defaultName = nameTemplate.replace(/{u}/g, username).replace(/{d}/g, displayName);
+
+                await voiceChannel.setName(defaultName).catch(() => {});
+                await voiceChannel.setUserLimit(0).catch(() => {});
+                await voiceChannel.setBitrate(64000).catch(() => {});
+                await voiceChannel.setNSFW(false).catch(() => {});
+
+                updateChannel(channelId, {
+                    name: defaultName,
+                    locked: true,
+                    hidden: true,
+                    allowedUsers: [],
+                    userPermissions: {},
+                    defaultPermissions: ['join']
+                });
+                vcData.name = defaultName;
+                vcData.locked = true;
+                vcData.hidden = true;
+                vcData.allowedUsers = [];
+                vcData.userPermissions = {};
+                vcData.defaultPermissions = ['join'];
+
+                const baseOverwrites = [
+                    {
+                        id: voiceChannel.guild.roles.everyone.id,
+                        deny: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.Connect]
+                    },
+                    {
+                        id: vcData.ownerId,
+                        allow: [
+                            PermissionFlagsBits.ViewChannel,
+                            PermissionFlagsBits.Connect,
+                            PermissionFlagsBits.Speak,
+                            PermissionFlagsBits.ManageChannels,
+                            PermissionFlagsBits.ManageRoles,
+                            PermissionFlagsBits.MuteMembers,
+                            PermissionFlagsBits.DeafenMembers,
+                            PermissionFlagsBits.MoveMembers,
+                            PermissionFlagsBits.Stream,
+                            PermissionFlagsBits.UseVAD,
+                            PermissionFlagsBits.PrioritySpeaker
+                        ]
+                    }
+                ];
+                if (voiceChannel.client.user) {
+                    baseOverwrites.push({
+                        id: voiceChannel.client.user.id,
+                        allow: [
+                            PermissionFlagsBits.ViewChannel,
+                            PermissionFlagsBits.Connect,
+                            PermissionFlagsBits.ManageChannels,
+                            PermissionFlagsBits.ManageRoles
+                        ]
+                    });
+                }
+                await voiceChannel.permissionOverwrites.set(baseOverwrites).catch(() => {});
+
+                const render = await renderControlPanel(voiceChannel, vcData, 'main');
+                await interaction.update(render);
+            }
+            else if (action === 'promptdelete') {
+                if (interaction.member.id !== vcData.ownerId && !interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+                    return interaction.reply({ content: '❌ Only the room owner or a server administrator can delete this room.', ephemeral: true });
+                }
+
+                return interaction.reply({
+                    content: '⚠️ **Are you sure you want to delete this temporary voice channel?**\nOnce confirmed, the channel will be deleted after a 5-second countdown unless cancelled.',
+                    components: [
+                        {
+                            type: 1,
+                            components: [
+                                new ButtonBuilder()
+                                    .setCustomId(`vc_btn_confirmdelete_${channelId}`)
+                                    .setLabel('🚨 Confirm Delete')
+                                    .setStyle(ButtonStyle.Danger)
+                                    .toJSON(),
+                                new ButtonBuilder()
+                                    .setCustomId(`vc_btn_cancelprompt_${channelId}`)
+                                    .setLabel('Cancel')
+                                    .setStyle(ButtonStyle.Secondary)
+                                    .toJSON()
+                            ]
+                        }
+                    ],
+                    ephemeral: true
+                });
+            }
+            else if (action === 'cancelprompt') {
+                return interaction.update({ content: '✅ Channel deletion cancelled.', components: [] });
+            }
+            else if (action === 'confirmdelete') {
+                if (interaction.member.id !== vcData.ownerId && !interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+                    return interaction.reply({ content: '❌ Only the room owner or a server administrator can delete this room.', ephemeral: true });
+                }
+
+                if (vcData.activeDeleteTimer) {
+                    return interaction.update({ content: '⏳ Deletion countdown is already in progress.', components: [] });
+                }
+
+                await interaction.update({ content: '⏳ Deletion initiated. Deleting in 5 seconds...', components: [] });
+
+                const countdownMessage = await voiceChannel.send({
+                    content: '⚠️ **This temporary voice channel will be deleted in 5 seconds...**',
+                    components: [
+                        {
+                            type: 1,
+                            components: [
+                                new ButtonBuilder()
+                                    .setCustomId(`vc_btn_cancelcountdown_${channelId}`)
+                                    .setLabel('❌ Cancel Deletion')
+                                    .setStyle(ButtonStyle.Danger)
+                                    .toJSON()
+                            ]
+                        }
+                    ]
+                }).catch(() => null);
+
+                const timer = setTimeout(async () => {
+                    try {
+                        const ch = await voiceChannel.guild.channels.fetch(channelId).catch(() => null);
+                        if (ch) {
+                            await ch.delete('Owner confirmed VC deletion');
+                        }
+                        removeChannel(channelId);
+                    } catch (err) {
+                        console.error('Error during confirmed VC deletion:', err);
+                        removeChannel(channelId);
+                    }
+                }, 5000);
+
+                vcData.activeDeleteTimer = timer;
+                vcData.countdownMessageId = countdownMessage?.id;
+            }
+            else if (action === 'cancelcountdown') {
+                if (vcData.activeDeleteTimer) {
+                    clearTimeout(vcData.activeDeleteTimer);
+                    vcData.activeDeleteTimer = null;
+                }
+
+                await interaction.update({
+                    content: `✅ **Channel deletion cancelled by ${interaction.user}.**`,
+                    components: []
+                });
+            }
         } catch (error) {
             console.error(error);
             await interaction.reply({ content: '❌ Failed to perform this action. Check permissions or rate limits.', ephemeral: true }).catch(() => {});
@@ -783,7 +1020,7 @@ module.exports = {
 
     async handleModal(interaction) {
         const parts = interaction.customId.split('_');
-        if (parts[0] !== 'vc') return;
+        if (parts[0] !== 'vc' || parts[1] !== 'modal') return;
         
         const action = parts[2];
         const channelId = parts[3];
@@ -798,9 +1035,16 @@ module.exports = {
             return interaction.reply({ content: '❌ Room data not found.', ephemeral: true });
         }
 
-        // Check permission
-        if (!hasControlPermission(interaction.member, voiceChannel, vcData)) {
-            return interaction.reply({ content: '❌ You do not have permission to manage this room.', ephemeral: true });
+        // Check permission based on action
+        const memberActions = ['add', 'remove', 'kick', 'invite'];
+        if (memberActions.includes(action)) {
+            if (!canManageMembers(interaction.member, voiceChannel, vcData)) {
+                return interaction.reply({ content: '❌ You do not have permission to manage members in this room.', ephemeral: true });
+            }
+        } else {
+            if (!hasControlPermission(interaction.member, voiceChannel, vcData)) {
+                return interaction.reply({ content: '❌ You do not have permission to manage this room.', ephemeral: true });
+            }
         }
 
         await interaction.deferReply({ ephemeral: true });
@@ -813,6 +1057,7 @@ module.exports = {
                 }
 
                 if (action === 'add') {
+                    if (!vcData.allowedUsers) vcData.allowedUsers = [];
                     if (!vcData.allowedUsers.includes(targetUser.id)) {
                         vcData.allowedUsers.push(targetUser.id);
                     }
@@ -830,7 +1075,13 @@ module.exports = {
                     await interaction.editReply({ content: `✅ Added ${targetUser} to the room.` });
                 }
                 else if (action === 'remove') {
-                    vcData.allowedUsers = vcData.allowedUsers.filter(id => id !== targetUser.id);
+                    if (targetUser.id === vcData.ownerId) {
+                        return interaction.editReply({ content: '❌ The room owner cannot be removed from the room.' });
+                    }
+
+                    if (vcData.allowedUsers) {
+                        vcData.allowedUsers = vcData.allowedUsers.filter(id => id !== targetUser.id);
+                    }
                     if (vcData.userPermissions && vcData.userPermissions[targetUser.id]) {
                         delete vcData.userPermissions[targetUser.id];
                     }
@@ -843,7 +1094,13 @@ module.exports = {
                     await interaction.editReply({ content: `✅ Removed ${targetUser}'s access.` });
                 }
                 else if (action === 'kick') {
-                    vcData.allowedUsers = vcData.allowedUsers.filter(id => id !== targetUser.id);
+                    if (targetUser.id === vcData.ownerId) {
+                        return interaction.editReply({ content: '❌ The room owner cannot be kicked from the room.' });
+                    }
+
+                    if (vcData.allowedUsers) {
+                        vcData.allowedUsers = vcData.allowedUsers.filter(id => id !== targetUser.id);
+                    }
                     if (vcData.userPermissions && vcData.userPermissions[targetUser.id]) {
                         delete vcData.userPermissions[targetUser.id];
                     }
@@ -865,6 +1122,7 @@ module.exports = {
                     await interaction.editReply({ content: `✅ Kicked ${targetUser} and revoked access.` });
                 }
                 else if (action === 'invite') {
+                    if (!vcData.allowedUsers) vcData.allowedUsers = [];
                     if (!vcData.allowedUsers.includes(targetUser.id)) {
                         vcData.allowedUsers.push(targetUser.id);
                     }
@@ -900,13 +1158,18 @@ module.exports = {
                     await interaction.editReply({ content: `✅ Invited ${targetUser} via DM.` });
                 }
                 else if (action === 'transfer') {
+                    if (targetUser.id === vcData.ownerId) {
+                        return interaction.editReply({ content: '❌ That user is already the room owner.' });
+                    }
+
+                    vcData.ownerId = targetUser.id;
                     updateChannel(channelId, { ownerId: targetUser.id });
                     await syncChannelPermissions(voiceChannel, vcData);
                     await interaction.editReply({ content: `👑 Room ownership transferred to ${targetUser}.` });
                 }
 
                 const originalMessage = interaction.message;
-                if (originalMessage) {
+                if (originalMessage && originalMessage.editable) {
                     const render = await renderControlPanel(voiceChannel, vcData, 'main');
                     await originalMessage.edit(render).catch(() => {});
                 }
@@ -920,12 +1183,13 @@ module.exports = {
                 }
 
                 await voiceChannel.setName(cleanName);
+                vcData.name = cleanName;
                 updateChannel(channelId, { name: cleanName });
 
                 await interaction.editReply({ content: `✅ Room renamed to **${cleanName}**.` });
 
                 const originalMessage = interaction.message;
-                if (originalMessage) {
+                if (originalMessage && originalMessage.editable) {
                     const render = await renderControlPanel(voiceChannel, vcData, 'main');
                     await originalMessage.edit(render).catch(() => {});
                 }
@@ -941,7 +1205,7 @@ module.exports = {
                 await interaction.editReply({ content: `✅ User limit updated to ${limit || 'No Limit'}.` });
 
                 const originalMessage = interaction.message;
-                if (originalMessage) {
+                if (originalMessage && originalMessage.editable) {
                     const render = await renderControlPanel(voiceChannel, vcData, 'config');
                     await originalMessage.edit(render).catch(() => {});
                 }
@@ -956,7 +1220,7 @@ module.exports = {
                 await interaction.editReply({ content: `✅ Navigating to page ${page}...` });
 
                 const originalMessage = interaction.message;
-                if (originalMessage) {
+                if (originalMessage && originalMessage.editable) {
                     const render = await renderControlPanel(voiceChannel, vcData, 'permissions', page - 1);
                     await originalMessage.edit(render).catch(() => {});
                 }
@@ -969,5 +1233,10 @@ module.exports = {
                 await interaction.editReply({ content: '❌ An error occurred during this operation. Check rate limits (e.g. rename limits).' });
             }
         }
-    }
+    },
+
+    renderControlPanel,
+    syncChannelPermissions,
+    hasControlPermission,
+    canManageMembers
 };

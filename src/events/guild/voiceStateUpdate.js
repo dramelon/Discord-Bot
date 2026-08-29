@@ -1,5 +1,6 @@
 const { Events, ChannelType, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const { tempChannels, addChannel, getChannel, updateChannel, removeChannel } = require('../../utils/tempVCManager');
+const { renderControlPanel } = require('../../commands/qol/vc');
 const { getConfig } = require('../../utils/configManager');
 
 const DELETE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
@@ -8,6 +9,7 @@ module.exports = {
     name: Events.VoiceStateUpdate,
     async execute(oldState, newState) {
         const member = newState.member;
+        if (!member) return;
         
         // Load server-specific configurations
         const guildId = newState.guild.id;
@@ -16,7 +18,7 @@ module.exports = {
         
         const createVcChannelId = config.tempVCCreateChannelId;
         const tempVcCategoryId = config.tempVCCategoryId;
-        const nameTemplate = config.tempVCNameTemplate;
+        const nameTemplate = config.tempVCNameTemplate || "{d}'s Room";
         
         // --- 1. Handle user joining the "Create VC" channel ---
         if (newState.channelId === createVcChannelId) {
@@ -45,39 +47,64 @@ module.exports = {
                     return;
                 }
                 // Resolve name template
-                const displayName = member.user.globalName;
+                const displayName = member.user.globalName || member.user.username;
                 const username = member.user.username;
                 const roomName = nameTemplate
                     .replace(/{u}/g, username)
                     .replace(/{d}/g, displayName);
+
+                // Configure locked & hidden permissions by default
+                const permissionOverwrites = [
+                    {
+                        id: newState.guild.roles.everyone.id,
+                        deny: [
+                            PermissionFlagsBits.ViewChannel,
+                            PermissionFlagsBits.Connect
+                        ]
+                    },
+                    {
+                        id: member.id,
+                        allow: [
+                            PermissionFlagsBits.ViewChannel,
+                            PermissionFlagsBits.Connect,
+                            PermissionFlagsBits.Speak,
+                            PermissionFlagsBits.ManageChannels,
+                            PermissionFlagsBits.ManageRoles,
+                            PermissionFlagsBits.MuteMembers,
+                            PermissionFlagsBits.DeafenMembers,
+                            PermissionFlagsBits.MoveMembers,
+                            PermissionFlagsBits.Stream,
+                            PermissionFlagsBits.UseVAD,
+                            PermissionFlagsBits.PrioritySpeaker
+                        ]
+                    }
+                ];
+
+                if (newState.client.user) {
+                    permissionOverwrites.push({
+                        id: newState.client.user.id,
+                        allow: [
+                            PermissionFlagsBits.ViewChannel,
+                            PermissionFlagsBits.Connect,
+                            PermissionFlagsBits.ManageChannels,
+                            PermissionFlagsBits.ManageRoles
+                        ]
+                    });
+                }
 
                 // Create the new channel
                 const newChannel = await newState.guild.channels.create({
                     name: roomName,
                     type: ChannelType.GuildVoice,
                     parent: tempVcCategoryId,
-                });
-
-                // Grant the owner full permissions explicitly
-                await newChannel.permissionOverwrites.create(member.id, {
-                    ViewChannel: true,
-                    Connect: true,
-                    Speak: true,
-                    ManageChannels: true,
-                    ManageRoles: true,
-                    MuteMembers: true,
-                    DeafenMembers: true,
-                    MoveMembers: true,
-                    Stream: true,
-                    UseVAD: true,
-                    PrioritySpeaker: true,
+                    permissionOverwrites: permissionOverwrites
                 });
 
                 // Move the member to the new channel
                 await member.voice.setChannel(newChannel);
 
-                // Register the channel in our memory manager
-                addChannel(newChannel.id, newChannel.guild.id, member.id, newChannel.name, false, []);
+                // Register the channel in our memory manager (locked: true, hidden: true)
+                addChannel(newChannel.id, newChannel.guild.id, member.id, newChannel.name, true, [], {}, true, ['join']);
 
                 // Send the welcome message to the text-in-voice chat using Components V2
                 const welcomePayload = {
@@ -90,7 +117,7 @@ module.exports = {
                                     components: [
                                         {
                                             type: 10, // Text Display
-                                            content: `## Welcome to your room, ${member.user.globalName}!\n\n**Basic Information:**\n* You are the room owner with full permissions over this channel.\n* The room will be automatically deleted 5 minutes after everyone leaves.\n\n**Manage Room:**\nClick the button below or use the \`/vc\` command to access the interactive control panel to lock/unlock, rename, add/remove/kick/invite members, and configure room permissions.`
+                                            content: `## Welcome to your room, ${displayName}!\n\n**Basic Information:**\n* You are the room owner with full permissions over this channel.\n* The room is **locked** and **hidden** from everyone by default.\n* The room will be automatically deleted 5 minutes after everyone leaves.\n\n**Manage Room:**\nUse the control panel below or the \`/vc\` command at any time to lock/unlock, toggle visibility, rename, add/remove/kick/invite members, and configure room permissions.`
                                         }
                                     ],
                                     accessory: {
@@ -100,17 +127,6 @@ module.exports = {
                                         },
                                         description: "Voice room"
                                     }
-                                },
-                                {
-                                    type: 1, // Action Row
-                                    components: [
-                                        {
-                                            type: 2, // Button
-                                            style: 1, // Primary (Blurple)
-                                            label: "Manage Room",
-                                            custom_id: `vc_btn_manage_${newChannel.id}`
-                                        }
-                                    ]
                                 }
                             ]
                         }
@@ -119,6 +135,13 @@ module.exports = {
                 };
                 
                 await newChannel.send(welcomePayload);
+
+                // Send the Voice Channel Control Panel into the room by default
+                const vcData = getChannel(newChannel.id);
+                if (vcData) {
+                    const controlPanelPayload = await renderControlPanel(newChannel, vcData, 'main');
+                    await newChannel.send(controlPanelPayload);
+                }
                 
             } catch (error) {
                 console.error("Error creating temporary voice channel:", error);

@@ -5,7 +5,7 @@ const dataPath = path.join(__dirname, '..', '..', 'data', 'tempChannels.json');
 
 // Map to store temporary VCs in memory
 // Key: channelId
-// Value: { guildId: string, ownerId: string, name: string, locked: boolean, createdAt: number, allowedUsers: Array, userPermissions: Object, timer: NodeJS.Timeout | null }
+// Value: { guildId: string, ownerId: string, name: string, locked: boolean, hidden: boolean, createdAt: number, allowedUsers: Array, userPermissions: Object, defaultPermissions: Array, timer: NodeJS.Timeout | null }
 const tempChannels = new Map();
 
 function loadData() {
@@ -26,10 +26,12 @@ function loadData() {
                             guildId: '1447192381479976993', // Fallback to Hometown server ID
                             ownerId: data.ownerId,
                             name: data.name || '',
-                            locked: data.locked || false,
+                            locked: data.locked !== undefined ? data.locked : true,
+                            hidden: data.hidden !== undefined ? data.hidden : true,
                             createdAt: data.createdAt || Date.now(),
                             allowedUsers: data.allowedUsers || [],
                             userPermissions: data.userPermissions || {},
+                            defaultPermissions: data.defaultPermissions || ['join'],
                             timer: null
                         });
                     }
@@ -42,10 +44,12 @@ function loadData() {
                                     guildId: guildId,
                                     ownerId: data.ownerId,
                                     name: data.name || '',
-                                    locked: data.locked || false,
+                                    locked: data.locked !== undefined ? data.locked : true,
+                                    hidden: data.hidden !== undefined ? data.hidden : true,
                                     createdAt: data.createdAt || Date.now(),
                                     allowedUsers: data.allowedUsers || [],
                                     userPermissions: data.userPermissions || {},
+                                    defaultPermissions: data.defaultPermissions || ['join'],
                                     timer: null
                                 });
                             }
@@ -70,10 +74,12 @@ function saveData() {
         dataToSave[guildId][channelId] = {
             ownerId: data.ownerId,
             name: data.name || '',
-            locked: data.locked || false,
+            locked: data.locked !== undefined ? data.locked : true,
+            hidden: data.hidden !== undefined ? data.hidden : true,
             createdAt: data.createdAt || Date.now(),
             allowedUsers: data.allowedUsers || [],
-            userPermissions: data.userPermissions || {}
+            userPermissions: data.userPermissions || {},
+            defaultPermissions: data.defaultPermissions || ['join']
         };
     }
     
@@ -84,15 +90,17 @@ function saveData() {
     }
 }
 
-function addChannel(channelId, guildId, ownerId, name = '', locked = false, allowedUsers = [], userPermissions = {}) {
+function addChannel(channelId, guildId, ownerId, name = '', locked = true, allowedUsers = [], userPermissions = {}, hidden = true, defaultPermissions = ['join']) {
     tempChannels.set(channelId, {
         guildId,
         ownerId,
         name,
         locked,
+        hidden,
         createdAt: Date.now(),
         allowedUsers,
         userPermissions,
+        defaultPermissions,
         timer: null
     });
     saveData();
@@ -115,8 +123,8 @@ function updateChannel(channelId, updates) {
     if (tempChannels.has(channelId)) {
         const current = tempChannels.get(channelId);
         tempChannels.set(channelId, { ...current, ...updates });
-        // Only save if locked, ownerId, name, allowedUsers, or userPermissions changes
-        const saveKeys = ['locked', 'ownerId', 'name', 'allowedUsers', 'userPermissions'];
+        // Only save if persistent keys change
+        const saveKeys = ['locked', 'hidden', 'ownerId', 'name', 'allowedUsers', 'userPermissions', 'defaultPermissions'];
         const shouldSave = Object.keys(updates).some(k => saveKeys.includes(k));
         if (shouldSave) {
             saveData();

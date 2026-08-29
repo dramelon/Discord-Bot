@@ -406,11 +406,32 @@
 			}
 		});
 
-		// Helper to get Date object forced to UTC+7 (ICT)
-		function getUTC7Date() {
+		// Helper to get time parts in UTC+7 (Asia/Bangkok timezone)
+		function getUTC7TimeParts() {
 			const now = new Date();
-			const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-			return new Date(utc + (3600000 * 7));
+			const formatter = new Intl.DateTimeFormat('en-US', {
+				timeZone: 'Asia/Bangkok',
+				hour12: false,
+				year: 'numeric',
+				month: 'numeric',
+				day: 'numeric',
+				hour: 'numeric',
+				minute: 'numeric',
+				second: 'numeric',
+				weekday: 'short'
+			});
+			const parts = {};
+			formatter.formatToParts(now).forEach(p => {
+				parts[p.type] = p.value;
+			});
+
+			const dayOfWeekMap = { 'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6 };
+			return {
+				hour: parseInt(parts.hour, 10),
+				minute: parseInt(parts.minute, 10),
+				dayOfWeek: dayOfWeekMap[parts.weekday] ?? 0,
+				now
+			};
 		}
 
 		// Dynamic UTC+7 clock updating routine
@@ -418,16 +439,14 @@
 			const timeLabel = document.getElementById('localClockTime');
 			const dateLabel = document.getElementById('calendarDateStr');
 
-			const now = getUTC7Date();
+			const { hour, minute, dayOfWeek, now } = getUTC7TimeParts();
 
 			// Format Clock Time
-			let hrs = now.getUTCHours();
-			const mns = now.getUTCMinutes();
-			const ampm = hrs >= 12 ? 'PM' : 'AM';
-			hrs = hrs % 12;
-			hrs = hrs ? hrs : 12; // 0 should be 12
-			const formattedMns = mns < 10 ? '0' + mns : mns;
-			const formattedHrs = hrs < 10 ? '0' + hrs : hrs;
+			const ampm = hour >= 12 ? 'PM' : 'AM';
+			let displayHrs = hour % 12;
+			displayHrs = displayHrs ? displayHrs : 12; // 0 should be 12
+			const formattedHrs = displayHrs < 10 ? '0' + displayHrs : displayHrs;
+			const formattedMns = minute < 10 ? '0' + minute : minute;
 			timeLabel.innerHTML = `${formattedHrs}:${formattedMns} <span>${ampm}</span>`;
 
 			// Format Calendar Date String in UTC+7
@@ -435,7 +454,6 @@
 			dateLabel.textContent = now.toLocaleDateString('en-US', options);
 
 			// Color the date label according to UTC+7 day of the week
-			const dayOfWeek = now.getUTCDay();
 			const dayColors = {
 				0: '#ef4444', // Sun: Red
 				1: '#eab308', // Mon: Yellow
@@ -585,7 +603,7 @@
 
 		// Update timeline current marker
 		function updateTimelineMarker() {
-			const currentHour = getUTC7Date().getUTCHours();
+			const { hour: currentHour } = getUTC7TimeParts();
 
 			// Clear all highlights
 			document.querySelectorAll('.timeline-hour-block').forEach(b => b.classList.remove('current-hour'));

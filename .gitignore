@@ -11,6 +11,7 @@ src/dashboard/config.txt
 src/dashboard/exampledata.txt
 src/dashboard/routes_whitelist.txt
 src/dashboard/run_standalone.js
+src/temporary
 
 # Dependencies
 node_modules/
