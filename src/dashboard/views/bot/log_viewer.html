@@ -1,0 +1,195 @@
+<div class="log-viewer-container">
+	<!-- Hero Header Banner -->
+	<header class="log-hero-banner">
+		<div class="log-hero-content">
+			<div class="log-hero-tag">
+				<span class="material-symbols-outlined">developer_board</span>
+				<span>Live Diagnostics</span>
+			</div>
+			<h1 class="log-hero-title">
+				<span class="material-symbols-outlined">terminal</span>
+				<span>Log Viewer</span>
+			</h1>
+			<p class="log-hero-desc">
+				Real-time terminal stream for Fluffingiously Dragooon (UTC+7 Timezone). Inspect stdout events, debug traces, and system warnings live.
+			</p>
+		</div>
+		<div id="streamStatusPill" class="log-hero-status-pill">
+			<span id="statusPulseDot" class="pulse-dot"></span>
+			<span>LIVE STREAMING (3s)</span>
+		</div>
+	</header>
+
+	<!-- Quick Overview Metrics Row -->
+	<div class="log-stats-grid">
+		<!-- Metric 1: Stream Status -->
+		<div class="log-stat-card">
+			<div class="log-stat-icon-box primary">
+				<span class="material-symbols-outlined">sensors</span>
+			</div>
+			<div class="log-stat-data">
+				<span class="log-stat-label">Stream Status</span>
+				<span id="statStreamMode" class="log-stat-value">Active</span>
+			</div>
+		</div>
+
+		<!-- Metric 2: Total Lines -->
+		<div class="log-stat-card">
+			<div class="log-stat-icon-box secondary">
+				<span class="material-symbols-outlined">format_list_numbered</span>
+			</div>
+			<div class="log-stat-data">
+				<span class="log-stat-label">Total Lines</span>
+				<span id="statTotalLines" class="log-stat-value">0</span>
+			</div>
+		</div>
+
+		<!-- Metric 3: Errors Detected -->
+		<div class="log-stat-card">
+			<div class="log-stat-icon-box danger">
+				<span class="material-symbols-outlined">error</span>
+			</div>
+			<div class="log-stat-data">
+				<span class="log-stat-label">Errors</span>
+				<span id="statErrorCount" class="log-stat-value">0</span>
+			</div>
+		</div>
+
+		<!-- Metric 4: Warnings Detected -->
+		<div class="log-stat-card">
+			<div class="log-stat-icon-box warning">
+				<span class="material-symbols-outlined">warning</span>
+			</div>
+			<div class="log-stat-data">
+				<span class="log-stat-label">Warnings</span>
+				<span id="statWarnCount" class="log-stat-value">0</span>
+			</div>
+		</div>
+
+		<!-- Metric 5: Last Synced Time -->
+		<div class="log-stat-card">
+			<div class="log-stat-icon-box primary">
+				<span class="material-symbols-outlined">schedule</span>
+			</div>
+			<div class="log-stat-data">
+				<span class="log-stat-label">Last Synced</span>
+				<span id="statLastSync" class="log-stat-value">--:--:--</span>
+			</div>
+		</div>
+	</div>
+
+	<!-- Interactive Toolbar: Filters & Controls -->
+	<div class="log-toolbar">
+		<div class="log-toolbar-left">
+			<!-- Search Box -->
+			<div class="log-search-wrapper">
+				<span class="material-symbols-outlined log-search-icon">search</span>
+				<input 
+					type="text" 
+					id="logSearchInput" 
+					class="log-search-input" 
+					placeholder="Search logs (grep / regex)..." 
+					autocomplete="off"
+				>
+				<button type="button" id="logSearchClear" class="log-search-clear" title="Clear Search">
+					<span class="material-symbols-outlined">cancel</span>
+				</button>
+			</div>
+
+			<!-- Level Filter Chips -->
+			<div class="log-filter-chips">
+				<button type="button" class="filter-btn log-filter-btn active" data-level="all">
+					<span>All</span>
+					<span id="countFilterAll" class="filter-count">0</span>
+				</button>
+				<button type="button" class="filter-btn log-filter-btn" data-level="info">
+					<span>Info</span>
+					<span id="countFilterInfo" class="filter-count">0</span>
+				</button>
+				<button type="button" class="filter-btn log-filter-btn" data-level="warn">
+					<span>Warn</span>
+					<span id="countFilterWarn" class="filter-count">0</span>
+				</button>
+				<button type="button" class="filter-btn log-filter-btn" data-level="error">
+					<span>Error</span>
+					<span id="countFilterError" class="filter-count">0</span>
+				</button>
+				<button type="button" class="filter-btn log-filter-btn" data-level="debug">
+					<span>Debug</span>
+					<span id="countFilterDebug" class="filter-count">0</span>
+				</button>
+			</div>
+		</div>
+
+		<div class="log-toolbar-right">
+			<!-- Sync Now Button -->
+			<button type="button" id="btnSyncLogs" class="btn-action log-action-btn btn-primary-action" title="Fetch fresh log entries">
+				<span class="material-symbols-outlined">sync</span>
+				<span>Sync Now</span>
+			</button>
+
+			<!-- Auto-Refresh Toggle -->
+			<button type="button" id="btnToggleAutoRefresh" class="btn-action log-action-btn active" title="Toggle automatic polling">
+				<span class="material-symbols-outlined">pause</span>
+				<span>Auto-refresh: 3s</span>
+			</button>
+
+			<!-- Auto-Scroll Toggle -->
+			<button type="button" id="btnToggleAutoScroll" class="btn-action log-action-btn active" title="Keep terminal scrolled to the newest log line">
+				<span class="material-symbols-outlined">vertical_align_bottom</span>
+				<span>Auto-scroll</span>
+			</button>
+
+			<!-- Download Logs -->
+			<button type="button" id="btnDownloadLogs" class="btn-action log-action-btn" title="Download log file to disk">
+				<span class="material-symbols-outlined">download</span>
+				<span>Export</span>
+			</button>
+
+			<!-- Clear Display Buffer -->
+			<button type="button" id="btnClearTerminal" class="btn-action log-action-btn" title="Clear local screen buffer">
+				<span class="material-symbols-outlined">delete_sweep</span>
+				<span>Clear</span>
+			</button>
+		</div>
+	</div>
+
+	<!-- Terminal Screen Window (Obsidian Glass Theme) -->
+	<div id="terminalWindow" class="terminal-window">
+		<!-- Terminal Window Header -->
+		<div class="terminal-header-bar">
+			<div class="terminal-header-left">
+				<div class="terminal-dots-wrapper">
+					<span class="mac-dot dot-close"></span>
+					<span class="mac-dot dot-minimize"></span>
+					<span class="mac-dot dot-zoom"></span>
+				</div>
+				<div class="terminal-title-text">
+					<span class="material-symbols-outlined">terminal</span>
+					<span>dragooon@kinetic-container:~/logs/bot.log</span>
+				</div>
+			</div>
+
+			<div class="terminal-header-right">
+				<span id="terminalHeaderLines" class="terminal-info-badge">0 lines</span>
+				<button type="button" id="btnCopyLogsHeader" class="terminal-icon-btn" title="Copy raw logs to clipboard">
+					<span class="material-symbols-outlined">content_copy</span>
+				</button>
+				<button type="button" id="btnToggleFullscreen" class="terminal-icon-btn" title="Toggle fullscreen view">
+					<span id="fullscreenIcon" class="material-symbols-outlined">fullscreen</span>
+				</button>
+			</div>
+		</div>
+
+		<!-- Terminal Screen Output Body -->
+		<div id="terminalBody" class="terminal-screen">
+			<!-- Rendered by /controllers/bot/log_viewer.js -->
+		</div>
+	</div>
+</div>
+
+<!-- Page-specific Stylesheet at Bottom -->
+<link rel="stylesheet" href="/styles/log_viewer.css">
+
+<!-- Page-specific Controller Script at Bottom -->
+<script src="/script/log_viewer.js"></script>

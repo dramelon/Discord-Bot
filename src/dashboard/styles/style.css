@@ -1,0 +1,1173 @@
+/* ==========================================================================
+   Base Design System (Midnight Navy & Indigo/Violet Accents)
+   ========================================================================== */
+:root {
+	/* Backgrounds & Canvas */
+	--bg-primary: #090d16;
+	--bg-secondary: #0f172a;
+	--glass-bg: rgba(15, 23, 42, 0.55);
+	--glass-border: rgba(255, 255, 255, 0.08);
+	--glass-glow: rgba(99, 102, 241, 0.05);
+
+	/* Text Hierarchy */
+	--text-primary: #f8fafc;
+	--text-secondary: #94a3b8;
+	--text-muted: #64748b;
+
+	/* Accents */
+	--accent-primary: #6366f1; /* Indigo */
+	--accent-secondary: #8b5cf6; /* Violet */
+	--success: #10b981; /* Emerald */
+	--warning: #f59e0b; /* Amber */
+	--danger: #ef4444; /* Rose */
+	--inactive: #334155; /* Slate */
+
+	--sidebar-width: 280px;
+
+	/* Discord Profile Defaults (Fallback) */
+	--discord-bg: #1a0500;
+	--discord-primary: hsla(11, 100%, 60.8%, 1);
+	--discord-secondary: hsla(95, 100%, 50%, 1);
+	--discord-overlay: rgba(255, 255, 255, 0.08);
+	--discord-modal-bg: hsla(51, 66.7%, 80%, 1);
+	--discord-button: hsla(0, 100%, 27.5%, 1);
+	--discord-inner: #0f0200;
+}
+
+* {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+body {
+	font-family: 'Outfit', sans-serif;
+	background-color: var(--bg-primary);
+	color: var(--text-primary);
+	min-height: 100vh;
+	display: flex;
+	background-image: 
+		radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.09) 0%, transparent 40%),
+		radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.09) 0%, transparent 40%);
+	background-attachment: fixed;
+	overflow-x: hidden;
+}
+
+/* Fix for vertical stacking on layout container */
+body.portfolio-page {
+	flex-direction: column;
+	align-items: center;
+	justify-content: flex-start;
+}
+
+/* ==========================================================================
+   Header and Navigation (Common for Portfolios/Homepages)
+   ========================================================================== */
+header {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 80px;
+	display: flex;
+	align-items: center;
+	padding: 0 2.5rem;
+	z-index: 1000;
+	transition: all 0.3s ease;
+	background: rgba(9, 13, 22, 0.45);
+	backdrop-filter: blur(20px);
+	-webkit-backdrop-filter: blur(20px);
+	border-bottom: 1px solid var(--glass-border);
+}
+
+header.scrolled {
+	background: rgba(9, 13, 22, 0.8);
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.header-container {
+	width: 100%;
+	max-width: 1200px;
+	margin: 0 auto;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.brand-logo {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	font-weight: 800;
+	font-size: 1.5rem;
+	letter-spacing: -0.02em;
+	text-decoration: none;
+	color: var(--text-primary);
+}
+
+.logo-circle {
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	overflow: hidden;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(255, 255, 255, 0.05);
+}
+
+.logo-img {
+	width: 24px;
+	height: 24px;
+	object-fit: contain;
+}
+
+.nav-links {
+	display: flex;
+	align-items: center;
+	gap: 2rem;
+}
+
+.nav-link {
+	color: var(--text-secondary);
+	text-decoration: none;
+	font-weight: 500;
+	transition: color 0.2s ease;
+}
+
+.nav-link:hover, .nav-link.active {
+	color: var(--accent-primary);
+}
+
+.header-cta-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.65rem 1.25rem;
+	background: var(--accent-primary);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	color: #ffffff;
+	text-decoration: none;
+	font-weight: 700;
+	border-radius: 12px;
+	font-size: 0.85rem;
+	transition: all 0.3s ease;
+	box-shadow: 0 4px 15px rgba(99, 102, 241, 0.25);
+}
+
+.header-cta-btn:hover {
+	transform: translateY(-1px);
+	filter: brightness(1.1);
+	box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+}
+
+.header-cta-btn:active {
+	transform: translateY(0);
+}
+
+@media (max-width: 768px) {
+	.nav-links {
+		display: none; /* Hide nav links on mobile */
+	}
+}
+
+/* ==========================================================================
+   Discord Bot Homepage (home.html) Specific Styles
+   ========================================================================== */
+.hero-container {
+	width: 100%;
+	min-height: 100vh;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	position: relative;
+	padding-top: 80px; /* Offset for fixed header */
+}
+
+.hero {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	padding: 2rem;
+	max-width: 800px;
+	margin: 0 auto;
+	position: relative;
+	z-index: 5;
+}
+
+.hero-badge {
+	background: rgba(99, 102, 241, 0.08);
+	border: 1px solid rgba(99, 102, 241, 0.2);
+	padding: 0.4rem 1rem;
+	border-radius: 20px;
+	font-size: 0.8rem;
+	font-weight: 600;
+	color: var(--accent-primary);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	margin-bottom: 1.5rem;
+}
+
+.hero h1 {
+	font-size: 3.5rem;
+	font-weight: 800;
+	letter-spacing: -0.03em;
+	line-height: 1.1;
+	margin-bottom: 1.5rem;
+	background: linear-gradient(135deg, var(--text-primary) 30%, var(--text-secondary) 100%);
+	-webkit-background-clip: text;
+	background-clip: text;
+	-webkit-text-fill-color: transparent;
+}
+
+.hero p {
+	font-size: 1.15rem;
+	line-height: 1.6;
+	color: var(--text-secondary);
+	margin-bottom: 2.5rem;
+}
+
+.cta-button {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 1rem 2rem;
+	background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+	color: #ffffff;
+	text-decoration: none;
+	font-weight: 600;
+	border-radius: 14px;
+	font-size: 1.05rem;
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cta-button:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 15px 30px -5px rgba(99, 102, 241, 0.6);
+	filter: brightness(1.1);
+}
+
+.cta-button:active {
+	transform: translateY(0);
+}
+
+.section-divider {
+	height: 1px;
+	background: radial-gradient(circle, var(--glass-border) 0%, transparent 70%);
+	width: 100%;
+	margin-top: 4rem;
+	margin-bottom: 6rem;
+}
+
+.features-section {
+	width: 100%;
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 4rem 2rem;
+}
+
+.features-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+	gap: 1.5rem;
+}
+
+.feature-card {
+	background: var(--glass-bg);
+	border: 1px solid var(--glass-border);
+	border-radius: 18px;
+	padding: 2rem;
+	display: flex;
+	flex-direction: column;
+	gap: 0.85rem;
+	transition: all 0.3s ease;
+	backdrop-filter: blur(16px);
+	-webkit-backdrop-filter: blur(16px);
+}
+
+.feature-card:hover {
+	transform: translateY(-4px);
+	border-color: rgba(99, 102, 241, 0.2);
+	box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+.feature-icon {
+	font-size: 1.75rem;
+	width: 46px;
+	height: 46px;
+	border-radius: 12px;
+	background: rgba(255, 255, 255, 0.02);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--accent-primary);
+	border: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+.feature-card h3 {
+	font-size: 1.15rem;
+	font-weight: 600;
+	color: var(--text-primary);
+}
+
+.feature-card p {
+	font-size: 0.9rem;
+	line-height: 1.5;
+	color: var(--text-secondary);
+}
+
+.commands-section {
+	width: 100%;
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 4rem 2rem;
+}
+
+.section-heading {
+	font-size: 2.25rem;
+	font-weight: 800;
+	text-align: center;
+	margin-bottom: 0.75rem;
+	background: linear-gradient(135deg, var(--text-primary) 30%, var(--text-secondary) 100%);
+	-webkit-background-clip: text;
+	background-clip: text;
+	-webkit-text-fill-color: transparent;
+}
+
+.section-subheading {
+	font-size: 1.05rem;
+	color: var(--text-secondary);
+	text-align: center;
+	margin-bottom: 3.5rem;
+}
+
+.commands-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+	gap: 1.5rem;
+	align-items: start;
+}
+
+.command-card {
+	background: var(--glass-bg);
+	border: 1px solid var(--glass-border);
+	border-radius: 20px;
+	padding: 1.5rem;
+	cursor: pointer;
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	overflow: hidden;
+	backdrop-filter: blur(16px);
+	-webkit-backdrop-filter: blur(16px);
+}
+
+.command-card:hover {
+	border-color: rgba(99, 102, 241, 0.25);
+	background: rgba(15, 23, 42, 0.6);
+	transform: translateY(-2px);
+}
+
+.command-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.command-name {
+	font-size: 1.1rem;
+	font-weight: 700;
+	color: var(--accent-primary);
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.command-name code {
+	font-family: inherit;
+	color: var(--accent-primary);
+	font-size: 1.15rem;
+}
+
+.command-chevron {
+	font-size: 0.8rem;
+	color: var(--text-muted);
+	transition: transform 0.3s ease;
+}
+
+.command-card.active {
+	border-color: rgba(99, 102, 241, 0.3);
+	background: rgba(15, 23, 42, 0.7);
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.command-card.active .command-chevron {
+	transform: rotate(180deg);
+	color: var(--text-primary);
+}
+
+.command-body {
+	max-height: 0;
+	opacity: 0;
+	overflow: hidden;
+	transition: max-height 0.3s cubic-bezier(0, 1, 0, 1), opacity 0.2s ease;
+}
+
+.command-card.active .command-body {
+	max-height: 800px;
+	opacity: 1;
+	transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+	padding-top: 1rem;
+	border-top: 1px solid rgba(255, 255, 255, 0.05);
+	margin-top: 0.75rem;
+}
+
+.command-description {
+	font-size: 0.92rem;
+	line-height: 1.6;
+	color: var(--text-secondary);
+}
+
+.command-field {
+	margin-top: 0.75rem;
+	font-size: 0.85rem;
+	background: rgba(0, 0, 0, 0.15);
+	padding: 0.75rem 1rem;
+	border-radius: 12px;
+	border-left: 3px solid var(--accent-primary);
+	box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.field-name {
+	font-weight: 700;
+	color: var(--text-primary);
+	text-transform: uppercase;
+	font-size: 0.75rem;
+	letter-spacing: 0.05em;
+	margin-bottom: 0.35rem;
+}
+
+.field-value {
+	color: var(--text-secondary);
+	line-height: 1.5;
+}
+
+.field-value code {
+	font-family: monospace;
+	background: rgba(255, 255, 255, 0.05);
+	padding: 0.1rem 0.3rem;
+	border-radius: 4px;
+	font-size: 0.8rem;
+	color: var(--text-primary);
+}
+
+footer {
+	width: 100%;
+	max-width: 1200px;
+	margin: auto auto 0 auto;
+	padding: 2.5rem 2rem;
+	text-align: center;
+	font-size: 0.8rem;
+	color: var(--text-muted);
+	border-top: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+/* ==========================================================================
+   Ethereal Noir Redesign Styles (Vanilla Translation)
+   ========================================================================== */
+.ethereal-container {
+	width: 100%;
+	max-width: 1200px;
+	margin: 120px auto 40px auto;
+	padding: 0 1.5rem;
+	display: flex;
+	flex-direction: column;
+	gap: 4rem; /* stack-lg */
+}
+
+/* Grid layout rules */
+.ethereal-hero-grid {
+	display: grid;
+	grid-template-columns: 6fr 4fr;
+	gap: 2rem;
+	align-items: start;
+	width: 100%;
+}
+
+.ethereal-social-grid {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 1.5rem;
+	width: 100%;
+}
+
+.ethereal-skills-grid {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 1.5rem;
+	width: 100%;
+}
+
+@media (max-width: 992px) {
+	.ethereal-hero-grid {
+		grid-template-columns: 1fr;
+	}
+	.ethereal-skills-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}
+
+@media (max-width: 768px) {
+	.ethereal-social-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+@media (max-width: 480px) {
+	.ethereal-skills-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* Typography styles */
+.text-headline-xl {
+	font-family: 'Hanken Grotesk', sans-serif;
+	font-size: 3rem;
+	font-weight: 800;
+	line-height: 1.1;
+	letter-spacing: -0.02em;
+	color: var(--text-primary);
+}
+
+.text-headline-lg {
+	font-family: 'Hanken Grotesk', sans-serif;
+	font-size: 2rem;
+	font-weight: 700;
+	line-height: 1.2;
+	letter-spacing: -0.01em;
+	color: var(--text-primary);
+}
+
+.text-headline-md {
+	font-family: 'Hanken Grotesk', sans-serif;
+	font-size: 1.5rem;
+	font-weight: 600;
+	line-height: 1.3;
+	color: var(--text-primary);
+}
+
+.text-body-lg {
+	font-family: 'Hanken Grotesk', sans-serif;
+	font-size: 1.125rem;
+	font-weight: 400;
+	line-height: 1.6;
+	color: var(--text-primary);
+}
+
+.text-body-md {
+	font-family: 'Hanken Grotesk', sans-serif;
+	font-size: 1rem;
+	font-weight: 400;
+	line-height: 1.6;
+	color: var(--text-primary);
+}
+
+.text-label-md {
+	font-family: 'JetBrains Mono', monospace;
+	font-size: 0.875rem;
+	font-weight: 500;
+	line-height: 1.4;
+	letter-spacing: 0.05em;
+}
+
+@media (max-width: 768px) {
+	.text-headline-xl {
+		font-size: 2.25rem;
+	}
+}
+
+/* Glass card component */
+.glass-card {
+	background: var(--glass-bg);
+	backdrop-filter: blur(20px);
+	-webkit-backdrop-filter: blur(20px);
+	border: 1px solid var(--glass-border);
+	border-radius: 2rem;
+	transition: transform 0.3s ease, border-color 0.3s ease;
+	overflow: hidden;
+}
+
+.glass-card:hover {
+	border-color: rgba(99, 102, 241, 0.35); /* Glow using indigo */
+}
+
+/* Ethereal Redesign: Profile Card Details */
+.ethereal-profile-card {
+	display: flex;
+	flex-direction: column;
+}
+
+.ethereal-banner {
+	height: 192px; /* h-48 */
+	width: 100%;
+	background-size: cover;
+	background-position: center;
+	position: relative;
+}
+
+.ethereal-banner-overlay {
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(to top, var(--bg-primary) 0%, transparent 100%);
+}
+
+.ethereal-profile-content {
+	padding: 0 2rem 2rem 2rem;
+	margin-top: -4rem; /* offset avatar */
+	position: relative;
+	z-index: 10;
+	display: flex;
+	flex-direction: column;
+	gap: 1.5rem;
+}
+
+.ethereal-avatar-wrapper {
+	position: relative;
+	display: inline-block;
+	width: fit-content;
+}
+
+.ethereal-avatar {
+	width: 128px; /* w-32 */
+	height: 128px;
+	border-radius: 50%;
+	border: 4px solid var(--bg-primary);
+	background: var(--bg-secondary);
+	object-fit: cover;
+	box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15); /* ring-primary/20 */
+}
+
+.ethereal-avatar-status {
+	position: absolute;
+	bottom: 8px;
+	right: 8px;
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	border: 4px solid var(--bg-primary);
+	background-color: var(--inactive);
+}
+
+.ethereal-avatar-status.online { background-color: #4ade80; }
+.ethereal-avatar-status.idle { background-color: #faa81a; }
+.ethereal-avatar-status.dnd { background-color: #f23f43; }
+.ethereal-avatar-status.offline { background-color: #747f8d; }
+
+/* Custom Status Cloud Bubble */
+.ethereal-custom-status-bubble {
+	position: absolute;
+	left: calc(100% + 12px);
+	bottom: 24px;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	background: #f4fbf4;
+	color: #1c1e21;
+	padding: 8px 16px;
+	border-radius: 20px;
+	font-size: 0.95rem;
+	font-weight: 500;
+	box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+	white-space: nowrap;
+	z-index: 5;
+	animation: popInBubble 0.3s ease-out;
+}
+
+.ethereal-custom-status-bubble::before {
+	content: '';
+	position: absolute;
+	left: -8px;
+	bottom: 12px;
+	width: 12px;
+	height: 12px;
+	background: #f4fbf4;
+	border-radius: 50%;
+}
+
+.ethereal-custom-status-bubble::after {
+	content: '';
+	position: absolute;
+	left: -16px;
+	bottom: 6px;
+	width: 7px;
+	height: 7px;
+	background: #f4fbf4;
+	border-radius: 50%;
+}
+
+.ethereal-custom-status-bubble .status-emoji {
+	width: 20px;
+	height: 20px;
+	object-fit: contain;
+	vertical-align: middle;
+}
+
+@keyframes popInBubble {
+	0% {
+		opacity: 0;
+		transform: scale(0.8) translateY(10px);
+	}
+	100% {
+		opacity: 1;
+		transform: scale(1) translateY(0);
+	}
+}
+
+.ethereal-badge-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	align-items: center;
+	background: rgba(0, 0, 0, 0.25);
+	padding: 6px 12px;
+	border-radius: 8px;
+	width: fit-content;
+	border: 1px solid var(--glass-border);
+}
+
+.ethereal-badge {
+	font-size: 1.25rem;
+	color: var(--text-secondary);
+	display: flex;
+	align-items: center;
+}
+
+.ethereal-badge.active-primary { color: var(--accent-primary); }
+.ethereal-badge.active-secondary { color: var(--accent-secondary); }
+
+.ethereal-clan-badge {
+	color: var(--text-secondary);
+	font-size: 0.78rem;
+	padding: 2px 8px;
+	background: rgba(255, 255, 255, 0.05);
+	border-radius: 6px;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	text-transform: lowercase;
+}
+
+.ethereal-clan-badge img {
+	width: 12px;
+	height: 12px;
+	object-fit: contain;
+}
+
+/* About me quotes block */
+.ethereal-bio-quote {
+	color: var(--text-primary);
+	line-height: 1.6;
+	border-left: 2px solid rgba(99, 102, 241, 0.3); /* indigo line */
+	padding-left: 1rem;
+	font-style: italic;
+	white-space: pre-line;
+}
+
+.ethereal-bio-quote img {
+	width: 16px;
+	height: 16px;
+	vertical-align: middle;
+}
+
+/* Discord Status Display Panel */
+.ethereal-status-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1rem;
+	margin-top: 0.5rem;
+}
+
+.ethereal-status-pill {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 0.85rem;
+	color: var(--text-secondary);
+	opacity: 0.5;
+	transition: opacity 0.3s;
+}
+
+.ethereal-status-pill.active {
+	opacity: 1;
+	font-weight: 600;
+	color: var(--text-primary);
+}
+
+.ethereal-status-dot {
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+	background-color: var(--inactive);
+}
+
+.ethereal-status-dot.online { background-color: #4ade80; }
+.ethereal-status-dot.idle { background-color: #faa81a; }
+.ethereal-status-dot.dnd { background-color: #f23f43; }
+.ethereal-status-dot.offline { background-color: #747f8d; }
+
+/* Dynamic layout content widgets */
+.ethereal-profile-footer {
+	margin-top: 1.5rem;
+}
+
+.ethereal-btn-primary {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	width: fit-content;
+	padding: 0.85rem 1.75rem;
+	background: var(--accent-primary);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	color: #ffffff;
+	font-weight: 700;
+	font-size: 0.95rem;
+	border-radius: 1rem;
+	cursor: pointer;
+	text-decoration: none;
+	transition: all 0.2s;
+	box-shadow: 0 4px 15px rgba(99, 102, 241, 0.25);
+}
+
+.ethereal-btn-primary:hover {
+	filter: brightness(1.1);
+	box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
+}
+
+/* Spotify & Application Panel */
+.ethereal-spotify-art {
+	width: 128px;
+	height: 128px;
+	border-radius: 1rem;
+	overflow: hidden;
+	position: relative;
+	box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+	flex-shrink: 0;
+}
+
+.ethereal-spotify-art img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	animation: spin-record 20s linear infinite;
+	animation-play-state: paused;
+}
+
+.ethereal-spotify-art img.playing {
+	animation-play-state: running;
+}
+
+/* Timeline progress bar shine */
+.ethereal-progress-bar {
+	width: 100%;
+	height: 6px;
+	background: rgba(255, 255, 255, 0.1);
+	border-radius: 999px;
+	overflow: hidden;
+}
+
+.ethereal-progress-fill {
+	height: 100%;
+	background: var(--accent-primary);
+	width: 0%;
+	position: relative;
+	border-radius: 999px;
+	transition: width 1s linear;
+}
+
+.progress-bar-shine {
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+	background-size: 200% 100%;
+	animation: shine-animation 2s infinite linear;
+}
+
+@keyframes shine-animation {
+	0% { background-position: -200% 0; }
+	100% { background-position: 200% 0; }
+}
+
+/* Level dynamic card widget */
+.ethereal-status-widget {
+	padding: 1.5rem;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	text-decoration: none;
+	color: inherit;
+}
+
+.ethereal-status-icon-wrapper {
+	width: 48px;
+	height: 48px;
+	border-radius: 0.75rem;
+	background: rgba(255, 255, 255, 0.04);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--accent-primary);
+	border: 1px solid var(--glass-border);
+}
+
+.live-indicator {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.live-dot {
+	width: 8px;
+	height: 8px;
+	background-color: #4ade80;
+	border-radius: 50%;
+	animation: pulse-animation 2s infinite;
+}
+
+@keyframes pulse-animation {
+	0% { transform: scale(0.9); opacity: 0.6; }
+	50% { transform: scale(1.15); opacity: 1; }
+	100% { transform: scale(0.9); opacity: 0.6; }
+}
+
+/* Local Time Widget */
+.local-time-card {
+	padding: 2rem;
+	display: flex;
+	flex-direction: column;
+	gap: 1.5rem;
+}
+
+.time-row {
+	font-size: 2.5rem;
+	font-weight: 700;
+	letter-spacing: -0.04em;
+	color: var(--text-primary);
+	font-family: 'JetBrains Mono', monospace;
+}
+
+.time-row span {
+	font-size: 1.25rem;
+	color: var(--accent-primary);
+	margin-left: 0.25rem;
+}
+
+.calendar-grid {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	gap: 0.5rem;
+	text-align: center;
+	font-size: 0.75rem;
+	border-top: 1px solid rgba(255, 255, 255, 0.05);
+	padding-top: 1rem;
+}
+
+.calendar-day-header {
+	opacity: 0.5;
+	font-weight: 700;
+}
+
+.calendar-day-cell {
+	padding: 4px;
+	border-radius: 6px;
+	font-weight: 500;
+}
+
+.calendar-day-cell.active-day {
+	background: rgba(99, 102, 241, 0.15);
+	border: 1px solid rgba(99, 102, 241, 0.3);
+	color: var(--accent-primary);
+	font-weight: 700;
+}
+
+.calendar-day-cell.inactive-day {
+	opacity: 0.3;
+}
+
+/* Social Connection grid items */
+.ethereal-social-card {
+	padding: 2rem;
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+	text-decoration: none;
+	color: inherit;
+}
+
+.ethereal-social-icon {
+	width: 56px;
+	height: 56px;
+	border-radius: 1rem;
+	background: rgba(255, 255, 255, 0.04);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.3s ease;
+	color: var(--text-primary);
+}
+
+.ethereal-social-icon svg {
+	width: 32px;
+	height: 32px;
+	fill: currentColor;
+}
+
+.ethereal-social-card:hover .ethereal-social-icon {
+	background: var(--accent-primary);
+	color: #ffffff;
+}
+
+/* Social card discord hover */
+.ethereal-social-card.discord-social:hover .ethereal-social-icon {
+	background: #5865F2;
+}
+
+/* Social card email/twitter hover */
+.ethereal-social-card.twitter-social:hover .ethereal-social-icon {
+	background: var(--accent-secondary);
+}
+
+/* Expertise grid item chips */
+.skill-chip {
+	padding: 0.25rem 0.75rem;
+	background: rgba(99, 102, 241, 0.08);
+	border: 1px solid rgba(99, 102, 241, 0.18);
+	border-radius: 6px;
+	font-family: 'JetBrains Mono', monospace;
+	font-size: 0.75rem;
+	color: var(--text-secondary);
+}
+
+/* Glowing backgrounds */
+.bg-glowing-orb {
+	position: fixed;
+	width: 500px;
+	height: 500px;
+	border-radius: 50%;
+	filter: blur(140px);
+	pointer-events: none;
+	z-index: -1;
+	opacity: 0.3;
+}
+
+.bg-glowing-orb.primary {
+	top: -10%;
+	left: -10%;
+	background: radial-gradient(circle, var(--accent-primary) 0%, transparent 80%);
+}
+
+.bg-glowing-orb.secondary {
+	bottom: -10%;
+	right: -10%;
+	background: radial-gradient(circle, var(--accent-secondary) 0%, transparent 80%);
+}
+
+/* Reverted default badge icons */
+.discord-badge-icon {
+	width: 22px;
+	height: 22px;
+	object-fit: contain;
+}
+
+/* Status description panel */
+.ethereal-status-desc {
+	background: rgba(255, 255, 255, 0.02);
+	border: 1px solid rgba(255, 255, 255, 0.05);
+	border-radius: 0.75rem;
+	padding: 0.75rem 1rem;
+	font-size: 0.85rem;
+	color: var(--text-secondary);
+	line-height: 1.5;
+	margin-top: 0.5rem;
+	border-left: 3px solid var(--accent-primary);
+	transition: all 0.3s ease;
+}
+
+/* 24-hour day schedule slider */
+.timeline-24h-wrapper {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	margin-top: 1rem;
+	padding-top: 1rem;
+	border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.timeline-24h-bar {
+	display: flex;
+	width: 100%;
+	gap: 3px;
+	height: 12px;
+	background: rgba(255, 255, 255, 0.03);
+	border-radius: 4px;
+	padding: 2px;
+}
+
+.timeline-hour-block {
+	flex: 1;
+	height: 100%;
+	border-radius: 2px;
+	background: rgba(99, 102, 241, 0.25); /* Active/Awake HSL */
+	transition: background 0.3s, box-shadow 0.3s;
+}
+
+.timeline-hour-block.sleep-hour {
+	background: #1e293b; /* Dark grey for sleep */
+	opacity: 0.5;
+}
+
+.timeline-hour-block.current-hour {
+	background: var(--accent-primary) !important;
+	box-shadow: 0 0 10px var(--accent-primary);
+	opacity: 1 !important;
+}
+
+.timeline-24h-labels {
+	display: flex;
+	justify-content: space-between;
+	font-size: 0.7rem;
+	color: var(--text-muted);
+	padding: 0 2px;
+}
+
+.timeline-24h-desc {
+	font-size: 0.78rem;
+	color: var(--text-secondary);
+	margin-top: 0.25rem;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+/* Calendar Date Colors */
+.sunday-color { color: #ef4444 !important; }
+.monday-color { color: #eab308 !important; }
+.tuesday-color { color: #f97316 !important; }
+.wednesday-color { color: #22c55e !important; }
+.thursday-color { color: #06b6d4 !important; }
+.friday-color { color: #3b82f6 !important; }
+.saturday-color { color: #8b5cf6 !important; }
+
+/* Calendar cells default white text */
+.calendar-day-cell {
+	color: #ffffff !important;
+}
+
+/* Dim cells of dates belonging to other months */
+.calendar-day-cell.other-month {
+	color: rgba(255, 255, 255, 0.28) !important;
+	background: transparent !important;
+	box-shadow: none !important;
+}

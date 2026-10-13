@@ -1,0 +1,373 @@
+/* ==========================================================================
+   Fluffingiously Dragooon - My Server Stylesheet
+   Discord Server Guilds, Presence Badges & Integration Management
+   Scoped to views/bot/my_server.html
+   ========================================================================== */
+
+/* ==========================================================================
+   1. My Server Page Container & Layout
+   ========================================================================== */
+.my-server-container {
+	display: flex;
+	flex-direction: column;
+	gap: 2rem;
+	width: 100%;
+	max-width: 1400px;
+	margin: 0 auto;
+	padding-bottom: 2rem;
+}
+
+/* Server Toolbar */
+.server-toolbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1.25rem;
+	flex-wrap: wrap;
+	margin-top: 0.5rem;
+	width: 100%;
+}
+
+.server-search-box {
+	display: flex;
+	align-items: center;
+	gap: 0.65rem;
+	background: var(--bg-surface);
+	border: 1px solid var(--border-light);
+	border-radius: var(--radius-md);
+	padding: 0.65rem 1rem;
+	min-width: 260px;
+	flex-grow: 1;
+	max-width: 420px;
+	transition: all var(--transition-base);
+}
+
+.server-search-box:focus-within {
+	border-color: var(--primary);
+	box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.12);
+	background: var(--bg-surface-elevated);
+}
+
+.server-search-box .material-symbols-outlined {
+	color: var(--text-subtle);
+	font-size: 1.25rem;
+	flex-shrink: 0;
+}
+
+.server-search-input {
+	background: transparent;
+	border: none;
+	outline: none;
+	color: var(--text-main);
+	font-family: var(--font-main);
+	font-size: 0.9rem;
+	width: 100%;
+}
+
+.server-search-input::placeholder {
+	color: var(--text-subtle);
+}
+
+.server-filter-tabs {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+}
+
+/* Quick Stats Grid */
+.server-stats-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	gap: 1.25rem;
+}
+
+/* ==========================================================================
+   2. Section Panels
+   ========================================================================== */
+.server-section-panel {
+	background: var(--bg-surface);
+	border: 1px solid var(--border-light);
+	border-radius: var(--radius-lg);
+	padding: 1.75rem;
+	display: flex;
+	flex-direction: column;
+	gap: 1.5rem;
+	box-shadow: var(--shadow-md);
+}
+
+.server-section-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	border-bottom: 1px solid var(--border-light);
+	padding-bottom: 1rem;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+}
+
+.server-section-title {
+	display: flex;
+	align-items: center;
+	gap: 0.65rem;
+	font-size: 1.2rem;
+	font-weight: 700;
+	color: var(--text-main);
+	margin: 0;
+}
+
+.server-section-count {
+	font-size: 0.75rem;
+	font-family: var(--font-mono);
+	background: var(--bg-surface-elevated);
+	border: 1px solid var(--border-light);
+	color: var(--text-muted);
+	padding: 0.2rem 0.6rem;
+	border-radius: var(--radius-full);
+	font-weight: 600;
+}
+
+/* ==========================================================================
+   3. Server Cards & Entity Grid
+   ========================================================================== */
+.servers-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+	gap: 1.25rem;
+}
+
+.server-card {
+	background: var(--bg-surface-elevated);
+	border: 1px solid var(--border-light);
+	border-radius: var(--radius-md);
+	padding: 1.25rem;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	transition: all var(--transition-smooth);
+	position: relative;
+	overflow: hidden;
+}
+
+.server-card::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 2px;
+	background: linear-gradient(90deg, transparent, var(--border-highlight), transparent);
+	opacity: 0;
+	transition: opacity var(--transition-slow);
+}
+
+.server-card:hover {
+	transform: translateY(-2px);
+	border-color: var(--border-highlight);
+	box-shadow: 0 8px 24px -4px rgba(var(--color-black-rgb), 0.35), 0 0 16px -2px rgba(var(--color-primary-rgb), 0.08);
+	background: var(--bg-surface-variant);
+}
+
+.server-card:hover::before {
+	opacity: 1;
+}
+
+.server-meta-group {
+	display: flex;
+	align-items: center;
+	gap: 0.9rem;
+	min-width: 0;
+	flex-grow: 1;
+}
+
+/* Server Avatar / Icon */
+.server-avatar-wrap {
+	position: relative;
+	width: 50px;
+	height: 50px;
+	flex-shrink: 0;
+}
+
+.server-avatar-img {
+	width: 100%;
+	height: 100%;
+	border-radius: var(--radius-md);
+	object-fit: cover;
+	border: 1px solid var(--border-light);
+	background: var(--bg-surface);
+	display: block;
+}
+
+.server-avatar-initials {
+	width: 100%;
+	height: 100%;
+	border-radius: var(--radius-md);
+	background: linear-gradient(135deg, var(--bg-surface), var(--bg-surface-variant));
+	border: 1px solid var(--border-light);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: 700;
+	font-size: 1rem;
+	color: var(--primary);
+	font-family: var(--font-mono);
+	letter-spacing: 0.05em;
+}
+
+.server-presence-dot {
+	position: absolute;
+	bottom: -2px;
+	right: -2px;
+	width: 12px;
+	height: 12px;
+	border-radius: var(--radius-full);
+	border: 2px solid var(--bg-surface-elevated);
+	background: var(--status-online);
+}
+
+.server-presence-dot.inviteable {
+	background: var(--secondary);
+}
+
+/* Server Details */
+.server-details {
+	display: flex;
+	flex-direction: column;
+	gap: 0.35rem;
+	min-width: 0;
+}
+
+.server-name {
+	font-size: 0.95rem;
+	font-weight: 600;
+	color: var(--text-main);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	margin: 0;
+}
+
+.server-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	font-size: 0.72rem;
+	font-weight: 600;
+	border-radius: var(--radius-full);
+	padding: 0.15rem 0.55rem;
+	width: fit-content;
+}
+
+.server-badge.configured {
+	background: var(--success-container);
+	color: var(--status-online);
+	border: 1px solid var(--success-border);
+}
+
+.server-badge.needs-setup {
+	background: var(--warning-container);
+	color: var(--status-warning);
+	border: 1px solid var(--warning-border);
+}
+
+.server-badge.inviteable {
+	background: var(--secondary-container);
+	color: var(--secondary);
+	border: 1px solid var(--secondary-border);
+}
+
+.badge-dot {
+	width: 6px;
+	height: 6px;
+	border-radius: var(--radius-full);
+	background-color: currentColor;
+}
+
+/* ==========================================================================
+   4. Skeleton Card Shimmer (Loading State)
+   ========================================================================== */
+.skeleton-card {
+	background: var(--bg-surface-elevated);
+	border: 1px solid var(--border-light);
+	border-radius: var(--radius-md);
+	padding: 1.25rem;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	position: relative;
+	overflow: hidden;
+}
+
+.skeleton-shimmer {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: linear-gradient(
+		90deg,
+		transparent 0%,
+		rgba(var(--color-white-rgb), 0.04) 50%,
+		transparent 100%
+	);
+	animation: skeletonShimmer 1.6s infinite;
+}
+
+@keyframes skeletonShimmer {
+	0% { transform: translateX(-100%); }
+	100% { transform: translateX(100%); }
+}
+
+.skeleton-avatar {
+	width: 50px;
+	height: 50px;
+	border-radius: var(--radius-md);
+	background: var(--bg-surface-variant);
+	flex-shrink: 0;
+}
+
+.skeleton-lines {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	flex-grow: 1;
+}
+
+.skeleton-line {
+	height: 12px;
+	border-radius: var(--radius-xs);
+	background: var(--bg-surface-variant);
+}
+
+.skeleton-line.short {
+	width: 55%;
+}
+
+.skeleton-line.mini {
+	width: 35%;
+	height: 10px;
+}
+
+/* ==========================================================================
+   5. Responsive Adaptations
+   ========================================================================== */
+@media (max-width: 768px) {
+	.server-toolbar {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.server-search-box {
+		max-width: 100%;
+	}
+
+	.servers-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.server-section-panel {
+		padding: 1.25rem;
+	}
+}

@@ -1,0 +1,660 @@
+/* ==========================================================================
+   Fluffingiously Dragooon - Log Viewer Stylesheet
+   Obsidian Glass Terminal Theme & Diagnostic Streaming Engine
+   Scoped to views/bot/log_viewer.html
+   ========================================================================== */
+
+/* ==========================================================================
+   1. Log Viewer Page Layout & Hero Diagnostics Header
+   ========================================================================== */
+.log-viewer-container {
+	display: flex;
+	flex-direction: column;
+	gap: 1.5rem;
+	padding-bottom: 3rem;
+	width: 100%;
+	max-width: 1400px;
+	margin: 0 auto;
+}
+
+/* Hero Header Banner */
+.log-hero-banner {
+	background: linear-gradient(135deg, rgba(var(--color-surface-rgb), 0.95) 0%, rgba(var(--color-canvas-rgb), 0.98) 100%);
+	border: 1px solid var(--border-light);
+	border-radius: var(--radius-lg);
+	padding: 2rem 2.25rem;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	position: relative;
+	overflow: hidden;
+	box-shadow: var(--shadow-lg);
+}
+
+.log-hero-banner::before {
+	content: '';
+	position: absolute;
+	top: -50%;
+	right: -10%;
+	width: 400px;
+	height: 400px;
+	background: radial-gradient(circle, rgba(var(--color-secondary-rgb), 0.08) 0%, rgba(var(--color-primary-rgb), 0.05) 40%, transparent 70%);
+	pointer-events: none;
+}
+
+.log-hero-content {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	z-index: 1;
+}
+
+.log-hero-tag {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	font-family: var(--font-mono);
+	font-size: 0.72rem;
+	font-weight: 700;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--secondary);
+	background: var(--secondary-container);
+	padding: 0.25rem 0.65rem;
+	border-radius: var(--radius-full);
+	width: fit-content;
+	border: 1px solid var(--secondary-border);
+}
+
+.log-hero-title {
+	font-family: var(--font-main);
+	font-size: 2rem;
+	font-weight: 800;
+	color: var(--text-main);
+	margin: 0;
+	letter-spacing: -0.02em;
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+.log-hero-title .material-symbols-outlined {
+	font-size: 2.25rem;
+	color: var(--primary);
+}
+
+.log-hero-desc {
+	font-size: 0.92rem;
+	color: var(--text-muted);
+	margin: 0;
+	max-width: 650px;
+	line-height: 1.5;
+}
+
+.log-hero-status-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.6rem;
+	padding: 0.6rem 1.15rem;
+	border-radius: var(--radius-full);
+	background: rgba(var(--color-surface-rgb), 0.9);
+	border: 1px solid var(--border-color);
+	font-family: var(--font-mono);
+	font-size: 0.8rem;
+	font-weight: 600;
+	color: var(--text-main);
+	box-shadow: var(--shadow-md);
+	z-index: 1;
+	white-space: nowrap;
+}
+
+/* ==========================================================================
+   2. Overview Metrics Grid
+   ========================================================================== */
+.log-stats-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+	gap: 1.25rem;
+}
+
+.log-stat-card {
+	background: var(--bg-surface);
+	border: 1px solid var(--border-light);
+	border-radius: var(--radius-lg);
+	padding: 1.25rem 1.5rem;
+	display: flex;
+	align-items: center;
+	gap: 1.1rem;
+	box-shadow: 0 4px 14px rgba(var(--color-black-rgb), 0.15);
+	transition: transform var(--transition-smooth), border-color var(--transition-smooth), box-shadow var(--transition-smooth);
+}
+
+.log-stat-card:hover {
+	transform: translateY(-2px);
+	border-color: var(--border-highlight);
+	box-shadow: 0 6px 20px rgba(var(--color-black-rgb), 0.3);
+}
+
+.log-stat-icon-box {
+	width: 46px;
+	height: 46px;
+	border-radius: var(--radius-md);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 1.45rem;
+	flex-shrink: 0;
+}
+
+.log-stat-icon-box.primary {
+	background: var(--primary-container);
+	color: var(--primary);
+	border: 1px solid var(--primary-border);
+}
+
+.log-stat-icon-box.secondary {
+	background: var(--secondary-container);
+	color: var(--secondary);
+	border: 1px solid var(--secondary-border);
+}
+
+.log-stat-icon-box.warning {
+	background: var(--warning-container);
+	color: var(--status-warning);
+	border: 1px solid var(--warning-border);
+}
+
+.log-stat-icon-box.danger {
+	background: var(--error-container);
+	color: var(--status-error);
+	border: 1px solid var(--error-border);
+}
+
+.log-stat-data {
+	display: flex;
+	flex-direction: column;
+	gap: 0.18rem;
+}
+
+.log-stat-value {
+	font-size: 1.45rem;
+	font-weight: 700;
+	font-family: var(--font-mono);
+	color: var(--text-main);
+	line-height: 1.15;
+	letter-spacing: -0.02em;
+}
+
+.log-stat-label {
+	font-size: 0.75rem;
+	color: var(--text-subtle);
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+/* ==========================================================================
+   3. Log Toolbar, Search & Filter Controls
+   ========================================================================== */
+.log-toolbar {
+	background: var(--bg-surface);
+	border: 1px solid var(--border-light);
+	border-radius: var(--radius-md);
+	padding: 1rem 1.25rem;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 1rem;
+	justify-content: space-between;
+	align-items: center;
+	box-shadow: var(--shadow-md);
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.log-toolbar-left {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 1rem;
+	flex: 1;
+	min-width: 280px;
+}
+
+.log-toolbar-right {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.65rem;
+}
+
+/* Search Input Wrapper */
+.log-search-wrapper {
+	position: relative;
+	display: flex;
+	align-items: center;
+	min-width: 240px;
+	flex: 1;
+	max-width: 400px;
+}
+
+.log-search-icon {
+	position: absolute;
+	left: 0.85rem;
+	font-size: 1.15rem;
+	color: var(--text-subtle);
+	pointer-events: none;
+}
+
+.log-search-input {
+	width: 100%;
+	background: var(--bg-surface-elevated);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-sm);
+	padding: 0.55rem 2rem 0.55rem 2.5rem;
+	color: var(--text-main);
+	font-family: var(--font-main);
+	font-size: 0.85rem;
+	outline: none;
+	transition: all var(--transition-base);
+	box-sizing: border-box;
+}
+
+.log-search-input:focus {
+	border-color: var(--primary);
+	box-shadow: 0 0 0 2px rgba(var(--color-primary-rgb), 0.15);
+	background: var(--bg-surface-variant);
+}
+
+.log-search-clear {
+	position: absolute;
+	right: 0.65rem;
+	background: none;
+	border: none;
+	color: var(--text-subtle);
+	font-size: 1.1rem;
+	cursor: pointer;
+	padding: 0;
+	display: none;
+	line-height: 1;
+}
+
+.log-search-clear:hover {
+	color: var(--text-main);
+}
+
+/* Filter Chips */
+.log-filter-chips {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	background: var(--bg-surface-elevated);
+	padding: 0.25rem;
+	border-radius: var(--radius-sm);
+	border: 1px solid var(--border-light);
+}
+
+.log-filter-btn {
+	background: transparent;
+	border: none;
+	color: var(--text-muted);
+	font-family: var(--font-mono);
+	font-size: 0.75rem;
+	font-weight: 600;
+	padding: 0.35rem 0.75rem;
+	border-radius: 0.35rem;
+	cursor: pointer;
+	transition: all var(--transition-base);
+	display: flex;
+	align-items: center;
+	gap: 0.35rem;
+}
+
+.log-filter-btn:hover {
+	color: var(--text-main);
+	background: rgba(var(--color-white-rgb), 0.05);
+}
+
+.log-filter-btn.active {
+	background: var(--primary);
+	color: var(--bg-canvas);
+	font-weight: 700;
+	box-shadow: 0 2px 8px rgba(var(--color-primary-rgb), 0.25);
+}
+
+.log-filter-btn .filter-count {
+	font-size: 0.68rem;
+	opacity: 0.85;
+	padding: 0.1rem 0.35rem;
+	border-radius: var(--radius-full);
+	background: rgba(var(--color-black-rgb), 0.25);
+}
+
+.log-filter-btn.active .filter-count {
+	background: rgba(var(--color-black-rgb), 0.2);
+	color: var(--bg-canvas);
+}
+
+/* ==========================================================================
+   4. Obsidian Glass Terminal Window Component
+   ========================================================================== */
+.terminal-window {
+	background: var(--bg-terminal);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-lg);
+	box-shadow: var(--shadow-xl), inset 0 1px 0 rgba(var(--color-white-rgb), 0.05);
+	display: flex;
+	flex-direction: column;
+	min-height: 580px;
+	height: 680px;
+	overflow: hidden;
+	position: relative;
+	transition: all var(--transition-slow);
+}
+
+/* Fullscreen Mode */
+.terminal-window.is-fullscreen {
+	position: fixed;
+	top: 1rem;
+	left: 1rem;
+	right: 1rem;
+	bottom: 1rem;
+	height: calc(100vh - 2rem);
+	z-index: 9999;
+	border-color: var(--primary);
+	box-shadow: 0 0 0 1000px rgba(var(--color-black-rgb), 0.85), 0 25px 60px rgba(var(--color-black-rgb), 0.8);
+}
+
+/* Terminal Header */
+.terminal-header-bar {
+	background: var(--bg-terminal-header);
+	border-bottom: 1px solid var(--border-light);
+	padding: 0.75rem 1.25rem;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	user-select: none;
+	box-sizing: border-box;
+}
+
+.terminal-header-left {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+}
+
+.terminal-dots-wrapper {
+	display: flex;
+	align-items: center;
+	gap: 0.45rem;
+}
+
+.mac-dot {
+	width: 11px;
+	height: 11px;
+	border-radius: var(--radius-full);
+	display: inline-block;
+}
+
+.dot-close {
+	background: rgb(var(--mac-dot-close-rgb));
+	border: 1px solid rgb(var(--mac-dot-close-border-rgb));
+}
+
+.dot-minimize {
+	background: rgb(var(--mac-dot-min-rgb));
+	border: 1px solid rgb(var(--mac-dot-min-border-rgb));
+}
+
+.dot-zoom {
+	background: rgb(var(--mac-dot-zoom-rgb));
+	border: 1px solid rgb(var(--mac-dot-zoom-border-rgb));
+}
+
+.terminal-title-text {
+	font-family: var(--font-mono);
+	font-size: 0.78rem;
+	color: var(--text-subtle);
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+}
+
+.terminal-title-text .material-symbols-outlined {
+	font-size: 0.95rem;
+	color: var(--primary);
+}
+
+.terminal-header-right {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+.terminal-info-badge {
+	font-family: var(--font-mono);
+	font-size: 0.72rem;
+	color: var(--text-subtle);
+	background: rgba(var(--color-white-rgb), 0.04);
+	padding: 0.25rem 0.6rem;
+	border-radius: var(--radius-sm);
+	border: 1px solid rgba(var(--color-white-rgb), 0.05);
+}
+
+/* Terminal Body Screen & Custom Scrollbar */
+.terminal-screen {
+	flex: 1;
+	overflow-y: auto;
+	overflow-x: auto;
+	padding: 1rem 1.25rem;
+	font-family: var(--font-mono);
+	font-size: 0.82rem;
+	line-height: 1.65;
+	color: var(--text-terminal);
+	background: var(--bg-terminal);
+	scroll-behavior: smooth;
+	box-sizing: border-box;
+}
+
+.terminal-screen::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+.terminal-screen::-webkit-scrollbar-track {
+	background: rgba(var(--color-black-rgb), 0.2);
+}
+
+.terminal-screen::-webkit-scrollbar-thumb {
+	background: rgba(var(--color-border-rgb), 0.5);
+	border-radius: var(--radius-xs);
+}
+
+.terminal-screen::-webkit-scrollbar-thumb:hover {
+	background: rgba(var(--color-primary-rgb), 0.3);
+}
+
+/* ==========================================================================
+   5. Terminal Log Lines Presentation & Badges
+   ========================================================================== */
+.log-row {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.85rem;
+	padding: 0.18rem 0.4rem;
+	border-radius: var(--radius-xs);
+	transition: background var(--transition-fast);
+	word-break: break-all;
+	white-space: pre-wrap;
+}
+
+.log-row:hover {
+	background: rgba(var(--color-white-rgb), 0.03);
+}
+
+.log-row.is-highlighted {
+	background: rgba(var(--color-primary-rgb), 0.08);
+	border-left: 2px solid var(--primary);
+}
+
+/* Line Number Gutter */
+.log-line-num {
+	color: rgb(var(--color-terminal-gutter-rgb));
+	font-size: 0.75rem;
+	user-select: none;
+	width: 36px;
+	text-align: right;
+	flex-shrink: 0;
+	line-height: 1.65;
+}
+
+/* Log Tag Badges */
+.log-tag {
+	font-size: 0.68rem;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	padding: 0.05rem 0.45rem;
+	border-radius: var(--radius-xs);
+	flex-shrink: 0;
+	text-transform: uppercase;
+	line-height: 1.5;
+	margin-top: 2px;
+}
+
+.log-tag-info {
+	background: rgba(var(--color-info-rgb), 0.12);
+	color: var(--info);
+	border: 1px solid rgba(var(--color-info-rgb), 0.25);
+}
+
+.log-tag-warn {
+	background: rgba(var(--color-warning-rgb), 0.14);
+	color: rgb(var(--color-warning-light-rgb));
+	border: 1px solid rgba(var(--color-warning-rgb), 0.3);
+}
+
+.log-tag-error {
+	background: rgba(var(--color-danger-rgb), 0.16);
+	color: rgb(var(--color-danger-light-rgb));
+	border: 1px solid rgba(var(--color-danger-rgb), 0.35);
+	font-weight: 800;
+}
+
+.log-tag-debug {
+	background: rgba(var(--color-debug-rgb), 0.12);
+	color: rgb(var(--color-debug-light-rgb));
+	border: 1px solid rgba(var(--color-debug-rgb), 0.25);
+}
+
+.log-timestamp {
+	color: rgb(var(--color-terminal-timestamp-rgb));
+	font-size: 0.76rem;
+	flex-shrink: 0;
+	user-select: none;
+}
+
+/* Log Text & State Specific Tinting */
+.log-text {
+	flex: 1;
+	color: var(--text-main);
+	line-height: 1.65;
+}
+
+.log-row-error .log-text {
+	color: rgb(var(--log-text-error-rgb));
+}
+
+.log-row-warn .log-text {
+	color: rgb(var(--log-text-warn-rgb));
+}
+
+.log-row-debug .log-text {
+	color: rgb(var(--log-text-debug-rgb));
+}
+
+/* Match Highlight */
+mark.log-search-match {
+	background: rgba(var(--log-highlight-bg-rgb), 0.3);
+	color: rgb(var(--log-highlight-bg-rgb));
+	padding: 0 0.2rem;
+	border-radius: 2px;
+}
+
+/* Terminal Screen Empty State */
+.terminal-empty-state {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	gap: 1rem;
+	color: var(--text-subtle);
+	text-align: center;
+	padding: 3rem 1.5rem;
+}
+
+.terminal-empty-icon {
+	font-size: 3.5rem;
+	color: var(--bg-surface-variant);
+}
+
+.terminal-empty-title {
+	font-size: 1.1rem;
+	font-weight: 700;
+	color: var(--text-muted);
+	margin: 0;
+}
+
+.terminal-empty-desc {
+	font-size: 0.85rem;
+	color: var(--text-subtle);
+	max-width: 420px;
+	margin: 0;
+	line-height: 1.5;
+}
+
+/* ==========================================================================
+   6. Responsive Adaptations
+   ========================================================================== */
+@media (max-width: 900px) {
+	.log-hero-banner {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 1.25rem;
+		padding: 1.5rem;
+	}
+
+	.log-hero-title {
+		font-size: 1.6rem;
+	}
+
+	.log-toolbar {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.log-toolbar-left,
+	.log-toolbar-right {
+		width: 100%;
+		justify-content: space-between;
+	}
+
+	.log-search-wrapper {
+		max-width: 100%;
+	}
+
+	.terminal-window {
+		height: 520px;
+	}
+}
+
+@media (max-width: 600px) {
+	.log-filter-chips {
+		overflow-x: auto;
+		width: 100%;
+	}
+
+	.log-line-num,
+	.log-timestamp {
+		display: none;
+	}
+}

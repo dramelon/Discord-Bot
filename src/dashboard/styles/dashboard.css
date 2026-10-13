@@ -1,0 +1,640 @@
+/* ==========================================================================
+   Fluffingiously Dragooon - Bot Status Dashboard Stylesheet
+   Scoped strictly to src/dashboard/views/bot/index.html (Status & Diagnostics)
+   Unified, Token-Driven CSS Architecture
+   ========================================================================== */
+
+/* ==========================================================================
+   1. Header Actions & Edit Layout Controls
+   ========================================================================== */
+.dashboard-header-actions {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+.edit-layout-actions {
+	display: none;
+	align-items: center;
+	gap: 0.65rem;
+}
+
+.edit-active .edit-layout-actions {
+	display: flex;
+}
+
+.edit-active #editLayoutBtn {
+	display: none !important;
+}
+
+/* Category Sections */
+.dashboard-category-section {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+
+.category-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding-bottom: 0.65rem;
+	border-bottom: 1px solid var(--border-light);
+	margin-top: 0.5rem;
+}
+
+.category-title {
+	font-size: 1.15rem;
+	font-weight: 700;
+	color: var(--text-main);
+	letter-spacing: -0.01em;
+}
+
+.category-edit-actions {
+	display: none;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.edit-active .category-edit-actions {
+	display: flex;
+}
+
+/* Edit Mode Buttons */
+.btn-edit-layout,
+.btn-save-layout,
+.btn-cancel-layout,
+.btn-add-cat,
+.btn-delete-cat {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	padding: 0.5rem 0.9rem;
+	border-radius: var(--radius-sm);
+	font-size: 0.82rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition: all var(--transition-base);
+	border: 1px solid transparent;
+}
+
+.btn-edit-layout {
+	background: var(--bg-surface-elevated);
+	border-color: var(--border-color);
+	color: var(--text-main);
+}
+
+.btn-edit-layout:hover {
+	background: var(--bg-surface-variant);
+	border-color: var(--primary);
+	color: var(--primary);
+}
+
+.btn-save-layout {
+	background: var(--primary);
+	color: var(--on-primary);
+}
+
+.btn-save-layout:hover {
+	background: var(--primary-hover);
+}
+
+.btn-cancel-layout {
+	background: var(--bg-surface-elevated);
+	border-color: var(--border-color);
+	color: var(--text-muted);
+}
+
+.btn-cancel-layout:hover {
+	background: var(--bg-surface-variant);
+	color: var(--text-main);
+}
+
+.btn-add-cat {
+	background: rgba(var(--color-primary-rgb), 0.1);
+	border-color: rgba(var(--color-primary-rgb), 0.25);
+	color: var(--primary);
+}
+
+.btn-add-cat:hover {
+	background: rgba(var(--color-primary-rgb), 0.2);
+}
+
+.btn-delete-cat {
+	background: rgba(var(--color-danger-rgb), 0.1);
+	border-color: rgba(var(--color-danger-rgb), 0.25);
+	color: var(--status-error);
+	padding: 0.35rem 0.6rem;
+}
+
+.btn-delete-cat:hover {
+	background: rgba(var(--color-danger-rgb), 0.2);
+}
+
+/* Add Category Trigger Section */
+.add-category-section {
+	display: none;
+	align-items: center;
+	justify-content: center;
+	gap: 0.65rem;
+	padding: 1.25rem;
+	background: var(--bg-surface);
+	border: 2px dashed var(--border-color);
+	border-radius: var(--radius-lg);
+	color: var(--text-muted);
+	font-weight: 600;
+	font-size: 0.95rem;
+	cursor: pointer;
+	transition: all var(--transition-base);
+}
+
+.edit-active .add-category-section {
+	display: flex;
+}
+
+.add-category-section:hover {
+	border-color: var(--primary);
+	color: var(--primary);
+	background: var(--bg-surface-elevated);
+}
+
+/* Unused Widgets Pool Section */
+.unused-pool-section {
+	display: none;
+	flex-direction: column;
+	gap: 1rem;
+	background: var(--bg-surface);
+	border: 1px solid var(--border-light);
+	border-radius: var(--radius-lg);
+	padding: 1.5rem;
+}
+
+.edit-active .unused-pool-section {
+	display: flex;
+}
+
+.unused-pool-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+	gap: 1rem;
+}
+
+/* ==========================================================================
+   2. Metrics Grid & Dynamic Widget Cards
+   ========================================================================== */
+.metrics-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+	gap: 1.25rem;
+}
+
+/* Metric Card */
+.metric-card {
+	background-color: var(--bg-surface);
+	border: 1px solid var(--border-light);
+	border-radius: var(--radius-lg);
+	padding: 1.35rem 1.5rem;
+	display: flex;
+	flex-direction: column;
+	gap: 0.85rem;
+	box-shadow: var(--shadow-sm);
+	transition: transform var(--transition-smooth), border-color var(--transition-smooth), box-shadow var(--transition-smooth);
+	position: relative;
+}
+
+.metric-card:hover {
+	transform: translateY(-2px);
+	border-color: var(--border-highlight);
+	box-shadow: var(--shadow-md);
+}
+
+.metric-card.is-dragging {
+	opacity: 0.45;
+	border: 2px dashed var(--primary);
+}
+
+.metric-card.drag-over {
+	border-color: var(--secondary);
+	box-shadow: 0 0 12px rgba(var(--color-secondary-rgb), 0.35);
+}
+
+.metric-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+.metric-title {
+	font-size: 0.82rem;
+	font-weight: 700;
+	color: var(--text-subtle);
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	margin: 0;
+}
+
+.metric-icon-box {
+	width: 38px;
+	height: 38px;
+	border-radius: var(--radius-md);
+	background: var(--bg-surface-elevated);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--primary);
+	font-size: 1.25rem;
+	flex-shrink: 0;
+	border: 1px solid var(--border-light);
+}
+
+.metric-drag-handle {
+	display: none;
+	cursor: grab;
+	color: var(--text-subtle);
+	padding: 0.2rem;
+	border-radius: var(--radius-xs);
+}
+
+.edit-active .metric-drag-handle {
+	display: flex;
+}
+
+.btn-remove-widget {
+	display: none;
+	background: transparent;
+	border: none;
+	color: var(--status-error);
+	cursor: pointer;
+	padding: 0.2rem;
+	border-radius: var(--radius-xs);
+	opacity: 0.75;
+	transition: opacity var(--transition-fast);
+}
+
+.btn-remove-widget:hover {
+	opacity: 1;
+	background: rgba(var(--color-danger-rgb), 0.1);
+}
+
+.edit-active .btn-remove-widget {
+	display: flex;
+}
+
+.metric-value-container {
+	display: flex;
+	align-items: baseline;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+}
+
+.metric-value {
+	font-size: 1.85rem;
+	font-weight: 800;
+	color: var(--text-main);
+	line-height: 1.1;
+	letter-spacing: -0.02em;
+	font-family: var(--font-mono);
+}
+
+.metric-subvalue {
+	font-size: 0.85rem;
+	color: var(--text-muted);
+	font-weight: 500;
+}
+
+.metric-desc {
+	font-size: 0.82rem;
+	color: var(--text-subtle);
+	line-height: 1.45;
+	margin: 0;
+}
+
+/* Unused Widget Item in Pool */
+.unused-widget-card {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 0.85rem 1rem;
+	background: var(--bg-surface-elevated);
+	border: 1px solid var(--border-light);
+	border-radius: var(--radius-md);
+	gap: 0.75rem;
+}
+
+.unused-widget-info {
+	display: flex;
+	align-items: center;
+	gap: 0.65rem;
+	min-width: 0;
+}
+
+.unused-widget-name {
+	font-size: 0.85rem;
+	font-weight: 600;
+	color: var(--text-main);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.btn-restore-widget {
+	background: rgba(var(--color-primary-rgb), 0.1);
+	border: 1px solid rgba(var(--color-primary-rgb), 0.25);
+	color: var(--primary);
+	border-radius: var(--radius-xs);
+	padding: 0.35rem 0.65rem;
+	font-size: 0.75rem;
+	font-weight: 600;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	gap: 0.25rem;
+	flex-shrink: 0;
+	transition: all var(--transition-base);
+}
+
+.btn-restore-widget:hover {
+	background: rgba(var(--color-primary-rgb), 0.2);
+}
+
+.unused-cat-select {
+	background: var(--bg-surface);
+	border: 1px solid var(--border-color);
+	color: var(--text-muted);
+	font-size: 0.75rem;
+	padding: 0.25rem 0.5rem;
+	border-radius: var(--radius-xs);
+	cursor: pointer;
+	max-width: 120px;
+	outline: none;
+}
+
+.unused-cat-select:focus {
+	border-color: var(--primary);
+}
+
+/* ==========================================================================
+   3. Reliability & Outage History Cards
+   ========================================================================== */
+.section-card {
+	background-color: var(--bg-surface);
+	border: 1px solid var(--border-light);
+	border-radius: var(--radius-lg);
+	padding: 1.75rem;
+	display: flex;
+	flex-direction: column;
+	gap: 1.5rem;
+	box-shadow: var(--shadow-md);
+}
+
+.section-header-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	border-bottom: 1px solid var(--border-light);
+	padding-bottom: 1rem;
+	flex-wrap: wrap;
+	gap: 0.75rem;
+}
+
+.section-title {
+	display: flex;
+	align-items: center;
+	gap: 0.65rem;
+	font-size: 1.2rem;
+	font-weight: 700;
+	color: var(--text-main);
+	margin: 0;
+}
+
+.section-status-indicator {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: 0.82rem;
+	font-weight: 600;
+	color: var(--status-online);
+}
+
+.indicator-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: var(--radius-full);
+	background-color: var(--status-online);
+}
+
+/* Reliability Blocks & Grid Wrapper */
+.reliability-grid-wrapper {
+	display: flex;
+	flex-direction: column;
+	gap: 1.5rem;
+}
+
+.reliability-row {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+}
+
+.reliability-row-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+.reliability-label {
+	font-size: 0.95rem;
+	font-weight: 700;
+	color: var(--text-main);
+}
+
+.reliability-meta {
+	font-size: 0.78rem;
+	color: var(--text-subtle);
+}
+
+.reliability-blocks {
+	display: flex;
+	gap: 4px;
+	height: 32px;
+	width: 100%;
+	background: var(--bg-surface-elevated);
+	border-radius: var(--radius-sm);
+	padding: 4px;
+	box-sizing: border-box;
+}
+
+.reliability-block {
+	flex: 1;
+	height: 100%;
+	border-radius: 2px;
+	background-color: var(--status-online);
+	transition: opacity var(--transition-fast), transform var(--transition-fast);
+	cursor: pointer;
+	position: relative;
+}
+
+.reliability-block:hover {
+	opacity: 0.8;
+	transform: scaleY(1.1);
+}
+
+.reliability-block.active {
+	background-color: var(--status-online);
+}
+
+.reliability-block.degraded {
+	background-color: var(--status-warning);
+}
+
+.reliability-block.down {
+	background-color: var(--status-error);
+}
+
+.reliability-block.no-data {
+	background-color: var(--bg-surface-variant);
+	opacity: 0.5;
+}
+
+.reliability-legend-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	font-size: 0.75rem;
+	color: var(--text-subtle);
+	flex-wrap: wrap;
+	gap: 0.75rem;
+}
+
+.grid-legend {
+	display: flex;
+	align-items: center;
+	gap: 1.15rem;
+	flex-wrap: wrap;
+}
+
+.legend-item {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+}
+
+.legend-color {
+	width: 10px;
+	height: 10px;
+	border-radius: 2px;
+}
+
+.legend-color.active {
+	background-color: var(--status-online);
+}
+
+.legend-color.degraded {
+	background-color: var(--status-warning);
+}
+
+.legend-color.down {
+	background-color: var(--status-error);
+}
+
+.legend-color.no-data {
+	background-color: var(--bg-surface-variant);
+}
+
+.timeframe-label {
+	font-family: var(--font-mono);
+}
+
+/* Outages Log List */
+.outages-list {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+}
+
+.outage-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 1rem 1.25rem;
+	background: var(--bg-surface-elevated);
+	border: 1px solid var(--border-light);
+	border-radius: var(--radius-md);
+	gap: 1rem;
+	flex-wrap: wrap;
+}
+
+.outage-icon-box {
+	width: 36px;
+	height: 36px;
+	border-radius: var(--radius-sm);
+	background: rgba(var(--color-danger-rgb), 0.12);
+	color: var(--status-error);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 1.2rem;
+	flex-shrink: 0;
+}
+
+.outage-details {
+	display: flex;
+	flex-direction: column;
+	gap: 0.2rem;
+	flex-grow: 1;
+}
+
+.outage-title {
+	font-size: 0.9rem;
+	font-weight: 700;
+	color: var(--text-main);
+	margin: 0;
+}
+
+.outage-time {
+	font-size: 0.78rem;
+	color: var(--text-subtle);
+	font-family: var(--font-mono);
+}
+
+.outage-duration {
+	font-size: 0.8rem;
+	font-family: var(--font-mono);
+	color: var(--status-warning);
+	font-weight: 600;
+	background: rgba(var(--color-warning-rgb), 0.1);
+	padding: 0.25rem 0.6rem;
+	border-radius: var(--radius-xs);
+	border: 1px solid rgba(var(--color-warning-rgb), 0.2);
+}
+
+.no-outages-message {
+	font-size: 0.88rem;
+	color: var(--status-online);
+	display: flex;
+	align-items: center;
+	gap: 0.6rem;
+	padding: 0.5rem 0;
+	font-weight: 500;
+}
+
+/* ==========================================================================
+   4. Responsive Adaptations
+   ========================================================================== */
+@media (max-width: 768px) {
+	.metrics-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.reliability-blocks {
+		gap: 2px;
+		height: 24px;
+	}
+
+	.section-card {
+		padding: 1.25rem;
+	}
+}

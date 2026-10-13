@@ -1,0 +1,142 @@
+<div class="dashboard-container">
+	<!-- Dashboard Header Banner -->
+	<header class="dashboard-header">
+		<div class="dashboard-header-info">
+			<div class="dashboard-title-row">
+				<h2 class="dashboard-title">System Status</h2>
+				<span id="liveStatusBadge" class="live-status-badge offline">
+					<span class="status-pulse-dot"></span>
+					<span id="liveStatusText">CONNECTING</span>
+				</span>
+			</div>
+			<p class="dashboard-subtitle">Real-time reliability metrics and bot diagnostic information.</p>
+		</div>
+
+		<div class="dashboard-header-actions">
+			<button id="editLayoutBtn" class="btn-edit-layout admin-only" style="display: none;" onclick="window.dashboardToggleEdit()">
+				<span class="material-symbols-outlined">edit</span>
+				<span>Edit Layout</span>
+			</button>
+			<div class="edit-layout-actions">
+				<button class="btn-save-layout" onclick="window.dashboardSaveLayout()">
+					<span class="material-symbols-outlined">save</span>
+					<span>Save Layout</span>
+				</button>
+				<button class="btn-cancel-layout" onclick="window.dashboardCancelEdit()">
+					<span class="material-symbols-outlined">close</span>
+					<span>Cancel</span>
+				</button>
+			</div>
+		</div>
+	</header>
+
+	<!-- Dynamic Metrics Widgets Panel -->
+	<div id="dashboardWidgets"></div>
+
+	<!-- Add Category Section (Edit mode only) -->
+	<div class="add-category-section" onclick="window.dashboardAddCategory()">
+		<span class="material-symbols-outlined">add_circle</span>
+		<span>Add New Category</span>
+	</div>
+
+	<!-- Unused Widgets Pool Section (Edit mode only) -->
+	<section class="unused-pool-section">
+		<div class="category-header">
+			<span class="category-title text-subtle">📦 Unused Widgets Pool</span>
+		</div>
+		<div id="unusedWidgetsGrid" class="unused-pool-grid"></div>
+	</section>
+
+	<!-- Reliability Grids Card -->
+	<section class="section-card">
+		<div class="section-header-row">
+			<h3 class="section-title">
+				<span class="material-symbols-outlined text-primary">analytics</span>
+				<span>Reliability &amp; Outage History</span>
+			</h3>
+			<div class="section-status-indicator">
+				<span class="indicator-dot"></span>
+				<span>Operational</span>
+			</div>
+		</div>
+
+		<div class="reliability-grid-wrapper">
+			<!-- Hourly Block Grid -->
+			<div class="reliability-row">
+				<div class="reliability-row-header">
+					<span class="reliability-label">Last 24 Hours</span>
+					<span class="reliability-meta">Hourly heartbeat checks</span>
+				</div>
+				<div id="hourlyReliability" class="reliability-blocks"></div>
+				<div class="reliability-legend-row">
+					<div class="grid-legend">
+						<div class="legend-item">
+							<div class="legend-color active"></div>
+							<span>Online</span>
+						</div>
+						<div class="legend-item">
+							<div class="legend-color degraded"></div>
+							<span>Degraded Uptime</span>
+						</div>
+						<div class="legend-item">
+							<div class="legend-color down"></div>
+							<span>Outage</span>
+						</div>
+						<div class="legend-item">
+							<div class="legend-color no-data"></div>
+							<span>No Data</span>
+						</div>
+					</div>
+					<div class="timeframe-label">24 hrs ago &rarr; Now</div>
+				</div>
+			</div>
+
+			<!-- Daily Block Grid -->
+			<div class="reliability-row">
+				<div class="reliability-row-header">
+					<span class="reliability-label">Last 24 Days</span>
+					<span class="reliability-meta">Daily summary blocks</span>
+				</div>
+				<div id="dailyReliability" class="reliability-blocks"></div>
+				<div class="reliability-legend-row">
+					<div class="grid-legend">
+						<div class="legend-item">
+							<div class="legend-color active"></div>
+							<span>100% Online</span>
+						</div>
+						<div class="legend-item">
+							<div class="legend-color degraded"></div>
+							<span>&gt;95% Uptime</span>
+						</div>
+						<div class="legend-item">
+							<div class="legend-color down"></div>
+							<span>Outages</span>
+						</div>
+						<div class="legend-item">
+							<div class="legend-color no-data"></div>
+							<span>No Data</span>
+						</div>
+					</div>
+					<div class="timeframe-label">24 days ago &rarr; Today</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Outages Log Card -->
+	<section class="section-card">
+		<div class="section-header-row">
+			<h3 class="section-title">
+				<span class="material-symbols-outlined text-tertiary">warning</span>
+				<span>Recent Outages (Past 24 Days)</span>
+			</h3>
+		</div>
+		<div id="outagesLogContainer" class="outages-list"></div>
+	</section>
+</div>
+
+<!-- Page-specific Stylesheet at Bottom -->
+<link rel="stylesheet" href="/styles/dashboard.css">
+
+<!-- Page-specific Controller Script at Bottom -->
+<script src="/script/dashboard.js"></script>

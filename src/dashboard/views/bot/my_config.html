@@ -1,0 +1,183 @@
+<div class="dashboard-container my-config-container">
+	<!-- Dashboard Header Banner -->
+	<header class="dashboard-header">
+		<div class="dashboard-header-info">
+			<div class="dashboard-title-row">
+				<h2 class="dashboard-title">My Configuration</h2>
+				<span class="live-status-badge online">
+					<span class="status-pulse-dot"></span>
+					<span>USER PREFERENCES</span>
+				</span>
+			</div>
+			<p class="dashboard-subtitle">Configure personalized rank badges, Discord Role Connection integrations, and profile card sync.</p>
+		</div>
+	</header>
+
+	<!-- Quick Stats Overview Bar -->
+	<div class="dashboard-stats-grid">
+		<div class="stat-card">
+			<div class="stat-icon-wrapper primary">
+				<span class="material-symbols-outlined">badge</span>
+			</div>
+			<div class="stat-info">
+				<span class="stat-value" id="statCurrentRank">-</span>
+				<span class="stat-label">Active Role Rank</span>
+			</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-icon-wrapper success">
+				<span class="material-symbols-outlined">sync</span>
+			</div>
+			<div class="stat-info">
+				<span class="stat-value" id="statActiveSyncCount">6 / 6</span>
+				<span class="stat-label">Synced Metrics</span>
+			</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-icon-wrapper secondary">
+				<span class="material-symbols-outlined">verified_user</span>
+			</div>
+			<div class="stat-info">
+				<span class="stat-value" id="statEligibleCount">-</span>
+				<span class="stat-label">Eligible Role Badges</span>
+			</div>
+		</div>
+	</div>
+
+	<!-- Configuration Grid Panels -->
+	<div class="settings-grid">
+		<!-- Panel 1: Profile Rank Configuration -->
+		<div class="settings-panel">
+			<div class="settings-panel-header">
+				<h3 class="settings-panel-title">
+					<span class="material-symbols-outlined text-primary">person</span>
+					<span>Profile Rank Badge</span>
+				</h3>
+				<p class="settings-panel-desc">Customize how your role rank is displayed across the bot web panel and server cards.</p>
+			</div>
+
+			<!-- Live User Profile Preview Card -->
+			<div class="config-profile-box">
+				<img id="configAvatar" src="https://cdn.discordapp.com/embed/avatars/0.png" alt="Avatar" class="config-avatar" onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+				<div class="config-user-details">
+					<h4 id="configUsername" class="config-username">Username</h4>
+					<span id="configRankText" class="config-rank-badge">MEMBER</span>
+				</div>
+			</div>
+
+			<!-- Custom Dropdown Rank Selector (Reference example: CustomModal.createDropdown integration) -->
+			<div class="form-group">
+				<label for="pageRankSelect" class="form-label">Select Active Display Rank</label>
+				<div id="pageRankDropdown"></div>
+				<input type="hidden" id="pageRankSelect" value="">
+			</div>
+
+			<button type="button" id="btnSaveRank" class="btn-save-config">
+				<span class="material-symbols-outlined">save</span>
+				<span>Save Rank Details</span>
+			</button>
+		</div>
+
+		<!-- Panel 2: Profile Connection & Custom Widget -->
+		<div class="settings-panel">
+			<div class="settings-panel-header">
+				<h3 class="settings-panel-title">
+					<span class="material-symbols-outlined text-secondary">link</span>
+					<span>Discord Connections &amp; Profile Widget</span>
+				</h3>
+				<p class="settings-panel-desc">Select which live statistics sync to your Discord profile for standard Role Connections and Custom Profile Widget.</p>
+			</div>
+
+			<span class="sync-status-badge">
+				<span class="badge-dot"></span>
+				<span>Discord Sync Active</span>
+			</span>
+
+			<div class="toggle-list">
+				<div class="toggle-container">
+					<div class="toggle-label">
+						<span class="toggle-title">Sync Level</span>
+						<span class="toggle-desc">Show your bot level and rank</span>
+					</div>
+					<label class="switch">
+						<input type="checkbox" id="syncLevel" checked>
+						<span class="slider"></span>
+					</label>
+				</div>
+
+				<div class="toggle-container">
+					<div class="toggle-label">
+						<span class="toggle-title">Sync XP Progress</span>
+						<span class="toggle-desc">Show level XP percentage and total XP</span>
+					</div>
+					<label class="switch">
+						<input type="checkbox" id="syncXP" checked>
+						<span class="slider"></span>
+					</label>
+				</div>
+
+				<div class="toggle-container">
+					<div class="toggle-label">
+						<span class="toggle-title">Sync Achievements</span>
+						<span class="toggle-desc">Show server achievements and ranking</span>
+					</div>
+					<label class="switch">
+						<input type="checkbox" id="syncAchievements" checked>
+						<span class="slider"></span>
+					</label>
+				</div>
+
+				<div class="toggle-container">
+					<div class="toggle-label">
+						<span class="toggle-title">Sync Messages Seen</span>
+						<span class="toggle-desc">Show message counts and message rank</span>
+					</div>
+					<label class="switch">
+						<input type="checkbox" id="syncMessages" checked>
+						<span class="slider"></span>
+					</label>
+				</div>
+
+				<div class="toggle-container">
+					<div class="toggle-label">
+						<span class="toggle-title">Sync Emojis Used</span>
+						<span class="toggle-desc">Show count of emojis used and emoji rank</span>
+					</div>
+					<label class="switch">
+						<input type="checkbox" id="syncEmojis" checked>
+						<span class="slider"></span>
+					</label>
+				</div>
+
+				<div class="toggle-container">
+					<div class="toggle-label">
+						<span class="toggle-title">Sync Stickers Used</span>
+						<span class="toggle-desc">Show count of stickers used and sticker rank</span>
+					</div>
+					<label class="switch">
+						<input type="checkbox" id="syncStickers" checked>
+						<span class="slider"></span>
+					</label>
+				</div>
+			</div>
+
+			<div class="info-callout">
+				<span class="material-symbols-outlined">info</span>
+				<div>
+					Enable <strong>"Display on profile"</strong> in your Discord Connection Settings under <em>Fluffingiously Dragooon</em> to display these verified stats on your Discord card.
+				</div>
+			</div>
+
+			<button type="button" id="btnSaveConnections" class="btn-save-config">
+				<span class="material-symbols-outlined">cloud_sync</span>
+				<span>Save &amp; Sync with Discord</span>
+			</button>
+		</div>
+	</div>
+</div>
+
+<!-- Page-specific Stylesheet at Bottom -->
+<link rel="stylesheet" href="/styles/my_config.css">
+
+<!-- Page-specific Controller Script at Bottom -->
+<script src="/script/my_config.js"></script>

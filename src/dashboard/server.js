@@ -6,7 +6,27 @@ const https = require('https');
 const querystring = require('querystring');
 const crypto = require('crypto');
 const apiTracker = require('../utils/apiTracker');
+const apiAllowlistManager = require('./apiAllowlistManager');
 const { getConfig, updateConfigs } = require('../utils/configManager');
+
+// Wrap apiTracker.fetch to enforce external API allowlist checks and debug logging
+const originalApiTrackerFetch = apiTracker.fetch.bind(apiTracker);
+apiTracker.fetch = async function(url, options = {}) {
+	const method = (options && options.method) ? options.method.toUpperCase() : 'GET';
+	apiAllowlistManager.checkExternalApi(method, String(url));
+	try {
+		const response = await originalApiTrackerFetch(url, options);
+		if (response.status >= 400 && apiAllowlistManager.isLocalOrDebug()) {
+			apiAllowlistManager.logInvalidRequest(response.status, method, String(url), 'External API Response');
+		}
+		return response;
+	} catch (err) {
+		if (apiAllowlistManager.isLocalOrDebug()) {
+			apiAllowlistManager.logInvalidRequest(500, method, String(url), `External Network Error: ${err.message}`);
+		}
+		throw err;
+	}
+};
 
 // Safe environment detection to avoid ENOENT crash inside Docker containers (Pterodactyl, etc.)
 let isLocal = false;
@@ -34,137 +54,35 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const aboutMeController = require('./controllers/aboutMeController');
 const sillyDatabaseController = require('./controllers/sillyDatabaseController');
 
-// Read and cache HTML files in memory on startup
-const HTML_FILE_PATH = path.join(__dirname, 'views', 'index.html');
-const HOME_FILE_PATH = path.join(__dirname, 'views', 'home.html');
-const ABOUT_ME_FILE_PATH = path.join(__dirname, 'views', 'about_me.html');
-const MY_SERVER_FILE_PATH = path.join(__dirname, 'views', 'my_server.html');
-const SERVER_CONFIG_FILE_PATH = path.join(__dirname, 'views', 'server_config.html');
-const MY_CONFIG_FILE_PATH = path.join(__dirname, 'views', 'my_config.html');
-const LOG_VIEWER_FILE_PATH = path.join(__dirname, 'views', 'log_viewer.html');
-const SILLY_DATABASE_FILE_PATH = path.join(__dirname, 'views', 'sillydatabase.html');
-const ADMIN_PANEL_FILE_PATH = path.join(__dirname, 'views', 'admin_panel.html');
-const ADMIN_API_LOGS_FILE_PATH = path.join(__dirname, 'views', 'admin_api_logs.html');
-const SIDEBAR_FILE_PATH = path.join(__dirname, 'views', 'sidebar.html');
-const EDIT_FILE_PATH = path.join(__dirname, 'views', 'edit.html');
-const CSS_FILE_PATH = path.join(__dirname, 'dashboard.css');
-const STYLE_FILE_PATH = path.join(__dirname, 'Style', 'style.css');
+const structureManager = require('./structureManager');
 
-let cachedHtml = '';
-let cachedHomeHtml = '';
-let cachedAboutMeHtml = '';
-let cachedEditHtml = '';
-let cachedMyServerHtml = '';
-let cachedServerConfigHtml = '';
-let cachedMyConfigHtml = '';
-let cachedLogViewerHtml = '';
-let cachedSillyDatabaseHtml = '';
-let cachedAdminPanelHtml = '';
-let cachedAdminApiLogsHtml = '';
-let cachedSidebarHtml = '';
+// Static CSS file paths
+const CSS_FILE_PATH = path.join(__dirname, 'styles', 'dashboard.css');
+const STYLE_FILE_PATH = path.join(__dirname, 'styles', 'style.css');
+
 let cachedCss = '';
 let cachedStyleCss = '';
 
 try {
-	cachedCss = fs.readFileSync(CSS_FILE_PATH, 'utf8');
+	if (fs.existsSync(CSS_FILE_PATH)) {
+		cachedCss = fs.readFileSync(CSS_FILE_PATH, 'utf8');
+	}
 } catch (err) {
 	console.error('[Dashboard] Error reading dashboard.css:', err);
 }
 
 try {
-	cachedSidebarHtml = fs.readFileSync(SIDEBAR_FILE_PATH, 'utf8');
-} catch (err) {
-	console.error('[Dashboard] Error reading sidebar.html:', err);
-}
-
-try {
-	cachedHtml = fs.readFileSync(HTML_FILE_PATH, 'utf8').replace('<!-- INCLUDE_SIDEBAR -->', cachedSidebarHtml);
-} catch (err) {
-	console.error('[Dashboard] Error reading index.html:', err);
-	cachedHtml = '<h1>Dashboard Template Error</h1>';
-}
-
-try {
-	cachedHomeHtml = fs.readFileSync(HOME_FILE_PATH, 'utf8');
-} catch (err) {
-	console.error('[Dashboard] Error reading home.html:', err);
-	cachedHomeHtml = '<h1>Home Template Error</h1>';
-}
-
-try {
-	cachedAboutMeHtml = fs.readFileSync(ABOUT_ME_FILE_PATH, 'utf8');
-} catch (err) {
-	console.error('[Dashboard] Error reading about_me.html:', err);
-	cachedAboutMeHtml = '<h1>About Me Template Error</h1>';
-}
-
-try {
-	cachedEditHtml = fs.readFileSync(EDIT_FILE_PATH, 'utf8');
-} catch (err) {
-	console.error('[Dashboard] Error reading edit.html:', err);
-	cachedEditHtml = '<h1>Edit Template Error</h1>';
-}
-
-try {
-	cachedStyleCss = fs.readFileSync(STYLE_FILE_PATH, 'utf8');
+	if (fs.existsSync(STYLE_FILE_PATH)) {
+		cachedStyleCss = fs.readFileSync(STYLE_FILE_PATH, 'utf8');
+	}
 } catch (err) {
 	console.error('[Dashboard] Error reading style.css:', err);
-}
-
-try {
-	cachedMyServerHtml = fs.readFileSync(MY_SERVER_FILE_PATH, 'utf8').replace('<!-- INCLUDE_SIDEBAR -->', cachedSidebarHtml);
-} catch (err) {
-	console.error('[Dashboard] Error reading my_server.html:', err);
-	cachedMyServerHtml = '<h1>My Servers Template Error</h1>';
-}
-
-try {
-	cachedServerConfigHtml = fs.readFileSync(SERVER_CONFIG_FILE_PATH, 'utf8').replace('<!-- INCLUDE_SIDEBAR -->', cachedSidebarHtml);
-} catch (err) {
-	console.error('[Dashboard] Error reading server_config.html:', err);
-	cachedServerConfigHtml = '<h1>Server Configuration Template Error</h1>';
-}
-
-
-try {
-	cachedMyConfigHtml = fs.readFileSync(MY_CONFIG_FILE_PATH, 'utf8').replace('<!-- INCLUDE_SIDEBAR -->', cachedSidebarHtml);
-} catch (err) {
-	console.error('[Dashboard] Error reading my_config.html:', err);
-	cachedMyConfigHtml = '<h1>My Configuration Template Error</h1>';
-}
-
-try {
-	cachedLogViewerHtml = fs.readFileSync(LOG_VIEWER_FILE_PATH, 'utf8').replace('<!-- INCLUDE_SIDEBAR -->', cachedSidebarHtml);
-} catch (err) {
-	console.error('[Dashboard] Error reading log_viewer.html:', err);
-	cachedLogViewerHtml = '<h1>Log Viewer Template Error</h1>';
-}
-
-try {
-	cachedSillyDatabaseHtml = fs.readFileSync(SILLY_DATABASE_FILE_PATH, 'utf8').replace('<!-- INCLUDE_SIDEBAR -->', cachedSidebarHtml);
-} catch (err) {
-	console.error('[Dashboard] Error reading sillydatabase.html:', err);
-	cachedSillyDatabaseHtml = '<h1>SillyDatabase Template Error</h1>';
-}
-
-try {
-	cachedAdminPanelHtml = fs.readFileSync(ADMIN_PANEL_FILE_PATH, 'utf8').replace('<!-- INCLUDE_SIDEBAR -->', cachedSidebarHtml);
-} catch (err) {
-	console.error('[Dashboard] Error reading admin_panel.html:', err);
-	cachedAdminPanelHtml = '<h1>Admin Panel Template Error</h1>';
-}
-
-try {
-	cachedAdminApiLogsHtml = fs.readFileSync(ADMIN_API_LOGS_FILE_PATH, 'utf8').replace('<!-- INCLUDE_SIDEBAR -->', cachedSidebarHtml);
-} catch (err) {
-	console.error('[Dashboard] Error reading admin_api_logs.html:', err);
-	cachedAdminApiLogsHtml = '<h1>Admin API Logs Template Error</h1>';
 }
 
 // In-memory rate limiting map
 const rateLimitMap = new Map();
 const LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-const MAX_REQUESTS_PER_WINDOW = 40; // 40 requests per minute
+const MAX_REQUESTS_PER_WINDOW = 100; // 100 requests per minute
 
 /**
  * Basic IP rate limiter
@@ -508,7 +426,7 @@ function getAchievementsCount(userId) {
  * Checks if a user session has permissions to manage a specific guild (MANAGE_GUILD or ADMINISTRATOR)
  */
 async function userHasGuildPermission(session, guildId) {
-	if (process.env.STANDALONE === 'true') {
+	if (process.env.STANDALONE === 'true' || process.env.IS_DEV === 'true' || session?.userId === 'mock_user_id') {
 		return true;
 	}
 
@@ -958,10 +876,36 @@ function parseCookies(req) {
 	return list;
 }
 
+function isLocalEnvironment(req = null) {
+	if (process.env.NODE_ENV === 'production') {
+		return false;
+	}
+	if (process.env.STANDALONE === 'true' || process.env.IS_DEV === 'true' || process.env.NODE_ENV === 'development') {
+		return true;
+	}
+	if (req) {
+		const host = (req.headers && req.headers.host) ? req.headers.host : '';
+		const remoteIp = req.headers['cf-connecting-ip'] ||
+			req.headers['x-forwarded-for']?.split(',')[0].trim() ||
+			req.socket?.remoteAddress ||
+			req.connection?.remoteAddress ||
+			'';
+		const isLoopbackIp = remoteIp === '127.0.0.1' || remoteIp === '::1' || remoteIp === '::ffff:127.0.0.1';
+		if ((host.includes('localhost') || host.includes('127.0.0.1') || host.startsWith('bot.localhost')) && isLoopbackIp) {
+			return true;
+		}
+	}
+	return false;
+}
+
 /**
+ * Formats display strings for rank indicators
  * Returns authenticated user info if session is valid (or refreshes it if close to expiry)
  */
 const RANK_FORMATS = {
+	"web_dev": " (web_dev)",
+	"owner": " (owner)",
+	"admin": " (admin)",
 	"bot dev": " (bot dev)",
 	"den boundless resident": " (den boundless resident)",
 	"den disciple echoing": " (den disciple echoing)",
@@ -971,7 +915,7 @@ const RANK_FORMATS = {
 };
 
 function getHomepageUrl(req) {
-	const isLocal = process.platform === 'darwin' || process.cwd().includes('newdramelon');
+	const isLocal = isLocalEnvironment(req);
 	const PORT = process.env.PORT || process.env.SERVER_PORT || 3000;
 	if (isLocal) {
 		return `http://localhost:${PORT}`;
@@ -981,7 +925,7 @@ function getHomepageUrl(req) {
 }
 
 function getDashboardUrl(req) {
-	const isLocal = process.platform === 'darwin' || process.cwd().includes('newdramelon');
+	const isLocal = isLocalEnvironment(req);
 	const PORT = process.env.PORT || process.env.SERVER_PORT || 3000;
 	if (isLocal) {
 		return `http://bot.localhost:${PORT}`;
@@ -991,6 +935,10 @@ function getDashboardUrl(req) {
 }
 
 async function getUserEligibleRanks(userId, client) {
+	if (userId === 'mock_user_id') {
+		return ["web_dev", "owner", "bot dev", "admin", "den boundless resident", "den disciple echoing", "den journeyer", "den member", "member"];
+	}
+
 	const eligibleRanks = [];
 
 	// 1. Bot Dev
@@ -1006,8 +954,8 @@ async function getUserEligibleRanks(userId, client) {
 	const HOMETOWN_GUILD_ID = process.env.HOMETOWN_GUILD_ID || '1447192381479976993';
 	const BOT_DEV_GUILD_ID = process.env.BOT_DEV_GUILD_ID || '1492101995094610062';
 
-	const hometownGuild = client.guilds.cache.get(HOMETOWN_GUILD_ID);
-	const botDevGuild = client.guilds.cache.get(BOT_DEV_GUILD_ID);
+	const hometownGuild = client?.guilds?.cache ? client.guilds.cache.get(HOMETOWN_GUILD_ID) : null;
+	const botDevGuild = client?.guilds?.cache ? client.guilds.cache.get(BOT_DEV_GUILD_ID) : null;
 
 	if (hometownGuild) {
 		const hometownMember = await hometownGuild.members.fetch(userId).catch(() => null);
@@ -1041,16 +989,34 @@ async function getUserEligibleRanks(userId, client) {
 async function getAuthenticatedUser(req, res, client) {
 	const cookies = parseCookies(req);
 	const sessionId = cookies.session_id;
-	if (!sessionId || !sessions[sessionId]) {
-		return null;
-	}
 
-	if (process.env.STANDALONE === 'true' && sessionId === 'standalone_mock_session_id') {
+	if (isLocalEnvironment(req)) {
+		const mockSessionId = sessionId || 'standalone_mock_session_id';
+		if (!sessions[mockSessionId]) {
+			sessions[mockSessionId] = {
+				userId: 'mock_user_id',
+				username: 'Mock Developer',
+				avatar: '0',
+				accessToken: 'mock_access_token',
+				refreshToken: 'mock_refresh_token',
+				expiresAt: Date.now() + 365 * 24 * 3600 * 1000
+			};
+			saveSessions();
+		}
+
+		if (!sessionId && res && !res.headersSent && typeof res.setHeader === 'function') {
+			try {
+				res.setHeader('Set-Cookie', [
+					`session_id=${mockSessionId}; Path=/; HttpOnly; Max-Age=2592000; SameSite=Lax`
+				]);
+			} catch (e) {}
+		}
+
 		const userConfig = userConfigs['mock_user_id'] || {};
-		const eligibleRanks = ["bot dev", "den boundless resident", "den disciple echoing", "den member"];
+		const eligibleRanks = ["web_dev", "owner", "bot dev", "admin", "den boundless resident", "den disciple echoing", "den journeyer", "den member", "member"];
 		let displayRank = userConfig.displayRank;
 		if (!displayRank || !eligibleRanks.includes(displayRank)) {
-			displayRank = eligibleRanks[0];
+			displayRank = "web_dev";
 		}
 		const rankText = displayRank.toUpperCase();
 
@@ -1059,6 +1025,9 @@ async function getAuthenticatedUser(req, res, client) {
 			username: 'Mock Developer',
 			avatarUrl: 'https://cdn.discordapp.com/embed/avatars/0.png',
 			isAdmin: true,
+			isOwner: true,
+			isWebDev: true,
+			rank: rankText,
 			eligibleRanks,
 			displayRank,
 			rankText,
@@ -1070,6 +1039,10 @@ async function getAuthenticatedUser(req, res, client) {
 				syncDeveloper: true
 			}
 		};
+	}
+
+	if (!sessionId || !sessions[sessionId]) {
+		return null;
 	}
 
 	const session = sessions[sessionId];
@@ -1196,7 +1169,21 @@ function startDashboard(client) {
 		console.warn('\x1b[33m%s\x1b[0m', '[Dashboard] WARNING: DISCORD_CLIENT_SECRET is not configured in .env. Discord Login will fail!');
 	}
 
-	// Load whitelisted routes
+	// Verify and load config/website_structure.json
+	try {
+		structureManager.init();
+	} catch (err) {
+		console.error('\x1b[31m%s\x1b[0m', err.message);
+	}
+
+	// Initialize API allowlist manager (internal and external API allowlists)
+	try {
+		apiAllowlistManager.init();
+	} catch (err) {
+		console.error('[Dashboard Security] Error initializing API allowlist manager:', err);
+	}
+
+	// Load whitelisted routes and sync dynamic routes from structureManager
 	let routesWhitelist = new Set();
 	try {
 		const whitelistPath = path.join(__dirname, 'routes_whitelist.txt');
@@ -1207,13 +1194,16 @@ function startDashboard(client) {
 					.map(line => line.trim())
 					.filter(line => line && !line.startsWith('#'))
 			);
-			console.log(`[Dashboard Security] Loaded ${routesWhitelist.size} whitelisted routes.`);
-		} else {
-			console.warn('[Dashboard Security] WARNING: routes_whitelist.txt not found. Running without whitelist protection.');
 		}
 	} catch (e) {
 		console.error('[Dashboard Security] Failed to load routes whitelist:', e);
 	}
+
+	// Merge all routes from config/website_structure.json into the whitelist
+	for (const route of structureManager.getWhitelistedRoutes()) {
+		routesWhitelist.add(route);
+	}
+	console.log(`[Dashboard Security] Loaded ${routesWhitelist.size} whitelisted routes (including dynamic website structure).`);
 
 	const server = http.createServer(async (req, res) => {
 		const requestStart = Date.now();
@@ -1225,38 +1215,76 @@ function startDashboard(client) {
 			req.connection?.remoteAddress ||
 			'unknown';
 
-		const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-		const reqUrl = parsedUrl.pathname;
+		const hostHeader = (req.headers.host || 'localhost').toLowerCase();
+		const protocol = req.headers['x-forwarded-proto'] || (req.socket?.encrypted || hostHeader.includes('furred') ? 'https' : 'http');
+		const parsedUrl = new URL(req.url, `${protocol}://${hostHeader}`);
+		let reqUrl = parsedUrl.pathname;
 
-		// Enforce route whitelist with dynamic pattern support
-		let isWhitelisted = routesWhitelist.has(reqUrl);
-		if (!isWhitelisted && routesWhitelist.size > 0) {
-			const myServerMatch = reqUrl.match(/^\/my_server\/([a-zA-Z0-9_-]+)$/);
-			if (myServerMatch && routesWhitelist.has('/my_server/:id')) {
-				isWhitelisted = true;
-			}
-		}
-
-		if (routesWhitelist.size > 0 && !isWhitelisted) {
-			console.warn(`[Dashboard Security] Blocked unwhitelisted request: ${req.method} ${reqUrl} from IP ${clientIp}`);
-			res.writeHead(404, { 'Content-Type': 'text/plain' });
-			return res.end('Not Found');
-		}
-
-
+		// Track all incoming requests and log invalid requests
 		res.end = function (...args) {
 			const duration = Date.now() - requestStart;
+			const statusCode = res.statusCode || 200;
+
 			apiTracker.recordIncomingRequest({
 				method: req.method,
 				path: req.url,
-				statusCode: res.statusCode || 200,
+				statusCode: statusCode,
 				duration: duration,
 				ip: clientIp,
 				reqHeaders: req.headers,
 				resHeaders: res.getHeaders()
 			});
+
+			if (statusCode >= 400) {
+				apiAllowlistManager.logInvalidRequest(statusCode, req.method, req.url, null, clientIp);
+			}
+
 			return originalEnd.apply(this, args);
 		};
+
+		// Identify request category
+		const isApiRequest = reqUrl.startsWith('/api/');
+		const isAssetRequest = reqUrl.startsWith('/styles/') || 
+			reqUrl.startsWith('/script/') ||
+			reqUrl.startsWith('/controllers/') || 
+			reqUrl.startsWith('/components/') || 
+			reqUrl.startsWith('/public/') || 
+			reqUrl.startsWith('/shares/') || 
+			reqUrl.startsWith('/assets/') || 
+			reqUrl.startsWith('/.well-known/') || 
+			reqUrl === '/favicon.ico' || 
+			reqUrl === '/dashboard.css' ||
+			reqUrl.toLowerCase() === '/style/style.css' ||
+			reqUrl === '/style.css';
+
+		// Log and validate based on category
+		if (isApiRequest) {
+			apiAllowlistManager.checkInternalApi(req.method, reqUrl, req, clientIp);
+		} else if (isAssetRequest) {
+			apiAllowlistManager.logAssetRequest(req.method, reqUrl, req, clientIp);
+		} else {
+			apiAllowlistManager.logWebRequest(req.method, reqUrl, req, clientIp);
+		}
+
+		if (!isApiRequest) {
+			// Enforce route whitelist with dynamic pattern support for non-API routes
+			let isWhitelisted = routesWhitelist.has(reqUrl) || isAssetRequest;
+			if (!isWhitelisted && routesWhitelist.size > 0) {
+				const myServerMatch = reqUrl.match(/^\/my_server\/([a-zA-Z0-9_-]+)$/);
+				if (myServerMatch && routesWhitelist.has('/my_server/:id')) {
+					isWhitelisted = true;
+				}
+			}
+
+			if (routesWhitelist.size > 0 && !isWhitelisted) {
+				console.warn(`[Dashboard Security] Blocked unwhitelisted request: ${req.method} ${reqUrl} from IP ${clientIp}`);
+				if (isAssetRequest) {
+					res.writeHead(404, { 'Content-Type': 'text/plain' });
+					return res.end('Not Found');
+				}
+				return structureManager.render404(req, res);
+			}
+		}
 
 		// Allow GET, POST, PUT, DELETE requests
 		if (req.method !== 'GET' && req.method !== 'POST' && req.method !== 'PUT' && req.method !== 'DELETE') {
@@ -1271,7 +1299,7 @@ function startDashboard(client) {
 		// Security headers
 		res.setHeader('X-Frame-Options', 'DENY');
 		res.setHeader('X-Content-Type-Options', 'nosniff');
-		res.setHeader('Content-Security-Policy', "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https://cdn.discordapp.com https://i.scdn.co https://*.scdn.co https://images-ext-1.discordapp.net https://images-ext-2.discordapp.net https://media.discordapp.net data:; connect-src 'self'; script-src 'self' 'unsafe-inline';");
+		res.setHeader('Content-Security-Policy', "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https://discord.com https://cdn.discordapp.com https://i.scdn.co https://*.scdn.co https://images-ext-1.discordapp.net https://images-ext-2.discordapp.net https://media.discordapp.net data:; connect-src 'self'; script-src 'self' 'unsafe-inline';");
 
 		// Rate Limiting Protection
 		if (isRateLimited(clientIp)) {
@@ -1279,164 +1307,128 @@ function startDashboard(client) {
 			return res.end('Too Many Requests');
 		}
 
-		// Route Handling
-		const hostHeader = req.headers.host || '';
-		const isBotDomain = hostHeader.startsWith('bot.');
-
-		// Redirect bot-specific pages on the main domain to the bot domain
-		if (!isBotDomain) {
-			const botPages = [
-				'/my_server', '/my_server.html',
-				'/my_config', '/my_config.html',
-				'/log_viewer', '/log_viewer.html',
-				'/admin_panel', '/admin_panel.html',
-				'/admin_panel/api', '/admin_panel/api.html'
-			];
-			if (botPages.includes(reqUrl) || reqUrl.startsWith('/my_server/')) {
-				const botUrl = getDashboardUrl(req);
-				res.writeHead(302, { 'Location': `${botUrl}${req.url}` });
-				return res.end();
-			}
-		}
-
+		// Legacy CSS path normalization
 		if (reqUrl === '/dashboard.css') {
-			res.writeHead(200, { 'Content-Type': 'text/css; charset=utf-8' });
-			return res.end(cachedCss);
+			reqUrl = '/styles/dashboard.css';
+		} else if (reqUrl.toLowerCase() === '/style/style.css' || reqUrl === '/style.css') {
+			reqUrl = '/styles/style.css';
 		}
 
-		if (reqUrl === '/Style/style.css' || reqUrl === '/style.css') {
-			res.writeHead(200, { 'Content-Type': 'text/css; charset=utf-8' });
-			return res.end(cachedStyleCss);
-		}
+		// Domain-Specific Script Asset Serving (/script/*) via config/script_allowlist.json
+		if (reqUrl.startsWith('/script/')) {
+			const currentDomainKey = structureManager.resolveDomainKey(hostHeader);
+			const resolvedScriptPath = structureManager.resolveScriptPath(currentDomainKey, reqUrl);
 
-		if (reqUrl === '/my_server' || reqUrl === '/my_server.html') {
-			const user = await getAuthenticatedUser(req, res, client).catch(() => null);
-			if (!user) {
-				res.writeHead(302, { 'Location': getDashboardUrl(req) });
-				return res.end();
-			}
-			res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-			return res.end(cachedMyServerHtml);
-		}
-
-		// Route: Serve dedicated server configuration subpage (/my_server/:id)
-		const serverIdMatch = reqUrl.match(/^\/my_server\/([a-zA-Z0-9_-]+)$/);
-		if (serverIdMatch) {
-			const serverId = serverIdMatch[1];
-			const user = await getAuthenticatedUser(req, res, client).catch(() => null);
-			if (!user) {
-				res.writeHead(302, { 'Location': getDashboardUrl(req) });
-				return res.end();
-			}
-
-			const cookies = parseCookies(req);
-			const sessionId = cookies.session_id;
-			const session = sessions[sessionId];
-			const hasPermission = await userHasGuildPermission(session, serverId);
-			if (!hasPermission) {
-				res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
-				return res.end('Forbidden: You do not have Manage Server permissions for this guild.');
-			}
-
-			res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-			return res.end(cachedServerConfigHtml);
-		}
-
-
-		if (reqUrl === '/my_config' || reqUrl === '/my_config.html') {
-			const user = await getAuthenticatedUser(req, res, client).catch(() => null);
-			if (!user) {
-				res.writeHead(302, { 'Location': getDashboardUrl(req) });
-				return res.end();
-			}
-			res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-			return res.end(cachedMyConfigHtml);
-		}
-
-		if (reqUrl === '/log_viewer' || reqUrl === '/log_viewer.html') {
-			const user = await getAuthenticatedUser(req, res, client).catch(() => null);
-			if (!user || !user.isAdmin) {
-				res.writeHead(302, { 'Location': getDashboardUrl(req) });
-				return res.end();
-			}
-			res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-			return res.end(cachedLogViewerHtml);
-		}
-
-		if (reqUrl === '/sillydatabase' || reqUrl === '/sillydatabase.html') {
-			const user = await getAuthenticatedUser(req, res, client).catch(() => null);
-			if (!user || !user.isAdmin) {
-				res.writeHead(302, { 'Location': getDashboardUrl(req) });
-				return res.end();
-			}
-			res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-			return res.end(cachedSillyDatabaseHtml);
-		}
-
-		if (reqUrl === '/admin_panel' || reqUrl === '/admin_panel.html') {
-			const user = await getAuthenticatedUser(req, res, client).catch(() => null);
-			if (!user || !user.isAdmin) {
-				res.writeHead(302, { 'Location': getDashboardUrl(req) });
-				return res.end();
-			}
-			res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-			return res.end(cachedAdminPanelHtml);
-		}
-
-		if (reqUrl === '/admin_panel/api' || reqUrl === '/admin_panel/api.html') {
-			const user = await getAuthenticatedUser(req, res, client).catch(() => null);
-			if (!user || !user.isAdmin) {
-				res.writeHead(302, { 'Location': getDashboardUrl(req) });
-				return res.end();
-			}
-			res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-			return res.end(cachedAdminApiLogsHtml);
-		}
-
-		if (reqUrl === '/edit' || reqUrl === '/edit.html') {
-			if (isBotDomain) {
-				const mainDomain = hostHeader.replace('bot.', '');
-				const protocol = req.headers['x-forwarded-proto'] || (req.socket.encrypted || req.headers.host?.includes('furred') ? 'https' : 'http');
-				res.writeHead(302, { 'Location': `${protocol}://${mainDomain}/edit` });
-				return res.end();
+			if (resolvedScriptPath && fs.existsSync(resolvedScriptPath) && fs.statSync(resolvedScriptPath).isFile()) {
+				try {
+					const fileData = fs.readFileSync(resolvedScriptPath);
+					res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8' });
+					return res.end(fileData);
+				} catch (err) {
+					console.error('[Dashboard] Error serving script asset:', resolvedScriptPath, err);
+					res.writeHead(500, { 'Content-Type': 'text/plain' });
+					return res.end('Internal Server Error');
+				}
 			} else {
-				const user = await getAuthenticatedUser(req, res, client).catch(() => null);
-				if (!user || (user.userId !== '389264086753345548' && process.env.STANDALONE !== 'true')) {
-					const botUrl = getDashboardUrl(req);
-					res.writeHead(302, { 'Location': `${botUrl}/api/auth/login?from=edit` });
-					return res.end();
-				}
-				res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-				return res.end(cachedEditHtml);
+				res.writeHead(404, { 'Content-Type': 'text/plain' });
+				return res.end('Not Found');
 			}
 		}
 
-		if (reqUrl === '/' || reqUrl === '/index.html' || reqUrl === '/home' || reqUrl === '/home.html' || reqUrl === '/dashboard') {
-			if (isBotDomain) {
-				res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-				// bot.furred.site / bot.localhost
-				if (reqUrl === '/dashboard') {
-					return res.end(cachedHtml); // Dashboard (index.html)
+		// Static Asset Serving (/styles, /controllers, /components, /public, /shares, /assets, /.well-known, favicon)
+		if (reqUrl.startsWith('/styles/') || reqUrl.startsWith('/controllers/') || reqUrl.startsWith('/components/') || reqUrl.startsWith('/public/') || reqUrl.startsWith('/shares/') || reqUrl.startsWith('/assets/') || reqUrl.startsWith('/.well-known/') || reqUrl === '/favicon.ico') {
+			const cleanUrl = reqUrl.replace(/\.\./g, ''); // Path traversal defense
+			const lowerUrl = cleanUrl.toLowerCase();
+
+			// Strictly block direct requests to server-side controllers and backend modules
+			if (lowerUrl.includes('aboutmecontroller') || 
+			    lowerUrl.includes('sillydatabasecontroller') || 
+			    cleanUrl === '/controllers/error404.js' ||
+			    lowerUrl.includes('/models/') || 
+			    lowerUrl.includes('/config/') || 
+			    lowerUrl.includes('/data/') ||
+			    lowerUrl.includes('/backend/')) {
+				res.writeHead(404, { 'Content-Type': 'text/plain' });
+				return res.end('Not Found');
+			}
+
+			// Whitelisted directories where static assets are allowed to be served from
+			const allowedStaticRoots = [
+				path.join(__dirname, 'public'),
+				path.join(__dirname, 'styles'),
+				path.join(__dirname, 'controllers', 'bot'),
+				path.join(__dirname, 'controllers', 'temp')
+			];
+
+			const candidatePaths = [
+				path.join(__dirname, 'public', cleanUrl),
+				path.join(__dirname, 'public', cleanUrl.replace(/^\/public\//, '')),
+				path.join(__dirname, 'styles', cleanUrl.replace(/^\/styles\//, '')),
+				path.join(__dirname, 'public', 'assets', cleanUrl.replace(/^\/assets\//, '')),
+				path.join(__dirname, 'public', 'assets', 'favicon', cleanUrl.replace(/^\/assets\/favicon\//, '').replace(/^\/assets\//, '')),
+				path.join(__dirname, 'public', 'components', cleanUrl.replace(/^\/shares\//, '').replace(/^\/components\//, '')),
+				path.join(__dirname, 'public', 'controllers', cleanUrl.replace(/^\/controllers\//, '')),
+				path.join(__dirname, 'controllers', 'bot', cleanUrl.replace(/^\/controllers\/bot\//, '').replace(/^\/controllers\//, '')),
+				path.join(__dirname, 'controllers', 'temp', cleanUrl.replace(/^\/controllers\/temp\//, '').replace(/^\/controllers\//, ''))
+			];
+
+			let resolvedStaticPath = null;
+			for (const cp of candidatePaths) {
+				const resolved = path.resolve(cp);
+				const isInsideAllowedRoot = allowedStaticRoots.some(root => resolved.startsWith(root + path.sep) || resolved === root);
+				if (isInsideAllowedRoot && fs.existsSync(resolved) && fs.statSync(resolved).isFile()) {
+					resolvedStaticPath = resolved;
+					break;
 				}
-				// Default on bot subdomain is the bot homepage (home.html)
-				return res.end(cachedHomeHtml);
-			} else {
-				// furred.site / localhost
-				if (reqUrl === '/' || reqUrl === '/index.html') {
-					res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-					return res.end(cachedAboutMeHtml); // Main Portfolio (about_me.html)
+			}
+
+			if (resolvedStaticPath) {
+				const ext = path.extname(resolvedStaticPath).toLowerCase();
+				const mimeMap = {
+					'.css': 'text/css; charset=utf-8',
+					'.js': 'application/javascript; charset=utf-8',
+					'.html': 'text/html; charset=utf-8',
+					'.json': 'application/json; charset=utf-8',
+					'.png': 'image/png',
+					'.jpg': 'image/jpeg',
+					'.jpeg': 'image/jpeg',
+					'.svg': 'image/svg+xml',
+					'.ico': 'image/x-icon',
+					'.webp': 'image/webp',
+					'.webmanifest': 'application/manifest+json',
+					'.woff': 'font/woff',
+					'.woff2': 'font/woff2',
+					'.ttf': 'font/ttf'
+				};
+				const contentType = mimeMap[ext] || 'application/octet-stream';
+				try {
+					const fileData = fs.readFileSync(resolvedStaticPath);
+					res.writeHead(200, { 'Content-Type': contentType });
+					return res.end(fileData);
+				} catch (err) {
+					console.error('[Dashboard] Error serving static asset:', resolvedStaticPath, err);
 				}
-				// Redirect home or dashboard requested on main domain to bot subdomain
-				const botUrl = getDashboardUrl(req);
-				const targetPath = reqUrl === '/dashboard' ? '/dashboard' : '/';
-				res.writeHead(302, { 'Location': `${botUrl}${targetPath}` });
-				return res.end();
 			}
 		}
 
-		// Endpoint: GET /api/auth/login - Redirect user to Discord OAuth page
+		// Dynamically handle all page routes via StructureManager
+		const isPageHandled = await structureManager.handleRoute(req, res, {
+			client,
+			sessions,
+			userHasGuildPermission,
+			getAuthenticatedUser,
+			getDashboardUrl,
+			parseCookies,
+			isLocalEnvironment
+		});
+
+		if (isPageHandled) {
+			return;
+		}
+
+		// Endpoint: GET /api/auth/login - Redirect user to Discord OAuth page (or Mock login on localhost)
 		if (reqUrl === '/api/auth/login') {
-			if (process.env.STANDALONE === 'true') {
+			if (isLocalEnvironment(req)) {
 				const sessionId = 'standalone_mock_session_id';
 				sessions[sessionId] = {
 					userId: 'mock_user_id',
@@ -1444,9 +1436,27 @@ function startDashboard(client) {
 					avatar: '0',
 					accessToken: 'mock_access_token',
 					refreshToken: 'mock_refresh_token',
-					expiresAt: Date.now() + 3600000
+					expiresAt: Date.now() + 365 * 24 * 3600 * 1000
 				};
 				saveSessions();
+
+				const from = parsedUrl.searchParams.get('from') || 'dashboard';
+				let redirectTarget = '/dashboard';
+				if (from === 'home' || from === '/') {
+					redirectTarget = '/';
+				} else if (from.startsWith('/')) {
+					redirectTarget = from;
+				} else if (from) {
+					redirectTarget = `/${from}`;
+				}
+
+				// If redirecting to /edit and currently on bot subdomain, send to main domain
+				if (redirectTarget === '/edit' || redirectTarget === '/edit.html') {
+					if (hostHeader.startsWith('bot.') || hostHeader.includes('bot.localhost') || hostHeader.includes('bot.127.0.0.1')) {
+						const mainHost = hostHeader.replace(/^bot\./, '');
+						redirectTarget = `${protocol}://${mainHost}/edit`;
+					}
+				}
 
 				const cookieOptions = [
 					`session_id=${sessionId}`,
@@ -1457,7 +1467,7 @@ function startDashboard(client) {
 				];
 				res.writeHead(302, {
 					'Set-Cookie': cookieOptions.join('; '),
-					'Location': '/dashboard'
+					'Location': redirectTarget
 				});
 				return res.end();
 			}
@@ -1481,14 +1491,21 @@ function startDashboard(client) {
 
 			if (hasSession) {
 				// Redirect immediately back to appropriate page
-				const redirectTarget = from === 'home' ? getDashboardUrl(req) : `${getDashboardUrl(req)}/dashboard`;
+				let redirectTarget = `${getDashboardUrl(req)}/dashboard`;
+				if (from === 'home' || from === '/') {
+					redirectTarget = getDashboardUrl(req);
+				} else if (from === 'edit' || from === '/edit') {
+					const mainHost = hostHeader.replace(/^bot\./, '');
+					redirectTarget = `${protocol}://${mainHost}/edit`;
+				} else if (from) {
+					redirectTarget = from.startsWith('/') ? from : `/${from}`;
+				}
 				res.writeHead(302, { 'Location': redirectTarget });
 				return res.end();
 			}
 
 			const isLocal = process.platform === 'darwin' || process.cwd().includes('newdramelon');
 			const host = req.headers.host || (isLocal ? `localhost:${PORT}` : 'bot.furred.site');
-			const protocol = req.headers['x-forwarded-proto'] || (req.socket.encrypted || req.headers.host?.includes('furred') ? 'https' : 'http');
 			const REDIRECT_URI = process.env.DASHBOARD_REDIRECT_URI || `${protocol}://${host}/api/auth/callback`;
 
 			const scopes = 'identify guilds role_connections.write';
@@ -1527,7 +1544,6 @@ function startDashboard(client) {
 
 			const isLocal = process.platform === 'darwin' || process.cwd().includes('newdramelon');
 			const host = req.headers.host || (isLocal ? `localhost:${PORT}` : 'bot.furred.site');
-			const protocol = req.headers['x-forwarded-proto'] || (req.socket.encrypted || req.headers.host?.includes('furred') ? 'https' : 'http');
 			const REDIRECT_URI = process.env.DASHBOARD_REDIRECT_URI || `${protocol}://${host}/api/auth/callback`;
 
 			const postData = querystring.stringify({
@@ -1632,6 +1648,16 @@ function startDashboard(client) {
 			return res.end();
 		}
 
+		// Endpoint: GET /api/auth/me - Retrieve currently authenticated user profile
+		if (reqUrl === '/api/auth/me' && req.method === 'GET') {
+			const user = await getAuthenticatedUser(req, res, client).catch(() => null);
+			res.writeHead(200, { 'Content-Type': 'application/json' });
+			if (user) {
+				return res.end(JSON.stringify({ authenticated: true, user }));
+			}
+			return res.end(JSON.stringify({ authenticated: false, user: null }));
+		}
+
 		// Endpoint: GET /api/user/guilds - Fetch user's Discord guilds categorized by bot presence
 		if (reqUrl === '/api/user/guilds') {
 			const cookies = parseCookies(req);
@@ -1641,7 +1667,7 @@ function startDashboard(client) {
 				return res.end(JSON.stringify({ error: 'Unauthorized' }));
 			}
 
-			if (process.env.STANDALONE === 'true') {
+			if (isLocalEnvironment(req) || process.env.STANDALONE === 'true') {
 				const managedGuilds = [];
 				const inviteGuilds = [];
 				const CLIENT_ID = process.env.CLIENT_ID || 'mock_client_id';
@@ -2307,13 +2333,15 @@ function startDashboard(client) {
 
 		// Endpoint: GET /api/presence/owner - Get sanitized live presence of the owner
 		if (reqUrl === '/api/presence/owner') {
-			res.writeHead(200, { 'Content-Type': 'application/json' });
 			try {
 				const presenceData = await aboutMeController.getOwnerPresence(client);
+				res.writeHead(200, { 'Content-Type': 'application/json' });
 				return res.end(JSON.stringify(presenceData));
 			} catch (err) {
 				console.error('[Dashboard] Error serving owner presence:', err);
-				res.writeHead(500, { 'Content-Type': 'application/json' });
+				if (!res.headersSent) {
+					res.writeHead(500, { 'Content-Type': 'application/json' });
+				}
 				return res.end(JSON.stringify({ error: 'Internal Server Error' }));
 			}
 		}
@@ -2520,9 +2548,16 @@ function startDashboard(client) {
 			}
 		}
 
-		// Fallback for not found files (404)
-		res.writeHead(404, { 'Content-Type': 'text/plain' });
-		return res.end('Not Found');
+		// Fallback for not found endpoints/files (404)
+		if (isApiRequest) {
+			res.writeHead(404, { 'Content-Type': 'application/json' });
+			return res.end(JSON.stringify({ error: 'Endpoint Not Found', status: 404 }));
+		}
+		if (isAssetRequest) {
+			res.writeHead(404, { 'Content-Type': 'text/plain' });
+			return res.end('Not Found');
+		}
+		return structureManager.render404(req, res);
 	});
 
 	server.listen(PORT, '0.0.0.0', () => {

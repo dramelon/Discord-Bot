@@ -1,0 +1,121 @@
+<div class="modal-testing-container">
+	<!-- Header Banner -->
+	<div class="test-header">
+		<div class="test-header-badge">
+			<span class="material-symbols-outlined">widgets</span>
+			<span>Interactive Component Lab</span>
+		</div>
+		<h1 class="test-title">Custom Modal Module Testing</h1>
+		<p class="test-subtitle">
+			Test and verify the screen-blocking interactive modal system with alerts, dynamic password reveal, multi-select dropdowns, and Promise return values.
+		</p>
+	</div>
+
+	<!-- Main Testing Grid -->
+	<div class="test-grid">
+		<!-- 1. Alert Notifications Card -->
+		<div class="test-card">
+			<div class="test-card-header">
+				<span class="material-symbols-outlined card-icon">notifications</span>
+				<h3>1. Alert &amp; Notice Modals</h3>
+			</div>
+			<p class="test-card-desc">Single-action focus modals for warnings, errors, and system notifications.</p>
+			<div class="test-button-group">
+				<button id="btnAlertInfo" class="test-btn btn-info">
+					<span class="material-symbols-outlined">info</span> Info Alert
+				</button>
+				<button id="btnAlertSuccess" class="test-btn btn-success">
+					<span class="material-symbols-outlined">check_circle</span> Success Alert
+				</button>
+				<button id="btnAlertWarning" class="test-btn btn-warning">
+					<span class="material-symbols-outlined">warning</span> Warning Alert
+				</button>
+				<button id="btnAlertError" class="test-btn btn-danger">
+					<span class="material-symbols-outlined">error</span> Error Alert
+				</button>
+			</div>
+		</div>
+
+		<!-- 2. Action Confirmations Card -->
+		<div class="test-card">
+			<div class="test-card-header">
+				<span class="material-symbols-outlined card-icon">help_center</span>
+				<h3>2. Action Confirmations</h3>
+			</div>
+			<p class="test-card-desc">Multi-button decision prompts returning true/false or custom action IDs.</p>
+			<div class="test-button-group">
+				<button id="btnConfirmStandard" class="test-btn btn-primary">
+					<span class="material-symbols-outlined">help</span> Standard Confirm
+				</button>
+				<button id="btnConfirmDanger" class="test-btn btn-danger">
+					<span class="material-symbols-outlined">delete_forever</span> Danger Action
+				</button>
+				<button id="btnConfirmMultiChoice" class="test-btn btn-secondary">
+					<span class="material-symbols-outlined">alt_route</span> 3-Action Choices
+				</button>
+			</div>
+		</div>
+
+		<!-- 3. Text & Number Input Prompts -->
+		<div class="test-card">
+			<div class="test-card-header">
+				<span class="material-symbols-outlined card-icon">edit_square</span>
+				<h3>3. Text &amp; Number Inputs</h3>
+			</div>
+			<p class="test-card-desc">Input prompts with live validation, placeholder text, and min/max ranges.</p>
+			<div class="test-button-group">
+				<button id="btnPromptText" class="test-btn btn-primary">
+					<span class="material-symbols-outlined">badge</span> Text Prompt
+				</button>
+				<button id="btnPromptNumber" class="test-btn btn-secondary">
+					<span class="material-symbols-outlined">pin</span> Number Prompt (1-100)
+				</button>
+				<button id="btnPromptTextarea" class="test-btn btn-secondary">
+					<span class="material-symbols-outlined">notes</span> Textarea Note
+				</button>
+			</div>
+		</div>
+
+		<!-- 4. Dynamic Password & Dropdowns -->
+		<div class="test-card">
+			<div class="test-card-header">
+				<span class="material-symbols-outlined card-icon">security</span>
+				<h3>4. Dynamic Password &amp; Dropdowns</h3>
+			</div>
+			<p class="test-card-desc">Password showing latest char temporarily before turning into a dot, plus custom dropdowns.</p>
+			<div class="test-button-group">
+				<button id="btnPromptPassword" class="test-btn btn-primary">
+					<span class="material-symbols-outlined">password</span> Dynamic Password
+				</button>
+				<button id="btnPromptSingleSelect" class="test-btn btn-secondary">
+					<span class="material-symbols-outlined">arrow_drop_down_circle</span> Single Dropdown
+				</button>
+				<button id="btnPromptMultiSelect" class="test-btn btn-info">
+					<span class="material-symbols-outlined">checklist</span> Multi Dropdown (Chips)
+				</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Real-Time Modal Response Output Card -->
+	<div class="result-card">
+		<div class="result-header">
+			<div class="result-title-group">
+				<span class="material-symbols-outlined">terminal</span>
+				<h3>Caller Response Output (Promise Resolution)</h3>
+			</div>
+			<button id="btnClearLogs" class="btn-clear-logs" title="Clear console output">
+				<span class="material-symbols-outlined">backspace</span> Clear Output
+			</button>
+		</div>
+		<div class="result-body">
+			<pre id="modalResultDisplay">// Interact with any modal above to view the returned result here in real time...</pre>
+		</div>
+	</div>
+</div>
+
+<!-- Page Scoped Stylesheet -->
+<link rel="stylesheet" href="/styles/testingpagecanvas.css">
+
+<!-- Testing Page Script -->
+<script src="/script/modaltesting.js"></script>

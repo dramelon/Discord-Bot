@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>404 - Page Not Found | Fluffingiously Dragooon</title>
+	<!-- Google Fonts -->
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+	<!-- 404 Stylesheet -->
+	<link rel="stylesheet" href="/styles/404.css">
+</head>
+<body class="error-page-body">
+	<!-- Ambient Background Elements -->
+	<div class="glow-orb glow-orb-violet"></div>
+	<div class="glow-orb glow-orb-cyan"></div>
+	<div class="ambient-grid"></div>
+
+	<div class="error-container">
+		<!-- Error Card -->
+		<div class="error-card">
+			<!-- Top Status Badge -->
+			<div class="status-badge">
+				<span class="status-dot"></span>
+				<span class="status-code">HTTP 404 &bull; ROUTE NOT FOUND</span>
+			</div>
+
+			<!-- Large 404 Visual Indicator -->
+			<div class="error-visual">
+				<span class="error-number">404</span>
+				<div class="icon-bubble">
+					<span class="material-symbols-outlined">explore_off</span>
+				</div>
+			</div>
+
+			<!-- Heading & Subtitle -->
+			<h1 class="error-title">Lost in the Digital Ether</h1>
+			<p class="error-message">
+				The route <code id="pathDisplay" class="code-badge">{{REQUESTED_PATH}}</code> does not exist on 
+				<span id="domainDisplay" class="domain-badge">{{CURRENT_HOST}}</span>.
+			</p>
+
+			<!-- Specific notice for unhosted / separate subdomains like excel.furred.site -->
+			<div id="subdomainNotice" class="subdomain-notice" style="display: none;">
+				<span class="material-symbols-outlined notice-icon">info</span>
+				<div class="notice-text">
+					<strong>Separate Application Notice:</strong>
+					<span id="subdomainNoticeDetail">This subdomain is a distinct standalone service and is not hosted under this dashboard deployment.</span>
+				</div>
+			</div>
+
+			<!-- Diagnostic Info Pill -->
+			<div class="diag-container">
+				<div class="diag-row">
+					<span class="diag-label">CURRENT ORIGIN</span>
+					<span id="originDisplay" class="diag-val">{{ORIGIN}}</span>
+				</div>
+				<div class="diag-row">
+					<span class="diag-label">DESTINATION ROOT</span>
+					<span id="rootDisplay" class="diag-val">/</span>
+				</div>
+			</div>
+
+			<!-- Action Buttons -->
+			<div class="action-buttons">
+				<a id="returnOriginBtn" href="{{ORIGIN}}/" class="btn btn-primary">
+					<span class="material-symbols-outlined">home</span>
+					<span id="returnOriginBtnText">Return to Origin</span>
+				</a>
+				<button id="goBackBtn" type="button" class="btn btn-secondary">
+					<span class="material-symbols-outlined">arrow_back</span>
+					<span>Go Back</span>
+				</button>
+			</div>
+		</div>
+
+		<!-- Footer Note -->
+		<div class="error-footer">
+			<span>Fluffingiously Dragooon Web Architecture</span>
+		</div>
+	</div>
+
+	<!-- Page Controller Script -->
+	<script src="/script/error404.js"></script>
+</body>
+</html>

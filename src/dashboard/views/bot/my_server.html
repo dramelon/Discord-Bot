@@ -1,0 +1,119 @@
+<div class="my-server-container">
+	<!-- Dashboard Header Banner -->
+	<header class="dashboard-header">
+		<div class="dashboard-header-info">
+			<div class="dashboard-title-row">
+				<h2 class="dashboard-title">My Discord Servers</h2>
+				<span class="live-status-badge online">
+					<span class="status-pulse-dot"></span>
+					<span>INTEGRATIONS ACTIVE</span>
+				</span>
+			</div>
+			<p class="dashboard-subtitle">Manage guild configurations where the bot is joined, or invite Fluffingiously Dragooon to servers you administer.</p>
+		</div>
+
+		<!-- Toolbar: Search and Filter Tabs -->
+		<div class="server-toolbar">
+			<div class="server-search-box">
+				<span class="material-symbols-outlined">search</span>
+				<input type="text" id="serverSearchInput" class="server-search-input" placeholder="Search servers by name..." autocomplete="off">
+			</div>
+			<div class="server-filter-tabs">
+				<button type="button" class="filter-tab active" data-filter="all">
+					<span>All Servers</span>
+					<span class="filter-tab-count" id="filterAllCount">-</span>
+				</button>
+				<button type="button" class="filter-tab" data-filter="managed">
+					<span>Active Bot</span>
+					<span class="filter-tab-count" id="filterManagedCount">-</span>
+				</button>
+				<button type="button" class="filter-tab" data-filter="configured">
+					<span>Configured</span>
+					<span class="filter-tab-count" id="filterConfiguredCount">-</span>
+				</button>
+				<button type="button" class="filter-tab" data-filter="setup">
+					<span>Setup Needed</span>
+					<span class="filter-tab-count" id="filterSetupCount">-</span>
+				</button>
+				<button type="button" class="filter-tab" data-filter="inviteable">
+					<span>Available to Invite</span>
+					<span class="filter-tab-count" id="filterInviteCount">-</span>
+				</button>
+			</div>
+		</div>
+	</header>
+
+	<!-- Quick Stats Banner -->
+	<div class="server-stats-grid">
+		<div class="stat-card">
+			<div class="stat-icon-wrapper primary">
+				<span class="material-symbols-outlined">dns</span>
+			</div>
+			<div class="stat-info">
+				<span class="stat-value" id="statTotalCount">-</span>
+				<span class="stat-label">Total Servers</span>
+			</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-icon-wrapper success">
+				<span class="material-symbols-outlined">check_circle</span>
+			</div>
+			<div class="stat-info">
+				<span class="stat-value" id="statConfiguredCount">-</span>
+				<span class="stat-label">Fully Configured</span>
+			</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-icon-wrapper warning">
+				<span class="material-symbols-outlined">settings_suggest</span>
+			</div>
+			<div class="stat-info">
+				<span class="stat-value" id="statManagedCount">-</span>
+				<span class="stat-label">Active Bot Guilds</span>
+			</div>
+		</div>
+		<div class="stat-card">
+			<div class="stat-icon-wrapper secondary">
+				<span class="material-symbols-outlined">person_add</span>
+			</div>
+			<div class="stat-info">
+				<span class="stat-value" id="statInviteableCount">-</span>
+				<span class="stat-label">Ready to Invite</span>
+			</div>
+		</div>
+	</div>
+
+	<!-- Section 1: Managed Guilds -->
+	<section class="server-section-panel" id="managedSectionPanel">
+		<div class="server-section-header">
+			<h3 class="server-section-title">
+				<span class="material-symbols-outlined text-primary">verified</span>
+				<span>Manage Active Servers</span>
+			</h3>
+			<span class="server-section-count" id="managedCountBadge">0</span>
+		</div>
+		<div id="managedGuildsContainer" class="servers-grid">
+			<!-- Injected by Controller -->
+		</div>
+	</section>
+
+	<!-- Section 2: Inviteable Guilds -->
+	<section class="server-section-panel" id="inviteSectionPanel">
+		<div class="server-section-header">
+			<h3 class="server-section-title">
+				<span class="material-symbols-outlined text-secondary">group_add</span>
+				<span>Invite Bot to Servers</span>
+			</h3>
+			<span class="server-section-count" id="inviteCountBadge">0</span>
+		</div>
+		<div id="inviteGuildsContainer" class="servers-grid">
+			<!-- Injected by Controller -->
+		</div>
+	</section>
+</div>
+
+<!-- Page-specific Stylesheet at Bottom -->
+<link rel="stylesheet" href="/styles/my_server.css">
+
+<!-- Page-specific Controller Script at Bottom -->
+<script src="/script/my_server.js"></script>

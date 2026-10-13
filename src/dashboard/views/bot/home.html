@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Fluffingiously Dragooon - Home</title>
+	<!-- Fonts -->
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+	<!-- Link to Core and Extracted Stylesheet -->
+	<link rel="stylesheet" href="/styles/root.css">
+	<link rel="stylesheet" href="/styles/style.css">
+	<style>
+		/* Page specific layout */
+		body {
+			flex-direction: column;
+			background-image: 
+				radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+				radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.12) 0%, transparent 45%),
+				radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.04) 0%, transparent 50%);
+		}
+	</style>
+</head>
+<body>
+
+	<!-- Navigation Header -->
+	<header id="navHeader">
+		<div class="header-container">
+			<a href="/" class="brand-logo">
+				<span class="logo-icon">🐉</span>
+				<span>Fluffingiously Dragooon</span>
+			</a>
+			<div style="display: flex; gap: 1rem; align-items: center;">
+				<a href="#" id="mainSiteLink" class="header-cta-btn" style="background: transparent; border-color: transparent;">Main Site</a>
+				<a href="#" id="headerDashboardBtn" class="header-cta-btn">Dashboard &rarr;</a>
+			</div>
+		</div>
+	</header>
+
+	<!-- Hero Container for Fullscreen layout -->
+	<div class="hero-container">
+		<section class="hero">
+			<div class="hero-badge">Official Website</div>
+			<h1>Advanced Discord Bot Integration</h1>
+			<p>
+				A lightweight, robust, and highly responsive Discord companion bot designed for community automation, leveling metrics, presence updates, and real-time environment analytics.
+			</p>
+			<a href="#" id="dashboardBtn" class="cta-button">
+				<span>Open Status Dashboard</span>
+				<span>&rarr;</span>
+			</a>
+		</section>
+	</div>
+
+	<div class="section-divider"></div>
+
+	<!-- Features Section -->
+	<section class="features-section">
+		<div class="features-grid">
+			<!-- Feature 1 -->
+			<div class="feature-card">
+				<div class="feature-icon">📊</div>
+				<h3>Status Tracking</h3>
+				<p>Minutely reliability monitoring with historical block grids for both daily operations and hourly heartbeats.</p>
+			</div>
+
+			<!-- Feature 2 -->
+			<div class="feature-card">
+				<div class="feature-icon">🔊</div>
+				<h3>Auto Voice Channels</h3>
+				<p>Dynamic creation and automated lifecycle cleanup for voice channels on Discord guilds to optimize server spacing.</p>
+			</div>
+
+			<!-- Feature 3 -->
+			<div class="feature-card">
+				<div class="feature-icon">✨</div>
+				<h3>Leveling Systems</h3>
+				<p>XP multipliers, level-up card overlays, and messaging synergies connected with activity achievements.</p>
+			</div>
+
+			<!-- Feature 4 -->
+			<div class="feature-card">
+				<div class="feature-icon">🔒</div>
+				<h3>OAuth2 Security</h3>
+				<p>Secure browser cookie mapping utilizing state of the art HTTP-Only session encryption to lock unauthorized control panels.</p>
+			</div>
+		</div>
+	</section>
+
+	<!-- Commands Section Divider -->
+	<div class="section-divider" style="margin-top: 2rem; margin-bottom: 4rem;"></div>
+
+	<!-- Slash Commands Section -->
+	<section class="commands-section">
+		<h2 class="section-heading">Slash Commands</h2>
+		<p class="section-subheading">Browse core interactive commands you can run inside Discord</p>
+		
+		<div class="commands-grid">
+			<!-- Command 1: help -->
+			<div class="command-card" onclick="toggleCommand(this)">
+				<div class="command-header">
+					<span class="command-name"><code>/help</code></span>
+					<span class="command-chevron">▼</span>
+				</div>
+				<div class="command-body">
+					<p class="command-description">Displays a comprehensive list of all available commands, or retrieves detailed info and parameters for a specific command.</p>
+					<div class="command-field">
+						<div class="field-name">Parameters</div>
+						<div class="field-value"><code>command</code> (Optional) - The specific command you want to learn about.</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Command 2: ping -->
+			<div class="command-card" onclick="toggleCommand(this)">
+				<div class="command-header">
+					<span class="command-name"><code>/ping</code></span>
+					<span class="command-chevron">▼</span>
+				</div>
+				<div class="command-body">
+					<p class="command-description">Tests connection latency and response performance between the bot, Discord API, and hosting server.</p>
+					<div class="command-field">
+						<div class="field-name">Latency Diagnostics Returned</div>
+						<div class="field-value">
+							• <strong>Gateway Latency:</strong> Discord WebSocket connection heartbeat duration.<br>
+							• <strong>Round-Trip Response:</strong> Latency between command execution and message response.
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Command 3: clipboard -->
+			<div class="command-card" onclick="toggleCommand(this)">
+				<div class="command-header">
+					<span class="command-name"><code>/clipboard</code></span>
+					<span class="command-chevron">▼</span>
+				</div>
+				<div class="command-body">
+					<p class="command-description">Puts customized text and animated emojis onto a graphic clipboard/sign inside Discord chat.</p>
+					<div class="command-field">
+						<div class="field-name">Parameters</div>
+						<div class="field-value"><code>text</code> (Required) - The message content to render. Supports custom server emojis.</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Command 4: stretch -->
+			<div class="command-card" onclick="toggleCommand(this)">
+				<div class="command-header">
+					<span class="command-name"><code>/stretch</code></span>
+					<span class="command-chevron">▼</span>
+				</div>
+				<div class="command-body">
+					<p class="command-description">Generates a wide-stretched distorted animation of your avatar or a target user's avatar.</p>
+					<div class="command-field">
+						<div class="field-name">Parameters</div>
+						<div class="field-value"><code>target</code> (Optional) - The user whose avatar you want to stretch. Defaults to yourself.</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Command 5: color -->
+			<div class="command-card" onclick="toggleCommand(this)">
+				<div class="command-header">
+					<span class="command-name"><code>/color</code></span>
+					<span class="command-chevron">▼</span>
+				</div>
+				<div class="command-body">
+					<p class="command-description">Manage your personal role name colors and icons through an interactive button interface.</p>
+					<div class="command-field">
+						<div class="field-name">How to Use</div>
+						<div class="field-value">Run the command to open the control panel. Click **Customize** to open a modal where you can input a hex color code or custom icon URL, or click **Remove** to clear your customized role styles.</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Command 6: leaderboard -->
+			<div class="command-card" onclick="toggleCommand(this)">
+				<div class="command-header">
+					<span class="command-name"><code>/leaderboard</code></span>
+					<span class="command-chevron">▼</span>
+				</div>
+				<div class="command-body">
+					<p class="command-description">Displays the server's top 10 users ranked by activity metrics, levels, and total earned XP.</p>
+				</div>
+			</div>
+
+			<!-- Command 7: petpet -->
+			<div class="command-card" onclick="toggleCommand(this)">
+				<div class="command-header">
+					<span class="command-name"><code>/petpet</code></span>
+					<span class="command-chevron">▼</span>
+				</div>
+				<div class="command-body">
+					<p class="command-description">Generates an animated petpet petting hand GIF of your avatar or a chosen user's avatar.</p>
+					<div class="command-field">
+						<div class="field-name">Parameters</div>
+						<div class="field-value"><code>target</code> (Optional) - The user whose profile photo will be petted. Defaults to yourself.</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Command 8: rank -->
+			<div class="command-card" onclick="toggleCommand(this)">
+				<div class="command-header">
+					<span class="command-name"><code>/rank</code></span>
+					<span class="command-chevron">▼</span>
+				</div>
+				<div class="command-body">
+					<p class="command-description">Renders your profile achievement card displaying server ranks, active level tiers, and current XP progression metrics.</p>
+					<div class="command-field">
+						<div class="field-name">Parameters</div>
+						<div class="field-value"><code>target</code> (Optional) - Check another server member's active XP level and profile card.</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Command 9: status -->
+			<div class="command-card" onclick="toggleCommand(this)">
+				<div class="command-header">
+					<span class="command-name"><code>/status</code></span>
+					<span class="command-chevron">▼</span>
+				</div>
+				<div class="command-body">
+					<p class="command-description">Fetch the bot's health check summaries, hosting environment info, and WebSocket heartbeat indicators.</p>
+				</div>
+			</div>
+
+			<!-- Command 10: vc -->
+			<div class="command-card" onclick="toggleCommand(this)">
+				<div class="command-header">
+					<span class="command-name"><code>/vc</code></span>
+					<span class="command-chevron">▼</span>
+				</div>
+				<div class="command-body">
+					<p class="command-description">Configure your dynamic voice channel parameters. Joining the main lobby automatically creates a private voice channel for you.</p>
+					<div class="command-field">
+						<div class="field-name">Channel Controls</div>
+						<div class="field-value">Customize dynamic voice layouts, lock/unlock channels, set member limits, or rename channels via direct slash sub-commands.</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- Footer -->
+	<footer>
+		<p>&copy; 2026 Fluffingiously Dragooon. All rights reserved.</p>
+		<p style="margin-top: 0.25rem;">Domain: <a href="https://furred.site" id="footerMainSiteLink" style="color: var(--text-secondary); text-decoration: none;">furred.site</a></p>
+	</footer>
+
+	<script>
+		// Setup dashboard and main portfolio links dynamically based on environment
+		const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.endsWith('.localhost');
+		
+		const dashboardBtn = document.getElementById('dashboardBtn');
+		const headerDashboardBtn = document.getElementById('headerDashboardBtn');
+		const mainSiteLink = document.getElementById('mainSiteLink');
+		const footerMainSiteLink = document.getElementById('footerMainSiteLink');
+		
+		// The dashboard button points to /dashboard on the bot domain
+		dashboardBtn.href = '/dashboard';
+		headerDashboardBtn.href = '/dashboard';
+		
+		// Main portfolio URL resolution
+		const mainSiteUrl = isLocal ? `http://localhost:${window.location.port}` : 'https://furred.site';
+		if (mainSiteLink) mainSiteLink.href = mainSiteUrl;
+		if (footerMainSiteLink) footerMainSiteLink.href = mainSiteUrl;
+
+		// Listen to scroll position to apply glassy headers background
+		window.addEventListener('scroll', () => {
+			const header = document.getElementById('navHeader');
+			if (window.scrollY > 50) {
+				header.classList.add('scrolled');
+			} else {
+				header.classList.remove('scrolled');
+			}
+		});
+
+		// Toggle Slash Command Card accordion behavior
+		function toggleCommand(card) {
+			const isActive = card.classList.contains('active');
+			
+			// Close other open cards
+			document.querySelectorAll('.command-card').forEach(c => {
+				c.classList.remove('active');
+			});
+			
+			// If the clicked card wasn't active, open it
+			if (!isActive) {
+				card.classList.add('active');
+			}
+		}
+	</script>
+</body>
+</html>

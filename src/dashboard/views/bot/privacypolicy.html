@@ -1,0 +1,325 @@
+<div class="legal-page-container">
+	<!-- Hero Header Banner -->
+	<header class="legal-hero">
+		<div class="legal-hero-top">
+			<div class="legal-badge-group">
+				<div class="legal-pill legal-pill-primary">
+					<span class="material-symbols-outlined">shield</span>
+					<span>Data &amp; Privacy</span>
+				</div>
+				<div class="legal-pill legal-pill-meta">
+					<span class="material-symbols-outlined">calendar_today</span>
+					<span>Last Updated: August 31, 2026</span>
+				</div>
+			</div>
+
+			<!-- Switcher Tabs -->
+			<nav class="legal-tabs" aria-label="Legal Documents Navigation">
+				<a href="/rules" class="legal-tab-link">
+					<span class="material-symbols-outlined">menu_book</span>
+					<span>Server Rules</span>
+				</a>
+				<a href="/tos" class="legal-tab-link">
+					<span class="material-symbols-outlined">gavel</span>
+					<span>Terms</span>
+				</a>
+				<a href="/privacypolicy" class="legal-tab-link active">
+					<span class="material-symbols-outlined">shield</span>
+					<span>Privacy</span>
+				</a>
+			</nav>
+		</div>
+
+		<div class="legal-title-group">
+			<h1 class="legal-title">
+				<span>Privacy Policy</span>
+			</h1>
+			<p class="legal-subtitle">
+				This Privacy Policy explains how <strong>fluffingiouslyDragooon</strong> (&ldquo;the Bot&rdquo;), developed and operated independently by <strong>_d6_</strong> (&ldquo;the Developer&rdquo;), collects, stores, and protects your information.
+			</p>
+		</div>
+	</header>
+
+	<!-- Main Content Layout with Sticky TOC -->
+	<div class="legal-content-layout">
+		<!-- Sidebar Sticky Navigation -->
+		<aside class="legal-toc-wrapper" aria-label="Table of Contents">
+			<div class="legal-toc-card">
+				<div class="legal-toc-header">
+					<span class="material-symbols-outlined" style="font-size: 16px;">format_list_bulleted</span>
+					<span>Quick Navigation</span>
+				</div>
+				<ul class="legal-toc-list">
+					<li>
+						<a href="#sec-data-collected" class="legal-toc-link">
+							<span class="legal-toc-num">01.</span>
+							<span>Data Collected</span>
+						</a>
+					</li>
+					<li>
+						<a href="#sec-storage-security" class="legal-toc-link">
+							<span class="legal-toc-num">02.</span>
+							<span>Storage &amp; Security</span>
+						</a>
+					</li>
+					<li>
+						<a href="#sec-usage-sharing" class="legal-toc-link">
+							<span class="legal-toc-num">03.</span>
+							<span>Usage &amp; Third-Parties</span>
+						</a>
+					</li>
+					<li>
+						<a href="#sec-user-rights" class="legal-toc-link">
+							<span class="legal-toc-num">04.</span>
+							<span>User Rights &amp; Deletion</span>
+						</a>
+					</li>
+					<li>
+						<a href="#sec-contact-info" class="legal-toc-link">
+							<span class="legal-toc-num">05.</span>
+							<span>Contact Information</span>
+						</a>
+					</li>
+				</ul>
+			</div>
+
+			<!-- Quick Support Box -->
+			<div class="legal-sidebar-support">
+				<div class="legal-sidebar-support-title">
+					<span class="material-symbols-outlined" style="color: var(--secondary);">lock_reset</span>
+					<span>Data Deletion</span>
+				</div>
+				<p class="legal-sidebar-support-text">
+					Want to permanently wipe your bot data, profiles, and progression metrics? Generate a deletion request.
+				</p>
+				<button id="btnRequestDataDeletion" class="legal-support-btn" style="width: 100%; border-color: rgba(202, 190, 255, 0.3); background: rgba(202, 190, 255, 0.1); color: var(--primary);">
+					<span class="material-symbols-outlined" style="font-size: 16px;">delete_forever</span>
+					<span>Request Data Deletion</span>
+				</button>
+			</div>
+		</aside>
+
+		<!-- Main Policy Body Sections -->
+		<div class="legal-main-content">
+			<!-- Section 1: Data Collected -->
+			<section id="sec-data-collected" class="legal-section-card">
+				<div class="legal-section-header">
+					<div class="legal-section-title-wrap">
+						<div class="legal-section-icon-badge">
+							<span class="material-symbols-outlined">dataset</span>
+						</div>
+						<h2 class="legal-section-title">1. Data Collected</h2>
+					</div>
+					<button class="btn-copy-section" data-target="sec-data-collected" title="Copy section link">
+						<span class="material-symbols-outlined">link</span>
+					</button>
+				</div>
+				<div class="legal-section-body">
+					<p>
+						We practice strict data minimization. The Bot collects and processes only the minimum data essential for delivering core bot features and maintaining server preferences:
+					</p>
+
+					<div class="legal-item-grid">
+						<!-- Item 1 -->
+						<div class="legal-item-box">
+							<div class="legal-item-header">
+								<span class="material-symbols-outlined legal-item-icon">badge</span>
+								<span class="legal-item-title">Discord Identifiers</span>
+							</div>
+							<p class="legal-item-desc">
+								Discord User IDs, Server (Guild) IDs, and Channel IDs to associate user records, assign role configurations, and deliver command replies.
+							</p>
+						</div>
+
+						<!-- Item 2 -->
+						<div class="legal-item-box">
+							<div class="legal-item-header">
+								<span class="material-symbols-outlined legal-item-icon">terminal</span>
+								<span class="legal-item-title">User Input &amp; Parameters</span>
+							</div>
+							<p class="legal-item-desc">
+								Command arguments, selected choices, and parameters supplied during slash command executions (e.g. custom clipboard text, search queries).
+							</p>
+						</div>
+
+						<!-- Item 3 -->
+						<div class="legal-item-box">
+							<div class="legal-item-header">
+								<span class="material-symbols-outlined legal-item-icon">settings</span>
+								<span class="legal-item-title">Configuration &amp; Preferences</span>
+							</div>
+							<p class="legal-item-desc">
+								Custom user preferences (such as personal color roles) and guild-level server settings (such as auto-VC channels and prefix configs).
+							</p>
+						</div>
+
+						<!-- Item 4 -->
+						<div class="legal-item-box">
+							<div class="legal-item-header">
+								<span class="material-symbols-outlined legal-item-icon">trending_up</span>
+								<span class="legal-item-title">Gameplay &amp; Leveling Data</span>
+							</div>
+							<p class="legal-item-desc">
+								Activity metrics, experience points (XP), virtual currency balances, inventory items, ranks, and leaderboard progression records.
+							</p>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- Section 2: Data Storage & Security -->
+			<section id="sec-storage-security" class="legal-section-card">
+				<div class="legal-section-header">
+					<div class="legal-section-title-wrap">
+						<div class="legal-section-icon-badge">
+							<span class="material-symbols-outlined">security</span>
+						</div>
+						<h2 class="legal-section-title">2. Data Storage &amp; Security</h2>
+					</div>
+					<button class="btn-copy-section" data-target="sec-storage-security" title="Copy section link">
+						<span class="material-symbols-outlined">link</span>
+					</button>
+				</div>
+				<div class="legal-section-body">
+					<p>
+						<strong>Storage Location:</strong> All collected data is stored locally in a secure, self-hosted database environment maintained and administered exclusively by the Developer. No unmanaged public database clusters are used.
+					</p>
+					<p>
+						<strong>Data Retention:</strong> Stored data is retained indefinitely to maintain seamless persistence of your server configurations, leveling milestones, and user profiles until a manual deletion request is submitted or the Bot service is permanently discontinued.
+					</p>
+					<div class="legal-callout legal-callout-info">
+						<span class="material-symbols-outlined legal-callout-icon">lock</span>
+						<div class="legal-callout-content">
+							<strong>Security Protocols</strong>
+							<p>Access to production database records is strictly gated and limited exclusively to authorized maintenance procedures via authenticated secure tunnels.</p>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- Section 3: Data Usage & Third-Party Sharing -->
+			<section id="sec-usage-sharing" class="legal-section-card">
+				<div class="legal-section-header">
+					<div class="legal-section-title-wrap">
+						<div class="legal-section-icon-badge">
+							<span class="material-symbols-outlined">share</span>
+						</div>
+						<h2 class="legal-section-title">3. Data Usage &amp; Third-Party Sharing</h2>
+					</div>
+					<button class="btn-copy-section" data-target="sec-usage-sharing" title="Copy section link">
+						<span class="material-symbols-outlined">link</span>
+					</button>
+				</div>
+				<div class="legal-section-body">
+					<p>
+						<strong>Primary Usage:</strong> Your data is utilized exclusively to maintain gameplay mechanics, execute requested bot functions, and preserve server-specific settings across Discord.
+					</p>
+					<p>
+						<strong>No Third-Party Sales:</strong> Your data is <strong>never sold, rented, monetized, or shared</strong> with third-party advertising, data brokers, or marketing networks under any circumstances.
+					</p>
+
+					<!-- AI Analysis Callout Box -->
+					<div class="legal-callout">
+						<span class="material-symbols-outlined legal-callout-icon" style="color: var(--secondary);">smart_toy</span>
+						<div class="legal-callout-content">
+							<strong>Bug Diagnostics &amp; AI Analysis</strong>
+							<p>
+								In the event of critical system errors, uncaught exceptions, or database anomalies, anonymized error stack traces and relevant command input snippets may be processed via AI analysis tools strictly for debugging, troubleshooting, stability tracking, and code optimization purposes.
+							</p>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- Section 4: User Rights & Data Deletion -->
+			<section id="sec-user-rights" class="legal-section-card">
+				<div class="legal-section-header">
+					<div class="legal-section-title-wrap">
+						<div class="legal-section-icon-badge" style="background: rgba(255, 180, 171, 0.1); border-color: rgba(255, 180, 171, 0.25); color: #ffb4ab;">
+							<span class="material-symbols-outlined">delete_sweep</span>
+						</div>
+						<h2 class="legal-section-title">4. User Rights &amp; Data Deletion</h2>
+					</div>
+					<button class="btn-copy-section" data-target="sec-user-rights" title="Copy section link">
+						<span class="material-symbols-outlined">link</span>
+					</button>
+				</div>
+				<div class="legal-section-body">
+					<p>
+						You maintain complete ownership of your privacy. You have the right to request a complete wipe of all your stored personal profiles, progression stats, and server records at any time.
+					</p>
+
+					<div class="legal-item-grid">
+						<div class="legal-item-box">
+							<div class="legal-item-header">
+								<span class="material-symbols-outlined legal-item-icon">mail</span>
+								<span class="legal-item-title">How to Request</span>
+							</div>
+							<p class="legal-item-desc">
+								Join the Official Support Server or directly message the developer (<strong>_d6_</strong>) providing your Discord User ID (and Server ID if requesting guild data removal).
+							</p>
+						</div>
+
+						<div class="legal-item-box">
+							<div class="legal-item-header">
+								<span class="material-symbols-outlined legal-item-icon">hourglass_top</span>
+								<span class="legal-item-title">Processing Timeframe</span>
+							</div>
+							<p class="legal-item-desc">
+								Deletion requests are manually reviewed, validated, and processed within a reasonable turnaround window (typically within 48 to 72 hours).
+							</p>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- Section 5: Contact Information -->
+			<section id="sec-contact-info" class="legal-section-card">
+				<div class="legal-section-header">
+					<div class="legal-section-title-wrap">
+						<div class="legal-section-icon-badge">
+							<span class="material-symbols-outlined">contact_support</span>
+						</div>
+						<h2 class="legal-section-title">5. Contact Information</h2>
+					</div>
+					<button class="btn-copy-section" data-target="sec-contact-info" title="Copy section link">
+						<span class="material-symbols-outlined">link</span>
+					</button>
+				</div>
+				<div class="legal-section-body">
+					<p>
+						If you have any questions or concerns regarding this Privacy Policy, or if you would like to initiate a data inquiry, please contact us:
+					</p>
+
+					<div class="legal-contact-grid">
+						<a href="https://discord.gg/fvDhbEP8cc" target="_blank" rel="noopener noreferrer" class="legal-contact-card">
+							<div class="legal-contact-icon contact-icon-discord">
+								<span class="material-symbols-outlined">forum</span>
+							</div>
+							<div class="legal-contact-details">
+								<span class="legal-contact-label">Official Support Server</span>
+								<span class="legal-contact-value">discord.gg/fvDhbEP8cc</span>
+							</div>
+						</a>
+
+						<div class="legal-contact-card" style="cursor: default;">
+							<div class="legal-contact-icon contact-icon-dev">
+								<span class="material-symbols-outlined">account_circle</span>
+							</div>
+							<div class="legal-contact-details">
+								<span class="legal-contact-label">Lead Developer Contact</span>
+								<span class="legal-contact-value">_d6_ <span style="font-weight: 400; color: var(--text-muted); font-size: 0.85rem;">(_mewwoN🍉)</span></span>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+		</div>
+	</div>
+</div>
+
+<!-- Page Scoped Stylesheet -->
+<link rel="stylesheet" href="/styles/legal.css">
+
+<!-- Legal Page Controller Script -->
+<script src="/script/legal.js"></script>

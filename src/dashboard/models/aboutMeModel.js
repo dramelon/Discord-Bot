@@ -1,3 +1,5 @@
+const apiAllowlistManager = require('../apiAllowlistManager');
+
 /**
  * Model representing the Owner's Discord profile and presence state.
  * Interfaces with Discord's REST API and Lanyard API.
@@ -38,7 +40,9 @@ class AboutMeModel {
 	 */
 	async fetchLanyardPresence() {
 		try {
-			const response = await fetch(`https://api.lanyard.rest/v1/users/${this.userId}`);
+			const url = `https://api.lanyard.rest/v1/users/${this.userId}`;
+			apiAllowlistManager.checkExternalApi('GET', url);
+			const response = await fetch(url);
 			if (!response.ok) {
 				throw new Error(`HTTP ${response.status}`);
 			}

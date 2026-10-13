@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Fluffingiously Dragooon</title>
+	<!-- Google Fonts & Material Symbols -->
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+	<!-- Stylesheets -->
+	<link rel="stylesheet" href="/styles/root.css">
+	<link rel="stylesheet" href="/styles/components.css">
+</head>
+<body class="app-body">
+
+	<!-- Loading Screen Overlay -->
+	<div id="loadingOverlay" class="loading-overlay">
+		<div class="spinner"></div>
+		<div class="loading-text" id="loadingMessage">Connecting to bot status...</div>
+	</div>
+
+	<!-- Profile Modal Settings Dialog -->
+	<div id="profileModal" class="modal-overlay" onclick="closeProfileModal(event)">
+		<div class="modal-content" onclick="event.stopPropagation()">
+			<div class="modal-header">
+				<h3>Profile Settings</h3>
+				<span class="close-btn" onclick="toggleProfileModal(false)">&times;</span>
+			</div>
+			<div class="modal-body">
+				<div class="profile-preview">
+					<img id="modalAvatar" src="" alt="Avatar">
+					<div class="profile-preview-info">
+						<h4 id="modalUsername">Username</h4>
+						<p id="modalRankText" class="modal-rank-soft-text"></p>
+					</div>
+				</div>
+				<!-- Custom Dropdown Rank Selector (Reference example: CustomModal.createDropdown integration) -->
+				<div class="form-group">
+					<label for="rankSelect" class="form-label">Choose Display Rank</label>
+					<div id="modalRankDropdown"></div>
+					<input type="hidden" id="rankSelect" value="">
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button class="btn btn-secondary" onclick="toggleProfileModal(false)">Cancel</button>
+				<button class="btn btn-primary" onclick="saveProfileSettings()">Save Changes</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Sidebar Component -->
+	<!-- INCLUDE_SIDEBAR -->
+
+	<!-- Main Wrapper (Topbar + Workspace + Footer) -->
+	<div class="main-wrapper">
+		<!-- Top Navigation Bar Component -->
+		<!-- INCLUDE_TOPNAVBAR -->
+
+		<!-- Main Workspace Area -->
+		<main class="main-workspace" id="mainContent">
+			<!-- PAGE_CONTENT -->
+		</main>
+
+		<!-- Footer Component -->
+		<!-- INCLUDE_FOOTER -->
+	</div>
+
+	<!-- Core Component Controllers -->
+	<script src="/script/custommodal.js"></script>
+	<!-- Page Template Orchestrator Script -->
+	<script src="/script/pagetemplate.js"></script>
+</body>
+</html>
