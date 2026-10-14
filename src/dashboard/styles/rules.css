@@ -591,3 +591,52 @@
 		font-size: 0.8rem;
 	}
 }
+
+/* Quick Support Card in Sidebar */
+.legal-sidebar-support {
+	background: linear-gradient(145deg, rgba(34, 42, 61, 0.8), rgba(23, 31, 51, 0.95));
+	border: 1px solid var(--border-light);
+	border-radius: 1rem;
+	padding: 1.25rem;
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+}
+
+.legal-sidebar-support-title {
+	font-size: 0.9rem;
+	font-weight: 700;
+	color: var(--text-main);
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.legal-sidebar-support-text {
+	font-size: 0.82rem;
+	color: var(--text-muted);
+	line-height: 1.45;
+}
+
+.legal-support-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	background: rgba(88, 101, 242, 0.2);
+	color: #a5b4fc;
+	border: 1px solid rgba(88, 101, 242, 0.4);
+	padding: 0.55rem 0.85rem;
+	border-radius: 0.5rem;
+	font-size: 0.82rem;
+	font-weight: 600;
+	text-decoration: none;
+	transition: all 0.2s ease;
+	cursor: pointer;
+}
+
+.legal-support-btn:hover {
+	background: rgba(88, 101, 242, 0.35);
+	color: #fff;
+	transform: translateY(-1px);
+}

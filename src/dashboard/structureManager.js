@@ -15,8 +15,12 @@ class StructureManager {
 		this.cached404Html = '';
 		this.compiledRoutes = [];
 		this.whitelistedRoutes = new Set();
-		this.scriptAllowlistPath = path.join(this.baseDir, 'config', 'script_allowlist.json');
-		this.scriptAllowlist = {};
+		this.scriptsAllowlistPath = path.join(this.baseDir, 'config', 'scripts_allowlist.json');
+		this.scriptsAllowlist = {};
+		this.stylesAllowlistPath = path.join(this.baseDir, 'config', 'styles_allowlist.json');
+		this.stylesAllowlist = {};
+		this.assetsAllowlistPath = path.join(this.baseDir, 'config', 'assets_allowlist.json');
+		this.assetsAllowlist = {};
 	}
 
 	findStructureFile() {
@@ -346,13 +350,13 @@ class StructureManager {
 			}
 		}
 
-		// Load script allowlist from config/script_allowlist.json
-		if (fs.existsSync(this.scriptAllowlistPath)) {
+		// Load scripts allowlist from config/scripts_allowlist.json
+		if (fs.existsSync(this.scriptsAllowlistPath)) {
 			try {
-				const scriptRaw = fs.readFileSync(this.scriptAllowlistPath, 'utf8');
-				this.scriptAllowlist = JSON.parse(scriptRaw);
+				const scriptRaw = fs.readFileSync(this.scriptsAllowlistPath, 'utf8');
+				this.scriptsAllowlist = JSON.parse(scriptRaw);
 				let scriptCount = 0;
-				for (const [dKey, scripts] of Object.entries(this.scriptAllowlist)) {
+				for (const [dKey, scripts] of Object.entries(this.scriptsAllowlist)) {
 					if (scripts && typeof scripts === 'object') {
 						for (const scriptRoute of Object.keys(scripts)) {
 							this.whitelistedRoutes.add(scriptRoute);
@@ -360,9 +364,49 @@ class StructureManager {
 						}
 					}
 				}
-				console.log(`[Dashboard Structure] Loaded ${scriptCount} allowed script routes from config/script_allowlist.json`);
+				console.log(`[Dashboard Structure] Loaded ${scriptCount} allowed script routes from config/scripts_allowlist.json`);
 			} catch (err) {
-				console.error(`\x1b[31m[Dashboard Structure] Error loading config/script_allowlist.json: ${err.message}\x1b[0m`);
+				console.error(`\x1b[31m[Dashboard Structure] Error loading config/scripts_allowlist.json: ${err.message}\x1b[0m`);
+			}
+		}
+
+		// Load styles allowlist from config/styles_allowlist.json
+		if (fs.existsSync(this.stylesAllowlistPath)) {
+			try {
+				const styleRaw = fs.readFileSync(this.stylesAllowlistPath, 'utf8');
+				this.stylesAllowlist = JSON.parse(styleRaw);
+				let styleCount = 0;
+				for (const [dKey, styles] of Object.entries(this.stylesAllowlist)) {
+					if (styles && typeof styles === 'object') {
+						for (const styleRoute of Object.keys(styles)) {
+							this.whitelistedRoutes.add(styleRoute);
+							styleCount++;
+						}
+					}
+				}
+				console.log(`[Dashboard Structure] Loaded ${styleCount} allowed style routes from config/styles_allowlist.json`);
+			} catch (err) {
+				console.error(`\x1b[31m[Dashboard Structure] Error loading config/styles_allowlist.json: ${err.message}\x1b[0m`);
+			}
+		}
+
+		// Load assets allowlist from config/assets_allowlist.json
+		if (fs.existsSync(this.assetsAllowlistPath)) {
+			try {
+				const assetRaw = fs.readFileSync(this.assetsAllowlistPath, 'utf8');
+				this.assetsAllowlist = JSON.parse(assetRaw);
+				let assetCount = 0;
+				for (const [dKey, assets] of Object.entries(this.assetsAllowlist)) {
+					if (assets && typeof assets === 'object') {
+						for (const assetRoute of Object.keys(assets)) {
+							this.whitelistedRoutes.add(assetRoute);
+							assetCount++;
+						}
+					}
+				}
+				console.log(`[Dashboard Structure] Loaded ${assetCount} allowed asset routes from config/assets_allowlist.json`);
+			} catch (err) {
+				console.error(`\x1b[31m[Dashboard Structure] Error loading config/assets_allowlist.json: ${err.message}\x1b[0m`);
 			}
 		}
 
@@ -375,10 +419,64 @@ class StructureManager {
 	}
 
 	resolveScriptPath(domainKey, reqUrl) {
-		if (!domainKey || !this.scriptAllowlist[domainKey]) return null;
-		const relativePath = this.scriptAllowlist[domainKey][reqUrl];
+		if (!domainKey || !this.scriptsAllowlist[domainKey]) {
+			for (const dKey of Object.keys(this.scriptsAllowlist)) {
+				if (this.scriptsAllowlist[dKey]?.[reqUrl]) {
+					return this.resolveFilePath(this.scriptsAllowlist[dKey][reqUrl]);
+				}
+			}
+			return null;
+		}
+		const relativePath = this.scriptsAllowlist[domainKey][reqUrl];
 		if (!relativePath) return null;
 		return this.resolveFilePath(relativePath);
+	}
+
+	resolveStylePath(domainKey, reqUrl) {
+		if (!domainKey || !this.stylesAllowlist[domainKey]) {
+			for (const dKey of Object.keys(this.stylesAllowlist)) {
+				if (this.stylesAllowlist[dKey]?.[reqUrl]) {
+					return this.resolveFilePath(this.stylesAllowlist[dKey][reqUrl]);
+				}
+			}
+			return null;
+		}
+		const relativePath = this.stylesAllowlist[domainKey][reqUrl];
+		if (!relativePath) return null;
+		return this.resolveFilePath(relativePath);
+	}
+
+	resolveAssetPath(domainKey, reqUrl) {
+		if (!domainKey || !this.assetsAllowlist[domainKey]) {
+			for (const dKey of Object.keys(this.assetsAllowlist)) {
+				if (this.assetsAllowlist[dKey]?.[reqUrl]) {
+					return this.resolveFilePath(this.assetsAllowlist[dKey][reqUrl]);
+				}
+			}
+			return null;
+		}
+		const relativePath = this.assetsAllowlist[domainKey][reqUrl];
+		if (!relativePath) {
+			for (const dKey of Object.keys(this.assetsAllowlist)) {
+				if (this.assetsAllowlist[dKey]?.[reqUrl]) {
+					return this.resolveFilePath(this.assetsAllowlist[dKey][reqUrl]);
+				}
+			}
+			return null;
+		}
+		return this.resolveFilePath(relativePath);
+	}
+
+	isAssetAllowed(domainKey, reqUrl) {
+		if (domainKey && this.assetsAllowlist[domainKey]?.[reqUrl]) {
+			return true;
+		}
+		for (const dKey of Object.keys(this.assetsAllowlist)) {
+			if (this.assetsAllowlist[dKey]?.[reqUrl]) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	getWhitelistedRoutes() {
@@ -450,18 +548,14 @@ class StructureManager {
 		const parsedUrl = new URL(req.url, `http://${hostHeader || 'localhost'}`);
 		const reqUrl = parsedUrl.pathname;
 
-		// Skip API endpoints and static styles/scripts to let dedicated handlers process them
+		// Skip API endpoints and static styles/scripts/assets to let dedicated handlers process them
 		if (reqUrl.startsWith('/api/') || 
-		    reqUrl.startsWith('/script/') ||
+		    reqUrl.startsWith('/scripts/') ||
+		    reqUrl.startsWith('/styles/') || 
 		    reqUrl === '/dashboard.css' || 
 		    reqUrl.toLowerCase() === '/style/style.css' || 
 		    reqUrl === '/style.css' || 
-		    reqUrl.startsWith('/styles/') || 
-		    reqUrl.startsWith('/controllers/') || 
-		    reqUrl.startsWith('/components/') || 
-		    reqUrl.startsWith('/public/') || 
-		    reqUrl.startsWith('/shares/') || 
-		    reqUrl.startsWith('/.well-known/') || 
+		    this.isAssetAllowed(currentDomainKey, reqUrl) ||
 		    reqUrl === '/favicon.ico') {
 			return false;
 		}
@@ -478,6 +572,9 @@ class StructureManager {
 		}
 		if (normalizedUrl.length > 5 && normalizedUrl.endsWith('.html')) {
 			normalizedUrl = normalizedUrl.slice(0, -5);
+		}
+		if (normalizedUrl === '/index') {
+			normalizedUrl = '/';
 		}
 
 		// 1. Find matching route for the target domain

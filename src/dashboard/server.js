@@ -1183,27 +1183,9 @@ function startDashboard(client) {
 		console.error('[Dashboard Security] Error initializing API allowlist manager:', err);
 	}
 
-	// Load whitelisted routes and sync dynamic routes from structureManager
-	let routesWhitelist = new Set();
-	try {
-		const whitelistPath = path.join(__dirname, 'routes_whitelist.txt');
-		if (fs.existsSync(whitelistPath)) {
-			const content = fs.readFileSync(whitelistPath, 'utf8');
-			routesWhitelist = new Set(
-				content.split('\n')
-					.map(line => line.trim())
-					.filter(line => line && !line.startsWith('#'))
-			);
-		}
-	} catch (e) {
-		console.error('[Dashboard Security] Failed to load routes whitelist:', e);
-	}
-
-	// Merge all routes from config/website_structure.json into the whitelist
-	for (const route of structureManager.getWhitelistedRoutes()) {
-		routesWhitelist.add(route);
-	}
-	console.log(`[Dashboard Security] Loaded ${routesWhitelist.size} whitelisted routes (including dynamic website structure).`);
+	// Whitelisted routes loaded directly from structureManager (website_structure, scripts, styles, assets)
+	const routesWhitelist = structureManager.getWhitelistedRoutes();
+	console.log(`[Dashboard Security] Loaded ${routesWhitelist.size} whitelisted routes (including dynamic website structure, scripts, styles, and assets).`);
 
 	const server = http.createServer(async (req, res) => {
 		const requestStart = Date.now();
@@ -1245,13 +1227,8 @@ function startDashboard(client) {
 		// Identify request category
 		const isApiRequest = reqUrl.startsWith('/api/');
 		const isAssetRequest = reqUrl.startsWith('/styles/') || 
-			reqUrl.startsWith('/script/') ||
-			reqUrl.startsWith('/controllers/') || 
-			reqUrl.startsWith('/components/') || 
-			reqUrl.startsWith('/public/') || 
-			reqUrl.startsWith('/shares/') || 
-			reqUrl.startsWith('/assets/') || 
-			reqUrl.startsWith('/.well-known/') || 
+			reqUrl.startsWith('/scripts/') ||
+			structureManager.isAssetAllowed(null, reqUrl) ||
 			reqUrl === '/favicon.ico' || 
 			reqUrl === '/dashboard.css' ||
 			reqUrl.toLowerCase() === '/style/style.css' ||
@@ -1314,8 +1291,8 @@ function startDashboard(client) {
 			reqUrl = '/styles/style.css';
 		}
 
-		// Domain-Specific Script Asset Serving (/script/*) via config/script_allowlist.json
-		if (reqUrl.startsWith('/script/')) {
+		// Domain-Specific Script Asset Serving (/scripts/*) via config/scripts_allowlist.json
+		if (reqUrl.startsWith('/scripts/')) {
 			const currentDomainKey = structureManager.resolveDomainKey(hostHeader);
 			const resolvedScriptPath = structureManager.resolveScriptPath(currentDomainKey, reqUrl);
 
@@ -1335,8 +1312,61 @@ function startDashboard(client) {
 			}
 		}
 
-		// Static Asset Serving (/styles, /controllers, /components, /public, /shares, /assets, /.well-known, favicon)
-		if (reqUrl.startsWith('/styles/') || reqUrl.startsWith('/controllers/') || reqUrl.startsWith('/components/') || reqUrl.startsWith('/public/') || reqUrl.startsWith('/shares/') || reqUrl.startsWith('/assets/') || reqUrl.startsWith('/.well-known/') || reqUrl === '/favicon.ico') {
+		// Domain-Specific Stylesheet Asset Serving (/styles/*) via config/styles_allowlist.json
+		if (reqUrl.startsWith('/styles/')) {
+			const currentDomainKey = structureManager.resolveDomainKey(hostHeader);
+			const resolvedStylePath = structureManager.resolveStylePath(currentDomainKey, reqUrl);
+
+			if (resolvedStylePath && fs.existsSync(resolvedStylePath) && fs.statSync(resolvedStylePath).isFile()) {
+				try {
+					const fileData = fs.readFileSync(resolvedStylePath);
+					res.writeHead(200, { 'Content-Type': 'text/css; charset=utf-8' });
+					return res.end(fileData);
+				} catch (err) {
+					console.error('[Dashboard] Error serving stylesheet asset:', resolvedStylePath, err);
+					res.writeHead(500, { 'Content-Type': 'text/plain' });
+					return res.end('Internal Server Error');
+				}
+			} else {
+				res.writeHead(404, { 'Content-Type': 'text/plain' });
+				return res.end('Not Found');
+			}
+		}
+
+		// Domain-Specific Static Asset Serving via config/assets_allowlist.json
+		if (structureManager.isAssetAllowed(null, reqUrl) || reqUrl === '/favicon.ico') {
+			const currentDomainKey = structureManager.resolveDomainKey(hostHeader);
+			const resolvedAssetPath = structureManager.resolveAssetPath(currentDomainKey, reqUrl);
+
+			if (resolvedAssetPath && fs.existsSync(resolvedAssetPath) && fs.statSync(resolvedAssetPath).isFile()) {
+				try {
+					const ext = path.extname(resolvedAssetPath).toLowerCase();
+					const mimeMap = {
+						'.ico': 'image/x-icon',
+						'.png': 'image/png',
+						'.jpg': 'image/jpeg',
+						'.jpeg': 'image/jpeg',
+						'.svg': 'image/svg+xml',
+						'.json': 'application/json; charset=utf-8',
+						'.webmanifest': 'application/manifest+json'
+					};
+					const contentType = mimeMap[ext] || 'application/octet-stream';
+					const fileData = fs.readFileSync(resolvedAssetPath);
+					res.writeHead(200, { 'Content-Type': contentType });
+					return res.end(fileData);
+				} catch (err) {
+					console.error('[Dashboard] Error serving static asset:', resolvedAssetPath, err);
+					res.writeHead(500, { 'Content-Type': 'text/plain' });
+					return res.end('Internal Server Error');
+				}
+			} else {
+				res.writeHead(404, { 'Content-Type': 'text/plain' });
+				return res.end('Not Found');
+			}
+		}
+
+		// Static Asset Serving (/components, /public, /shares, /assets, /.well-known)
+		if (reqUrl.startsWith('/components/') || reqUrl.startsWith('/public/') || reqUrl.startsWith('/shares/') || reqUrl.startsWith('/assets/') || reqUrl.startsWith('/.well-known/')) {
 			const cleanUrl = reqUrl.replace(/\.\./g, ''); // Path traversal defense
 			const lowerUrl = cleanUrl.toLowerCase();
 
